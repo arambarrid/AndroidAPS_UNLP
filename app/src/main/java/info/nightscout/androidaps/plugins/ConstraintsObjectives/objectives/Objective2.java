@@ -9,7 +9,7 @@ import info.nightscout.utils.T;
 
 public class Objective2 extends Objective {
 
-    public final int MANUAL_ENACTS_NEEDED = 20;
+    public final int MANUAL_ENACTS_NEEDED = 0;
 
     public Objective2() {
         super(1, R.string.objectives_1_objective, R.string.objectives_1_gate);
