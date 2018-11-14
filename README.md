@@ -25,7 +25,7 @@ $ git remote -v # para ver si lo agrego bien
 origin	https://github.com/arambarrid/AndroidAPS_UNLP (fetch)
 origin	https://github.com/arambarrid/AndroidAPS_UNLP (push) #si falta esta es porque no tenés permiso para pushear
 ``` 
-Va a crear una carpeta sistemaSilos en la carpeta dónde esté parada la consola.
+Va a crear una carpeta AndroidAPS_UNLP en la carpeta dónde esté parada la consola.
 ### Antes de trabajar
 Hay que actualizar el código local con el del repo. La primera vez no tiene sentido porque el clone ya está actualizado
 ``` sh
@@ -71,7 +71,7 @@ $ git add README.md # agrega el archivo sólo
 ```
 O sino
 ```sh
-$ git add . # agrega todos los archivos de la carpeta (parado en el sistemaSilos) 
+$ git add . # agrega todos los archivos de la carpeta (parado en el AndroidAPS_UNLP) 
 ```
 
 Esto del add se hace siempre que se creen archivos nuevos o se renombren. Lo más fácil es no tener archivos que no sirvan dentro del proyecto para poder hacer `git add .` en vez de especificar uno por uno.
