@@ -29,6 +29,7 @@ import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.ARG.ARGPlugin;
 import info.nightscout.androidaps.plugins.Actions.ActionsFragment;
 import info.nightscout.androidaps.plugins.Careportal.CareportalPlugin;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
@@ -167,6 +168,7 @@ public class MainApp extends Application {
             if (Config.APS) pluginsList.add(OpenAPSMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSAMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSSMBPlugin.getPlugin());
+            if (Config.APS) pluginsList.add(ARGPlugin.getPlugin());
             pluginsList.add(NSProfilePlugin.getPlugin());
             if (Config.OTHERPROFILES) pluginsList.add(SimpleProfilePlugin.getPlugin());
             if (Config.OTHERPROFILES) pluginsList.add(LocalProfilePlugin.getPlugin());
