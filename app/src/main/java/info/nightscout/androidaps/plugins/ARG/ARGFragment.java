@@ -30,7 +30,6 @@ import info.nightscout.utils.FabricPrivacy;
 import info.nightscout.utils.JSONFormatter;
 
 import info.nightscout.androidaps.plugins.OpenAPSSMB.DetermineBasalAdapterSMBJS;
-import info.nightscout.androidaps.plugins.OpenAPSSMB.DetermineBasalResultSMB;
 import info.nightscout.androidaps.plugins.OpenAPSSMB.OpenAPSSMBPlugin;
 
 
@@ -95,13 +94,13 @@ public class ARGFragment extends SubscriberFragment {
                 synchronized (ARGFragment.this) {
                     if (!isBound()) return;
                     ARGPlugin plugin = ARGPlugin.getPlugin();
-                    DetermineBasalResultSMB lastAPSResult = plugin.lastAPSResult;
+                    DetermineBasalResultARG lastAPSResult = plugin.lastAPSResult;
                     if (lastAPSResult != null) {
                         resultView.setText(JSONFormatter.format(lastAPSResult.json));
                         requestView.setText(lastAPSResult.toSpanned());
                     }
-                    DetermineBasalAdapterSMBJS determineBasalAdapterSMBJS = plugin.lastDetermineBasalAdapterSMBJS;
-                    if (determineBasalAdapterSMBJS != null) {
+                    DetermineBasalAdapterARG determineBasalAdapterARG = plugin.lastDetermineBasalAdapterARG;
+                    if (determineBasalAdapterARG != null) {
                         /*
                         glucoseStatusView.setText(JSONFormatter.format(determineBasalAdapterSMBJS.getGlucoseStatusParam()).toString().trim());
                         currentTempView.setText(JSONFormatter.format(determineBasalAdapterSMBJS.getCurrentTempParam()).toString().trim());

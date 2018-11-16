@@ -35,8 +35,7 @@ import info.nightscout.utils.Profiler;
 import info.nightscout.utils.Round;
 import info.nightscout.utils.ToastUtils;
 
-import info.nightscout.androidaps.plugins.OpenAPSSMB.DetermineBasalAdapterSMBJS;
-import info.nightscout.androidaps.plugins.OpenAPSSMB.DetermineBasalResultSMB;
+
 
 
 public class ARGPlugin extends PluginBase implements APSInterface {
@@ -53,9 +52,9 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
     // last values
 
-    DetermineBasalAdapterSMBJS lastDetermineBasalAdapterSMBJS = null;
+    DetermineBasalAdapterARG lastDetermineBasalAdapterARG = null;
     long lastAPSRun = 0;
-    DetermineBasalResultSMB lastAPSResult = null;
+    DetermineBasalResultARG lastAPSResult = null;
     AutosensResult lastAutosensResult = null;
 
     private ARGPlugin() {
@@ -96,8 +95,8 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         if (L.isEnabled(L.APS))
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
         lastAPSResult = null;
-        //DetermineBasalAdapterSMBJS determineBasalAdapterSMBJS;
-        //determineBasalAdapterSMBJS = new DetermineBasalAdapterSMBJS(new ScriptReader(MainApp.instance().getBaseContext()));
+        DetermineBasalAdapterARG determineBasalAdapterARG;
+        determineBasalAdapterARG = new DetermineBasalAdapterARG(new ScriptReader(MainApp.instance().getBaseContext()));
 
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
         Profile profile = ProfileFunctions.getInstance().getProfile();
@@ -207,10 +206,10 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             Profiler.log(log, "SMB data gathering", start);
 
         start = System.currentTimeMillis();
-        /*
+
         try {
 
-            determineBasalAdapterSMBJS.setData(profile, maxIob, maxBasal, minBg, maxBg, targetBg, ConfigBuilderPlugin.getPlugin().getActivePump().getBaseBasalRate(), iobArray, glucoseStatus, mealData,
+            determineBasalAdapterARG.setData(profile, maxIob, maxBasal, minBg, maxBg, targetBg, ConfigBuilderPlugin.getPlugin().getActivePump().getBaseBasalRate(), iobArray, glucoseStatus, mealData,
                     lastAutosensResult.ratio, //autosensDataRatio
                     isTempTarget,
                     smbAllowed.value(),
@@ -222,32 +221,31 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             log.error(e.getMessage());
             return;
         }
-        */
+
 
         long now = System.currentTimeMillis();
 
-        //DetermineBasalResultSMB determineBasalResultSMB = determineBasalAdapterSMBJS.invoke();
+        DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);
         // TODO still needed with oref1?
         // Fix bug determine basal
-        /*
-        if (determineBasalResultSMB.rate == 0d && determineBasalResultSMB.duration == 0 && !TreatmentsPlugin.getPlugin().isTempBasalInProgress())
-            determineBasalResultSMB.tempBasalRequested = false;
 
-        determineBasalResultSMB.iob = iobArray[0];
+        if (determineBasalResultARG.rate == 0d && determineBasalResultARG.duration == 0 && !TreatmentsPlugin.getPlugin().isTempBasalInProgress())
+            determineBasalResultARG.tempBasalRequested = false;
+
+        determineBasalResultARG.iob = iobArray[0];
 
         try {
-            determineBasalResultSMB.json.put("timestamp", DateUtil.toISOString(now));
+            determineBasalResultARG.json.put("timestamp", DateUtil.toISOString(now));
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
 
-        determineBasalResultSMB.inputConstraints = inputConstraints;
+        determineBasalResultARG.inputConstraints = inputConstraints;
 
-        lastDetermineBasalAdapterSMBJS = determineBasalAdapterSMBJS;
-        lastAPSResult = determineBasalResultSMB;
-        */
+        lastDetermineBasalAdapterARG = determineBasalAdapterARG;
+        lastAPSResult = determineBasalResultARG;
         lastAPSRun = now;
         MainApp.bus().post(new EventOpenAPSUpdateGui());
 
