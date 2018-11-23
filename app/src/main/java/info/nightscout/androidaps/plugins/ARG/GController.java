@@ -13,10 +13,10 @@ public class GController {
 	private GControllerState open; 			   // Estado open-loop (NO SE UTILIZA)
 	private GControllerState closed; 		   // Estado closed-loop
 	private GControllerState gControllerState; // Estado actual 
-	private int itNumber; 					   // N�mero de iteraciones actuales
-	private int olTime; 					   // N�mero inicial de iteraciones en open-loop (NO SE UTILIZA)
+	private int itNumber; 					   // N´mero de iteraciones actuales
+	private int olTime; 					   // N´mero inicial de iteraciones en open-loop (NO SE UTILIZA)
 	private Estimator estimator; 			   // Estimador
-	private double pCBolus; 				   // Bolo generado por la cuantizaci�n de la bomba
+	private double pCBolus; 				   // Bolo generado por la cuantizaci´n de la bomba
 	private int rCFBolus; 					   // Contador asociado a los BACs
 	private int tEndAgg; 					   // Contador asociado a los BACs
 	
@@ -36,7 +36,7 @@ public class GController {
 		
 		// Pump
 		
-		// Genero una bomba con las caracter�sticas de la bomba Roche que usaremos en las pruebas
+		// Genero una bomba con las caracter´sticas de la bomba Roche que usaremos en las pruebas
 		
 		RochePumpBuilder rochePumpBuilder = new RochePumpBuilder();
 		PumpEngineer pumpEngineer         = new PumpEngineer(rochePumpBuilder);
@@ -54,7 +54,7 @@ public class GController {
 		
 		// NSF Filter
 		
-		// NO SE UTILIZA, pero se mantiene su definici�n. Se setea con 3 mg/dl/min (la m�xima tasa de cambio fisiol�gica de glucosa).
+		// NO SE UTILIZA, pero se mantiene su definici´n. Se setea con 3 mg/dl/min (la m´xima tasa de cambio fisiol´gica de glucosa).
 		
 		nsf = new NSF(3.0);
 		
@@ -63,9 +63,9 @@ public class GController {
 		// Switched LQG
 		
 		// Para testear con Matlab se definen las matrices iguales a 0. En Matlab luego se setean iguales a las definidas
-		// en ctrlsetup.m mediante la funci�n createGController.m
+		// en ctrlsetup.m mediante la funci´n createGController.m
 		
-		// En la versi�n DiAs esto es diferente, ya que las matrices se cargan del archivo cmatrices.txt
+		// En la versi´n DiAs esto es diferente, ya que las matrices se cargan del archivo cmatrices.txt
 		
 		Matrix Ak     = new Matrix(13,13);
 		Matrix Bk     = new Matrix(13,2);
@@ -80,8 +80,8 @@ public class GController {
 		
 		double kDia = 16.3e-03;      // Se define un DIA por default de 5 hs
 		double ts   = 0.1;           // Tiempo de muestreo [min]
-		double tau  = 0.0;           // En la funci�n de sliding no se toma en cuenta la derivada del IOB
-		double filterEdgefreq = 0.5; // El filtro de primer orden no se considera m�s, pero se mantiene su definici�n
+		double tau  = 0.0;           // En la funci´n de sliding no se toma en cuenta la derivada del IOB
+		double filterEdgefreq = 0.5; // El filtro de primer orden no se considera m´s, pero se mantiene su definici´n
 		
 		safe = new Safe(kDia,ts,parameterWeight,parameterIBasal,parameterCR,tau,filterEdgefreq,slqgController);
 		
@@ -97,7 +97,7 @@ public class GController {
 		
 		// Estimator
 		
-		int nSamples = 6; // N�mero de muestras del estimador
+		int nSamples = 6; // N´mero de muestras del estimador
 		estimator    = new Estimator(nSamples,slqgController.getTs());
 		
 		/**************************************************************************************************************/
@@ -138,7 +138,7 @@ public class GController {
 		/**************************************************************************************************************/
 		
 		// Se definen las posibles transiciones
-		// Notar que la condici�n {false, false} no se considera ya que no implicar�a una conmutaci�n
+		// Notar que la condici´n {false, false} no se considera ya que no implicar´a una conmutaci´n
 		
 		boolean[] condBoolean1 = {true,false};
 		Condition condition1   = new Condition(condBoolean1);
@@ -164,7 +164,7 @@ public class GController {
 		
 		/**************************************************************************************************************/
 		
-		// Construcci�n del SLQG
+		// Construcci´n del SLQG
 		
 		SLQGController slqgController = new SLQGController(aggressive, conservative, lqg, transitions, controllerTs); 
 		

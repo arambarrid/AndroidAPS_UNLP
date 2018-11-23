@@ -39,6 +39,8 @@ import info.nightscout.utils.ToastUtils;
 
 
 public class ARGPlugin extends PluginBase implements APSInterface {
+    //prueba
+    double resultado;
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
     private static ARGPlugin argPlugin;
@@ -224,7 +226,10 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
 
         long now = System.currentTimeMillis();
+        //prueba
 
+        GController gController = new GController(120.0, 25.0, 15.0, 20.0, 80.0, 1.0);
+        resultado=gController.run(true,1, 100);
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);
