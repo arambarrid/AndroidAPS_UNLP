@@ -1226,4 +1226,11 @@
         <item quantity="one">%1$d minute</item>
         <item quantity="other">%1$d minutes</item>
     </plurals>
+
+    <string name="key_arg_byte">key_arg_argument</string>
+    <string name="arg_byte_title">Un byte sin signo</string>
+    <string name="arg_byte">Un numero de prueba con validacion de 0 a 255</string>
+    <string name="key_arg_p_const">key_arg_argument</string>
+    <string name="arg_p_const_title">Constante K proporcional</string>
+    <string name="arg_p_const">Numero real de -10.0 a 10.0</string>
 </resources>

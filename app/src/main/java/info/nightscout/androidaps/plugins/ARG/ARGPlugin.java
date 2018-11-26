@@ -63,7 +63,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 .fragmentClass(ARGFragment.class.getName())
                 .pluginName(R.string.openapsarg)
                 .shortName(R.string.arg_shortname)
-                .preferencesId(R.xml.pref_openapssmb)
+                .preferencesId(R.xml.pref_arg)
                 .description(R.string.description_arg)
         );
     }
