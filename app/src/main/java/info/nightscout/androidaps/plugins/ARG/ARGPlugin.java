@@ -1,8 +1,15 @@
 package info.nightscout.androidaps.plugins.ARG;
 
+import com.opencsv.CSVWriter;
+
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.FileWriter;
+import java.io.File;
+import java.util.List;
+import java.io.IOException;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -10,6 +17,7 @@ import info.nightscout.androidaps.data.GlucoseStatus;
 import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
+import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.interfaces.APSInterface;
 import info.nightscout.androidaps.interfaces.Constraint;
@@ -41,6 +49,10 @@ import info.nightscout.utils.ToastUtils;
 public class ARGPlugin extends PluginBase implements APSInterface {
     //prueba
     double resultado;
+    GController gController;
+    private static final String STRING_ARRAY_SAMPLE = "./string-array-sample.csv";
+
+    //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
     private static ARGPlugin argPlugin;
@@ -227,9 +239,37 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
         long now = System.currentTimeMillis();
         //prueba
+        if(gController==null)
+            gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 0.0);
 
-        GController gController = new GController(120.0, 25.0, 15.0, 20.0, 80.0, 1.0);
-        resultado=gController.run(true,1, 100);
+        long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
+        List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
+        resultado=gController.run( true,1, data.get(0).raw);
+        Matrix matrizAExcel = new Matrix(2,3);
+        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+        String fileName = "AnalysisData.csv";
+        String filePath = baseDir + File.separator + fileName;
+        File f = new File(filePath );
+        CSVWriter writer = null;
+        // File exist
+        try {
+            FileWriter mFileWriter = new FileWriter(filePath, true);
+            writer = new CSVWriter(mFileWriter);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        String[] data2 = {"Ship Name"};
+
+        writer.writeNext(data2);
+        try{
+            writer.close();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        //prueba
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);

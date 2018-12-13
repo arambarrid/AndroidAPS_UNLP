@@ -19,6 +19,7 @@ import com.squareup.otto.Subscribe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Date;
 
 import info.nightscout.androidaps.Constants;
@@ -445,6 +446,8 @@ public class LoopPlugin extends PluginBase {
             }
 
             MainApp.bus().post(new EventLoopUpdateGui());
+        } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             if (L.isEnabled(L.APS))
                 log.debug("invoke end");

@@ -163,6 +163,9 @@ configurations {
 }
 
 dependencies {
+
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation ('com.opencsv:opencsv:4.3.2')
     wearApp project(':wear')
 
     implementation fileTree(include: ['*.jar'], dir: 'libs')

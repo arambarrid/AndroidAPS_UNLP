@@ -9,5 +9,5 @@ public interface APSInterface {
     public APSResult getLastAPSResult();
     public long getLastAPSRun();
 
-    public void invoke(String initiator, boolean tempBasalFallback);
+    public void invoke(String initiator, boolean tempBasalFallback) throws java.io.IOException;
 }

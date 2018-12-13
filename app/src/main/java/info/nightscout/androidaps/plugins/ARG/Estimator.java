@@ -68,7 +68,7 @@ public class Estimator {
 		auxVector.getData()[cgmVector.getM()-1][0] = cgmValue;
 		cgmVector = auxVector;
 		
-	}
+		}
 	
 	/**************************************************************************************************************/
 	
