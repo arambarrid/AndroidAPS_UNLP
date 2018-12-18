@@ -1,6 +1,7 @@
 package info.nightscout.androidaps.plugins.ARG;
 
 import com.opencsv.CSVWriter;
+import com.opencsv.CSVReader;
 
 import org.json.JSONException;
 import org.slf4j.Logger;
@@ -8,9 +9,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.util.List;
 import java.io.IOException;
-
+import java.util.Objects;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.GlucoseStatus;
@@ -51,6 +53,8 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     double resultado;
     GController gController;
     private static final String STRING_ARRAY_SAMPLE = "./string-array-sample.csv";
+    private static CSVReader reader=null;
+    private static boolean firstExecution=true;
 
     //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
@@ -105,7 +109,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     }
 
     @Override
-    public void invoke(String initiator, boolean tempBasalFallback) {
+    public void invoke(String initiator, boolean tempBasalFallback) throws IOException {
         if (L.isEnabled(L.APS))
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
         lastAPSResult = null;
@@ -239,36 +243,58 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
         long now = System.currentTimeMillis();
         //prueba
-        if(gController==null)
-            gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 0.0);
-
-        long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
-        List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-        resultado=gController.run( true,1, data.get(0).raw);
-        Matrix matrizAExcel = new Matrix(2,3);
         String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-        String fileName = "AnalysisData.csv";
-        String filePath = baseDir + File.separator + fileName;
-        File f = new File(filePath );
-        CSVWriter writer = null;
-        // File exist
-        try {
-            FileWriter mFileWriter = new FileWriter(filePath, true);
-            writer = new CSVWriter(mFileWriter);
+        String anuncioFileName = "anuncio2.csv";
+        String anuncioFilePath = baseDir + File.separator + anuncioFileName;
+        String[] nextRecord;
+        if(reader==null) {
+            try {
+                reader = new CSVReader(new FileReader(anuncioFilePath));
+                nextRecord = reader.readNext(); //leo la primera linea porque sino no estan sincronizados cgm con anuncio
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        catch(IOException e) {
-            e.printStackTrace();
+        else {
+            if ((nextRecord = reader.readNext()) != null) {
+                if (gController == null)
+                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 0.0);
+
+                long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
+                List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
+                resultado = gController.run(Boolean.valueOf(nextRecord[0]), 1, data.get(0).raw);
+                double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
+                double [][] iobStates = gController.getSafe().getIob().getX().getData();
+                String fileName = "TablaDeDatos.csv";
+                String filePath = baseDir + File.separator + fileName;
+                CSVWriter writer = null;
+                // File exist
+                try {
+                    FileWriter mFileWriter = new FileWriter(filePath, true);
+                    writer = new CSVWriter(mFileWriter);
+                    if(firstExecution) {
+                        String[] headerRecord = {"time", "CGM", "IOB", "Gpred", "Gpred_correction", "Gpred_bolus", "Xi00", "Xi01", "Xi02", "Xi03", "Xi04", "Xi05", "Xi06", "Xi07", "brakes" +
+                                "_coeff",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Resultado"};
+                        writer.writeNext(headerRecord);
+                        firstExecution=false;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                int slqgStateFlag = 0;
+                if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
+                    slqgStateFlag = 1;
+                String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(nextRecord[0]), String.valueOf(resultado)};
+
+                writer.writeNext(dataToCSV);
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
-        String[] data2 = {"Ship Name"};
-
-        writer.writeNext(data2);
-        try{
-            writer.close();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
         //prueba
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
