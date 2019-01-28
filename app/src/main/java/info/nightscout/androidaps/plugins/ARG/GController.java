@@ -1,5 +1,7 @@
 package info.nightscout.androidaps.plugins.ARG;
 
+import android.content.Context;
+
 import java.util.ArrayList;
 
 public class GController {
@@ -24,7 +26,7 @@ public class GController {
 	
 	// Constructor
 	
-	public GController(double parameterSetpoint, double parameterTDI, double parameterCR, double parameterCF, double parameterWeight, double parameterIBasal){
+	public GController(double parameterSetpoint, double parameterTDI, double parameterCR, double parameterCF, double parameterWeight, double parameterIBasal, Context contexto){
 		
 		/**************************************************************************************************************/
 		
@@ -66,13 +68,23 @@ public class GController {
 		// en ctrlsetup.m mediante la funci´n createGController.m
 		
 		// En la versi´n DiAs esto es diferente, ya que las matrices se cargan del archivo cmatrices.txt
-		
-		Matrix Ak     = new Matrix(13,13);
-		Matrix Bk     = new Matrix(13,2);
-		Matrix CkCons = new Matrix(1,13);
-		Matrix CkAgg  = new Matrix(1,13);
-    			
-		slqgController   = buildSlqgController(Ak, Bk, CkCons, CkAgg);
+		AndroidFileRead metodo = new AndroidFileRead(13);
+
+		double[][] data = metodo.getData(contexto);
+
+		double[][] Am = metodo.getAMatrix(data);
+		Matrix Ak = new Matrix(Am);
+
+		double[][] Bm = metodo.getBMatrix(data);
+		Matrix Bk = new Matrix(Bm);
+
+		double[][] CmCons = metodo.getCConsMatrix(data);
+		Matrix CkCons = new Matrix(CmCons);
+
+		double[][] CmAgg = metodo.getCAggMatrix(data);
+		Matrix CkAgg = new Matrix(CmAgg);
+
+		slqgController = buildSlqgController(Ak, Bk, CkCons, CkAgg);
 		
 		/**************************************************************************************************************/
 		

@@ -1,18 +1,21 @@
 package info.nightscout.androidaps.plugins.ARG;
 
-import com.opencsv.CSVWriter;
+import android.content.Context;
+
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.util.List;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
+
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.GlucoseStatus;
@@ -55,16 +58,17 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     private static final String STRING_ARRAY_SAMPLE = "./string-array-sample.csv";
     private static CSVReader reader=null;
     private static boolean firstExecution=true;
-
+    private static Context miContexto;
     //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
     private static ARGPlugin argPlugin;
 
-    public static ARGPlugin getPlugin() {
+    public static ARGPlugin getPlugin(Context contexto) {
         if (argPlugin == null) {
             argPlugin = new ARGPlugin();
         }
+        miContexto=contexto;
         return argPlugin;
     }
 
@@ -242,7 +246,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
 
         long now = System.currentTimeMillis();
-        //prueba
+        //-------------prueba------------
         String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
         String anuncioFileName = "anuncio2.csv";
         String anuncioFilePath = baseDir + File.separator + anuncioFileName;
@@ -258,7 +262,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         else {
             if ((nextRecord = reader.readNext()) != null) {
                 if (gController == null)
-                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 0.0);
+                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.0, miContexto );
 
                 long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
                 List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);

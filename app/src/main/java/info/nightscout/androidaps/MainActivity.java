@@ -69,8 +69,15 @@ public class MainActivity extends AppCompatActivity {
 
     private MenuItem pluginPreferencesMenuItem;
 
+    // PRUEBA
+    public Context contexto;
+    //PRUEBA
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        //PRUEBA
+        contexto=this.getApplicationContext();
+        //PRUEBA
         super.onCreate(savedInstanceState);
 
         if (L.isEnabled(L.CORE))
@@ -416,4 +423,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return actionBarDrawerToggle.onOptionsItemSelected(item);
     }
+
+
 }

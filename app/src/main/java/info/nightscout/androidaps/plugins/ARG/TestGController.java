@@ -11,7 +11,7 @@ public class TestGController {
 		double weight   = 80.0;
 		double uBasal   = 1.0;
 		
-		GController gController = new GController(setPoint, TDI, CR, CF, weight, uBasal);
+		GController gController = new GController(setPoint, TDI, CR, CF, weight, uBasal, null);
 		
 		System.out.println("setPoint: " + gController.getSetpoint());
 		

@@ -168,7 +168,7 @@ public class MainApp extends Application {
             if (Config.APS) pluginsList.add(OpenAPSMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSAMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSSMBPlugin.getPlugin());
-            if (Config.APS) pluginsList.add(ARGPlugin.getPlugin());
+            if (Config.APS) pluginsList.add(ARGPlugin.getPlugin(this.getApplicationContext()));
             pluginsList.add(NSProfilePlugin.getPlugin());
             if (Config.OTHERPROFILES) pluginsList.add(SimpleProfilePlugin.getPlugin());
             if (Config.OTHERPROFILES) pluginsList.add(LocalProfilePlugin.getPlugin());
