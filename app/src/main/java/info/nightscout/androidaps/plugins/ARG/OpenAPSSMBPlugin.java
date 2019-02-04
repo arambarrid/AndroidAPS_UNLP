@@ -1,20 +1,8 @@
 package info.nightscout.androidaps.plugins.ARG;
 
-import android.content.Context;
-
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -22,7 +10,6 @@ import info.nightscout.androidaps.data.GlucoseStatus;
 import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
-import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.interfaces.APSInterface;
 import info.nightscout.androidaps.interfaces.Constraint;
@@ -48,45 +35,35 @@ import info.nightscout.utils.Profiler;
 import info.nightscout.utils.Round;
 import info.nightscout.utils.ToastUtils;
 
-
-
-
-public class ARGPlugin extends PluginBase implements APSInterface {
-    //prueba
-    double resultado;
-    GController gController;
-    private static final String STRING_ARRAY_SAMPLE = "./string-array-sample.csv";
-    private static CSVReader reader=null;
-    private static boolean firstExecution=true;
-    private static Context miContexto;
-    //prueba
+/**
+ * Created by mike on 05.08.2016.
+ */
+public class OpenAPSSMBPlugin extends PluginBase implements APSInterface {
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
-    private static ARGPlugin argPlugin;
+    private static OpenAPSSMBPlugin openAPSSMBPlugin;
 
-    public static ARGPlugin getPlugin(Context contexto) {
-        if (argPlugin == null) {
-            argPlugin = new ARGPlugin();
+    public static OpenAPSSMBPlugin getPlugin() {
+        if (openAPSSMBPlugin == null) {
+            openAPSSMBPlugin = new OpenAPSSMBPlugin();
         }
-        miContexto=contexto;
-        return argPlugin;
+        return openAPSSMBPlugin;
     }
 
     // last values
-
-    DetermineBasalAdapterARG lastDetermineBasalAdapterARG = null;
+    DetermineBasalAdapterSMBJS lastDetermineBasalAdapterSMBJS = null;
     long lastAPSRun = 0;
-    DetermineBasalResultARG lastAPSResult = null;
+    DetermineBasalResultSMB lastAPSResult = null;
     AutosensResult lastAutosensResult = null;
 
-    private ARGPlugin() {
+    private OpenAPSSMBPlugin() {
         super(new PluginDescription()
                 .mainType(PluginType.APS)
-                .fragmentClass(ARGFragment.class.getName())
-                .pluginName(R.string.openapsarg)
-                .shortName(R.string.arg_shortname)
+                .fragmentClass(OpenAPSSMBFragment.class.getName())
+                .pluginName(R.string.openapssmb)
+                .shortName(R.string.smb_shortname)
                 .preferencesId(R.xml.pref_openapssmb)
-                .description(R.string.description_arg)
+                .description(R.string.description_smb)
         );
     }
 
@@ -113,12 +90,12 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     }
 
     @Override
-    public void invoke(String initiator, boolean tempBasalFallback) throws IOException {
+    public void invoke(String initiator, boolean tempBasalFallback) {
         if (L.isEnabled(L.APS))
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
         lastAPSResult = null;
-        DetermineBasalAdapterARG determineBasalAdapterARG;
-        determineBasalAdapterARG = new DetermineBasalAdapterARG(new ScriptReader(MainApp.instance().getBaseContext()));
+        DetermineBasalAdapterSMBJS determineBasalAdapterSMBJS;
+        determineBasalAdapterSMBJS = new DetermineBasalAdapterSMBJS(new ScriptReader(MainApp.instance().getBaseContext()));
 
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
         Profile profile = ProfileFunctions.getInstance().getProfile();
@@ -228,102 +205,41 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             Profiler.log(log, "SMB data gathering", start);
 
         start = System.currentTimeMillis();
-
         try {
-
-            determineBasalAdapterARG.setData(profile, maxIob, maxBasal, minBg, maxBg, targetBg, ConfigBuilderPlugin.getPlugin().getActivePump().getBaseBasalRate(), iobArray, glucoseStatus, mealData,
+            determineBasalAdapterSMBJS.setData(profile, maxIob, maxBasal, minBg, maxBg, targetBg, ConfigBuilderPlugin.getPlugin().getActivePump().getBaseBasalRate(), iobArray, glucoseStatus, mealData,
                     lastAutosensResult.ratio, //autosensDataRatio
                     isTempTarget,
                     smbAllowed.value(),
                     uam.value(),
                     advancedFiltering.value()
             );
-
         } catch (JSONException e) {
             log.error(e.getMessage());
             return;
         }
 
-
         long now = System.currentTimeMillis();
-        //-------------prueba------------
-        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-        String anuncioFileName = "anuncio2.csv";
-        String anuncioFilePath = baseDir + File.separator + anuncioFileName;
-        String[] nextRecord;
-        if(reader==null) {
-            try {
-                reader = new CSVReader(new FileReader(anuncioFilePath));
-                nextRecord = reader.readNext(); //leo la primera linea porque sino no estan sincronizados cgm con anuncio
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        else {
-            if ((nextRecord = reader.readNext()) != null) {
-                if (gController == null) {
-                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.0, miContexto);
-                    double[][] xTemp = {{0.0},{0.0},{0.0}};
-                    Matrix iobState  = new Matrix(xTemp);
-                    gController.getSafe().getIob().setX(iobState);
-                }
-                long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
-                List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-                resultado = gController.run(Boolean.valueOf(nextRecord[0]), 1, data.get(0).raw);
-                double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
-                double [][] iobStates = gController.getSafe().getIob().getX().getData();
-                String fileName = "TablaDeDatos.csv";
-                String filePath = baseDir + File.separator + fileName;
-                CSVWriter writer = null;
-                // File exist
-                try {
-                    FileWriter mFileWriter = new FileWriter(filePath, true);
-                    writer = new CSVWriter(mFileWriter);
-                    if(firstExecution) {
-                        String[] headerRecord = {"time", "CGM", "IOB", "Gpred", "Gpred_correction", "Gpred_bolus", "Xi00", "Xi01", "Xi02", "Xi03", "Xi04", "Xi05", "Xi06", "Xi07", "brakes" +
-                                "_coeff",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Resultado"};
-                        writer.writeNext(headerRecord);
-                        firstExecution=false;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                int slqgStateFlag = 0;
-                if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
-                    slqgStateFlag = 1;
-                String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(nextRecord[0]), String.valueOf(resultado)};
 
-                writer.writeNext(dataToCSV);
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        //prueba
-        DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
+        DetermineBasalResultSMB determineBasalResultSMB = determineBasalAdapterSMBJS.invoke();
         if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);
         // TODO still needed with oref1?
         // Fix bug determine basal
+        if (determineBasalResultSMB.rate == 0d && determineBasalResultSMB.duration == 0 && !TreatmentsPlugin.getPlugin().isTempBasalInProgress())
+            determineBasalResultSMB.tempBasalRequested = false;
 
-        if (determineBasalResultARG.rate == 0d && determineBasalResultARG.duration == 0 && !TreatmentsPlugin.getPlugin().isTempBasalInProgress())
-            determineBasalResultARG.tempBasalRequested = false;
-
-        determineBasalResultARG.iob = iobArray[0];
+        determineBasalResultSMB.iob = iobArray[0];
 
         try {
-            determineBasalResultARG.json.put("timestamp", DateUtil.toISOString(now));
+            determineBasalResultSMB.json.put("timestamp", DateUtil.toISOString(now));
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
 
-        determineBasalResultARG.inputConstraints = inputConstraints;
+        determineBasalResultSMB.inputConstraints = inputConstraints;
 
-        lastDetermineBasalAdapterARG = determineBasalAdapterARG;
-        lastAPSResult = determineBasalResultARG;
+        lastDetermineBasalAdapterSMBJS = determineBasalAdapterSMBJS;
+        lastAPSResult = determineBasalResultSMB;
         lastAPSRun = now;
         MainApp.bus().post(new EventOpenAPSUpdateGui());
 
@@ -351,5 +267,3 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     }
 
 }
-
-
