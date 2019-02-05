@@ -76,8 +76,9 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     public static final String DATABASE_CAREPORTALEVENTS = "CareportalEvents";
     public static final String DATABASE_PROFILESWITCHES = "ProfileSwitches";
     public static final String DATABASE_TDDS = "TDDs";
+    public static final String DATABASE_ARGHISTORY = "ARGHistory";
 
-    private static final int DATABASE_VERSION = 9;
+    private static final int DATABASE_VERSION = 10;
 
     public static Long earliestDataChange = null;
 
@@ -115,6 +116,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 log.info("onCreate");
             TableUtils.createTableIfNotExists(connectionSource, TempTarget.class);
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
+            TableUtils.createTableIfNotExists(connectionSource, ARGHistory.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
             TableUtils.createTableIfNotExists(connectionSource, DbRequest.class);
             TableUtils.createTableIfNotExists(connectionSource, TemporaryBasal.class);
@@ -142,6 +144,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 log.info(DatabaseHelper.class.getName(), "onUpgrade");
                 TableUtils.dropTable(connectionSource, TempTarget.class, true);
                 TableUtils.dropTable(connectionSource, BgReading.class, true);
+                TableUtils.dropTable(connectionSource, ARGHistory.class, true);
                 TableUtils.dropTable(connectionSource, DanaRHistoryRecord.class, true);
                 TableUtils.dropTable(connectionSource, DbRequest.class, true);
                 TableUtils.dropTable(connectionSource, TemporaryBasal.class, true);
@@ -183,6 +186,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try {
             TableUtils.dropTable(connectionSource, TempTarget.class, true);
             TableUtils.dropTable(connectionSource, BgReading.class, true);
+            TableUtils.dropTable(connectionSource, ARGHistory.class, true);
             TableUtils.dropTable(connectionSource, DanaRHistoryRecord.class, true);
             TableUtils.dropTable(connectionSource, DbRequest.class, true);
             TableUtils.dropTable(connectionSource, TemporaryBasal.class, true);
@@ -194,6 +198,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
             TableUtils.createTableIfNotExists(connectionSource, DbRequest.class);
+            TableUtils.createTableIfNotExists(connectionSource, ARGHistory.class);
             TableUtils.createTableIfNotExists(connectionSource, TemporaryBasal.class);
             TableUtils.createTableIfNotExists(connectionSource, ExtendedBolus.class);
             TableUtils.createTableIfNotExists(connectionSource, CareportalEvent.class);
@@ -203,6 +208,9 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         } catch (SQLException e) {
             log.error("Unhandled exception", e);
         }
+
+        // TODO : aca hace falta algo para ARgHistory
+
         VirtualPumpPlugin.getPlugin().setFakingStatus(true);
         scheduleBgChange(null); // trigger refresh
         scheduleTemporaryBasalChange();
@@ -293,6 +301,10 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         return getDao(BgReading.class);
     }
 
+    private Dao<ARGHistory, Long> getDaoARGHistory() throws SQLException {
+        return getDao(ARGHistory.class);
+    }
+
     private Dao<DanaRHistoryRecord, String> getDaoDanaRHistory() throws SQLException {
         return getDao(DanaRHistoryRecord.class);
     }
@@ -328,6 +340,10 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 log.debug("Rounding " + date + " to " + rounded);
         return rounded;
     }
+
+    // TODO : Los nombres no hacen referencia a BgReading y parecen funciones
+    // genericas de DatabaseHelper
+
     // -------------------  BgReading handling -----------------------
 
     public boolean createIfNotExists(BgReading bgReading, String from) {
@@ -1651,4 +1667,43 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     }
 
     // ---------------- Food handling ---------------
+
+
+
+    // ARGHistory
+
+    public boolean createARGHistoryIfNotExists(ARGHistory argHistory, String from) {
+        try {
+            argHistory.date = roundDateToSec(argHistory.date);
+
+            getDaoARGHistory().create(argHistory);
+            if (L.isEnabled(L.DATABASE))
+                log.debug("[ARGPLUGIN] Agregado a DB local: " + from + " " + argHistory.toString());
+            
+            // scheduleBgChange(bgReading);
+            return true;
+        } catch (SQLException e) {
+            log.error("[ARGPLUGIN] Unhandled exception", e);
+        }
+        return false;
+    }
+
+
+    public List<ARGHistory> getAllARGHistoryFromTime(long mills, boolean ascending) {
+        try {
+            Dao<ARGHistory, Long> daoARGHistory = getDaoARGHistory();
+            List<ARGHistory> argHistoryList;
+            QueryBuilder<ARGHistory, Long> queryBuilder = daoARGHistory.queryBuilder();
+            queryBuilder.orderBy("date", ascending);
+            Where where = queryBuilder.where();
+            where.ge("date", mills);
+            PreparedQuery<ARGHistory> preparedQuery = queryBuilder.prepare();
+            argHistoryList = daoARGHistory.query(preparedQuery);
+            return argHistoryList;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return new ArrayList<ARGHistory>();
+    }
+
 }

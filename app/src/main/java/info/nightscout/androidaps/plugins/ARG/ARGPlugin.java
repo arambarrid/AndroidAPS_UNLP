@@ -23,6 +23,7 @@ import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
+import info.nightscout.androidaps.db.ARGHistory;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.interfaces.APSInterface;
 import info.nightscout.androidaps.interfaces.Constraint;
@@ -114,6 +115,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
     @Override
     public void invoke(String initiator, boolean tempBasalFallback) throws IOException {
+
         if (L.isEnabled(L.APS))
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
         lastAPSResult = null;
@@ -242,12 +244,12 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         } catch (JSONException e) {
             log.error(e.getMessage());
             return;
-        }
-
+        } 
 
         long now = System.currentTimeMillis();
+
         //-------------prueba------------
-        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+      /*  String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
         String anuncioFileName = "anuncio2.csv";
         String anuncioFilePath = baseDir + File.separator + anuncioFileName;
         String[] nextRecord;
@@ -261,17 +263,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         }
         else {
             if ((nextRecord = reader.readNext()) != null) {
-                if (gController == null) {
-                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.0, miContexto);
-                    double[][] xTemp = {{0.0},{0.0},{0.0}};
-                    Matrix iobState  = new Matrix(xTemp);
-                    gController.getSafe().getIob().setX(iobState);
-                }
-                long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
-                List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-                resultado = gController.run(Boolean.valueOf(nextRecord[0]), 1, data.get(0).raw);
-                double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
-                double [][] iobStates = gController.getSafe().getIob().getX().getData();
                 String fileName = "TablaDeDatos.csv";
                 String filePath = baseDir + File.separator + fileName;
                 CSVWriter writer = null;
@@ -288,10 +279,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                int slqgStateFlag = 0;
-                if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
-                    slqgStateFlag = 1;
-                String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(nextRecord[0]), String.valueOf(resultado)};
 
                 writer.writeNext(dataToCSV);
                 try {
@@ -303,6 +290,92 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         }
 
         //prueba
+*/
+
+        // Separo lo que es correr gController de guardar datos en CSV
+        if (gController == null) {
+            log.debug("[ARGPLUGIN] Creando contexto");
+            gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.0, miContexto);
+            double[][] xTemp = {{0.0},{0.0},{0.0}};
+            Matrix iobState  = new Matrix(xTemp);
+            gController.getSafe().getIob().setX(iobState);
+        }
+
+        log.debug("[ARGPLUGIN] A punto de dar llamado gController.run()");
+
+        long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
+        List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
+
+        resultado = gController.run(
+            false, // Boolean.valueOf(nextRecord[0]), ¿ tiene que ver con el excel?
+            1, data.get(0).raw);
+
+        double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
+        double [][] iobStates = gController.getSafe().getIob().getX().getData();
+                 
+        int slqgStateFlag = 0;
+        if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
+            slqgStateFlag = 1;
+        
+        String[] headerRecord = {"time", "CGM", "IOB", "Gpred", "Gpred_correction", "Gpred_bolus", "Xi00", "Xi01", "Xi02", "Xi03", "Xi04", "Xi05", "Xi06", "Xi07", "brakes" +
+                                "_coeff",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Resultado"};
+                        
+        // Tenia que ver que onda 
+        String [] dataToCSV = {String.valueOf(DateUtil.now()), 
+                String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), 
+                String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), 
+                String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), 
+                String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), 
+                String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), 
+                String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), 
+                String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  
+                String.valueOf((double) gController.getSlqgController().gettMeal()), 
+                String.valueOf((double) gController.getSlqgController().getExtAgg()), 
+                String.valueOf(gController.getpCBolus()), 
+                String.valueOf(gController.getSafe().getIobMax()), 
+                String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), 
+                String.valueOf((double) gController.getEstimator().getListening()), 
+                String.valueOf((double) gController.getEstimator().getMCount()), 
+                String.valueOf((double) gController.getrCFBolus()), 
+                String.valueOf((double) gController.gettEndAgg()), 
+                String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), 
+                String.valueOf(iobStates[2][0]), 
+                String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), 
+                String.valueOf(gController.getSafe().getGamma()),  
+                String.valueOf(""),// String.valueOf(nextRecord[0]), tiene que ver con el excel 
+                String.valueOf(resultado)};
+
+        // Prueba ARGHistory : Tomo los datos que carga al excel y los cargo en 
+        // una clase, ésta se sube a NS y a su vez se guarda en la db local del celu
+
+            String dataToARGHistory = new String("{");
+            for (int i=0; i<dataToCSV.length; i++)
+            {
+                dataToARGHistory +=  "\"" + headerRecord[i] + "\" : \"" + dataToCSV[i] + "\",";
+            }
+            dataToARGHistory += "\"validated\": true }";
+
+            log.debug("[ARGPLUGIN] concat " + dataToARGHistory);
+
+            ARGHistory historialDeVariables = new ARGHistory();
+            historialDeVariables = historialDeVariables.data(dataToARGHistory).date(now);
+
+            // Subo a Nightscoute
+            NSUpload.uploadARGHistory(prueba);
+            
+            // Actualizo la db local
+            MainApp.getDbHelper().createARGHistoryIfNotExists(prueba, "ARGPlugin.invoke()");
+
+            // Para obtener desde X tiempo por ejemplo, las ultimas subidas hace 2 minutos
+            List<ARGHistory> argHistoryList = 
+                    MainApp.getDbHelper().getAllARGHistoryFromTime(DateUtil.now() - 2 * 1000L, false);
+
+            log.debug("[ARGPLUGIN] Consultando ARGHistoryList hace dos minutos " + String.valueOf(argHistoryList.size()));
+
+
+        // Fin de prueba ARGHistory
+
+
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);
