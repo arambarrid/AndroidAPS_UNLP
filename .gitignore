@@ -13,3 +13,7 @@ debug/
 release/
 app/com.crashlytics.settings.json
 app/session_analytics.tap
+.settings/
+.project
+wear/
+app/.classpath

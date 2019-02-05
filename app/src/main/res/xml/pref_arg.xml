@@ -6,21 +6,7 @@
         android:title="@string/openapsarg">
 
         <com.andreabaccega.widget.ValidatingEditTextPreference
-            android:defaultValue="128"
-            android:dialogMessage="@string/arg_byte"
-            android:digits="0123456789"
-            android:inputType="number"
-            android:key="key_arg_byte"
-            android:maxLines="20"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="@string/arg_byte_title"
-            validate:maxNumber="255"
-            validate:minNumber="0"
-            validate:testType="numericRange" />
-
-        <com.andreabaccega.widget.ValidatingEditTextPreference
-            android:defaultValue="0"
+            android:defaultValue="1.5"
             android:dialogMessage="@string/arg_p_const"
             android:digits="0123456789.,"
             android:inputType="number"
@@ -30,7 +16,35 @@
             android:singleLine="true"
             android:title="@string/arg_p_const_title"
             validate:floatmaxNumber="10"
-            validate:floatminNumber="-10"
+            validate:floatminNumber="0"
+            validate:testType="floatNumericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="100"
+            android:dialogMessage="@string/arg_cmgref_const"
+            android:digits="0123456789.,"
+            android:inputType="number"
+            android:key="key_arg_cmgref_const"
+            android:maxLines="20"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/arg_cmgref_const_title"
+            validate:floatmaxNumber="200"
+            validate:floatminNumber="20"
+            validate:testType="floatNumericRange" />
+
+        <com.andreabaccega.widget.ValidatingEditTextPreference
+            android:defaultValue="90"
+            android:dialogMessage="@string/arg_td_const"
+            android:digits="0123456789.,"
+            android:inputType="number"
+            android:key="key_arg_td_const"
+            android:maxLines="20"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/arg_td_const_title"
+            validate:floatmaxNumber="200"
+            validate:floatminNumber="10"
             validate:testType="floatNumericRange" />
 
     </PreferenceCategory>

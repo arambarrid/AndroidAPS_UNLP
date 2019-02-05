@@ -34,6 +34,14 @@ import info.nightscout.utils.SP;
 import info.nightscout.utils.SafeParse;
 import info.nightscout.androidaps.plugins.OpenAPSSMB.SMBDefaults;
 
+import info.nightscout.utils.DateUtil;
+import info.nightscout.androidaps.plugins.ARG.PDBasal;
+
+import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+import info.nightscout.androidaps.db.BgReading;
+
 public class DetermineBasalAdapterARG {
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
@@ -60,18 +68,18 @@ public class DetermineBasalAdapterARG {
 
     private String scriptDebug = "";
 
+    private PDBasal pdBasal = null;
+
     /**
      * Main code
      */
 
     DetermineBasalAdapterARG(ScriptReader scriptReader) {
         mScriptReader = scriptReader;
+        pdBasal = new PDBasal();
     }
 
-
     public DetermineBasalResultARG invoke() {
-
-
         if (L.isEnabled(L.APS)) {
             log.debug(">>> Invoking detemine_basal <<<");
             log.debug("Glucose status: " + (storedGlucoseStatus = mGlucoseStatus.toString()));
@@ -88,8 +96,22 @@ public class DetermineBasalAdapterARG {
             log.debug("SMBAlwaysAllowed:  " + (storedSMBAlwaysAllowed = "" + mSMBAlwaysAllowed));
         }
 
-        DetermineBasalResultARG DetermineBasalResultARG = null;
+        DetermineBasalResultARG determineBasalResultARG = null;
+        pdBasal.run();
+        double basal = pdBasal.getTempBasal();
+        String reason = pdBasal.getReason();
 
+        try {
+          JSONObject result = new JSONObject();
+          result.put("duration", "5");
+          result.put("rate", basal);
+          result.put("reason", reason);
+
+          determineBasalResultARG = new DetermineBasalResultARG(result);
+        } catch (JSONException e) {
+          log.error("Unhandled exception", e);
+        }
+/*
         Context rhino = Context.enter();
         Scriptable scope = rhino.initStandardObjects();
         // Turn off optimization to make Rhino Android compatible
@@ -155,7 +177,7 @@ public class DetermineBasalAdapterARG {
             log.error(e.toString());
         } finally {
             Context.exit();
-        }
+        }*/
 
         storedGlucoseStatus = mGlucoseStatus.toString();
         storedIobData = mIobData.toString();
@@ -163,7 +185,7 @@ public class DetermineBasalAdapterARG {
         storedProfile = mProfile.toString();
         storedMeal_data = mMealData.toString();
 
-        return DetermineBasalResultARG;
+        return determineBasalResultARG;
 
     }
 
@@ -316,6 +338,21 @@ public class DetermineBasalAdapterARG {
         mMicrobolusAllowed = microBolusAllowed;
         mSMBAlwaysAllowed = advancedFiltering;
 
+
+        long fromtime = DateUtil.now() - 60 * 1000L * 45;
+        List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
+
+        for (int i = 0; i < data.size(); i++){
+            BgReading then = data.get(i);
+            log.debug("[PDBASAL] dato : " + String.valueOf(then.value));
+        }
+
+        double tD = SP.getDouble("key_arg_td_const", 90d);
+        double kP = SP.getDouble("key_arg_p_const", 0.2d);
+        double CMGref = SP.getInt("key_arg_cmgref_const", 100);
+        double basal0 = profile.getBasal();
+
+        pdBasal.setData(profile, data, kP, tD, CMGref, basal0);
     }
 
     private Object makeParam(JSONObject jsonObject, Context rhino, Scriptable scope) {

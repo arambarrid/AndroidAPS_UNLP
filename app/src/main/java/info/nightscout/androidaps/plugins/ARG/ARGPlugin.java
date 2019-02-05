@@ -96,7 +96,11 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
         lastAPSResult = null;
         DetermineBasalAdapterARG determineBasalAdapterARG;
-        determineBasalAdapterARG = new DetermineBasalAdapterARG(new ScriptReader(MainApp.instance().getBaseContext()));
+
+        if (lastDetermineBasalAdapterARG == null)
+          determineBasalAdapterARG = new DetermineBasalAdapterARG(new ScriptReader(MainApp.instance().getBaseContext()));
+        else
+          determineBasalAdapterARG = lastDetermineBasalAdapterARG;
 
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
         Profile profile = ProfileFunctions.getInstance().getProfile();
