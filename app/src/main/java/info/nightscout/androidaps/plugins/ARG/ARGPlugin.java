@@ -1,4 +1,4 @@
-package info.nightscout.androidaps.plugins.ARG;
+ package info.nightscout.androidaps.plugins.ARG;
 
 import android.content.Context;
 
@@ -107,6 +107,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         return lastAPSResult;
     }
 
+    @Override
     @Override
     public long getLastAPSRun() {
         return lastAPSRun;
@@ -262,17 +263,21 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         else {
             if ((nextRecord = reader.readNext()) != null) {
                 if (gController == null) {
-                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.0, miContexto);
-                    double[][] xTemp = {{0.0},{0.0},{0.0}};
+                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.22, miContexto);
+
+                    double[][] xTemp = {{1.25},{1.25},{0}};
                     Matrix iobState  = new Matrix(xTemp);
                     gController.getSafe().getIob().setX(iobState);
+                    double[][] uTemp = {{2.5}};
+                    Matrix u = new Matrix(uTemp);
+                    gController.getSafe().getIob().stateUpdate(u);
                 }
                 long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
                 List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-                resultado = gController.run(Boolean.valueOf(nextRecord[0]), 1, data.get(0).raw);
+                resultado = gController.run(Boolean.valueOf(nextRecord[0]), 3, data.get(0).raw);
                 double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
                 double [][] iobStates = gController.getSafe().getIob().getX().getData();
-                String fileName = "TablaDeDatos.csv";
+                String fileName = "TablaDeDatos2.csv";
                 String filePath = baseDir + File.separator + fileName;
                 CSVWriter writer = null;
                 // File exist
