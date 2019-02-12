@@ -305,6 +305,43 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 }
             }
         }
+        
+
+        // En esta sección del codigo podría llamarse a guardar todos los datos que tenga que guardar
+        // de todas formas, el JSONObject DATA podría ser global a la clase y actualizarse y guardar
+        // o bien podría ser local en este procedimiento y actualizarse donde tenga que actualizarse
+        // con la informacion que haga falta, pero importante NO PISAR las keys
+
+        // Este objeto sería la futura nueva fila
+        // ARGTable historialDeVariables = new ARGTable();
+
+        // Es como un diccionario
+        // JSONObject argTableJSON = new JSONObject();
+
+        // para agregar un campo a la table
+        // argTableJSON.put("campo", valor);
+
+        // Se asigna el json como data y el tiempo de generacion         
+        // historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
+
+        // Subo a Nightscoute
+        // NSUpload.uploadARGTable(historialDeVariables);
+         
+        // Actualizo la db local
+        // MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
+
+
+        // Para consultar ARGTables viejas desde la DB local (esta es la primera que guarda),
+        // por lo que si el celular se apaga y no alcanzo a subir a internet, de todas formas,
+        // los datos van a estar aca
+        // List<ARGTable> argTableList = 
+                MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
+
+        // log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
+
+
+
+
         //prueba
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
