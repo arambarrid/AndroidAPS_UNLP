@@ -57,6 +57,8 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     //prueba
     double resultado;
     GController gController;
+    IOMain ioMain;
+
     private static final String STRING_ARRAY_SAMPLE = "./string-array-sample.csv";
     private static CSVReader reader=null;
     private static boolean firstExecution=true;
@@ -391,6 +393,12 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         //        MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
 
         // log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
+
+
+        
+        if (ioMain == null){
+            ioMain = new IOMain();
+        }
 
 
         //prueba
