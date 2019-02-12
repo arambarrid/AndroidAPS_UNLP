@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.Objects;
 
+import org.json.JSONObject;
+import org.json.JSONException;
+
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -22,8 +25,8 @@ import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 
-@DatabaseTable(tableName = DatabaseHelper.DATABASE_ARGHISTORY)
-public class ARGHistory {
+@DatabaseTable(tableName = DatabaseHelper.DATABASE_ARGTABLE)
+public class ARGTable {
     private static Logger log = LoggerFactory.getLogger(L.DATABASE);
 
     @DatabaseField(id = true)
@@ -40,20 +43,31 @@ public class ARGHistory {
     @DatabaseField
     public String _id = null; // NS _id
 
-    public ARGHistory() {
+    public ARGTable() {
         data = new String("");
     }
 
     @Override
     public String toString() {
-        return "ARGHistory{" +
+        return "ARGTable{" +
                 "date=" + date +
                 ", date=" + new Date(date).toLocaleString() +
                 ", Data=" + data +
                 '}';
     }
 
-    public boolean isDataChanging(ARGHistory other) {
+    public JSONObject getData(){
+        JSONObject ret = new JSONObject();
+        try{
+            ret = new JSONObject(data);
+        }catch (JSONException e){
+
+        }
+        
+        return ret;
+    }
+
+    public boolean isDataChanging(ARGTable other) {
         if (date != other.date) {
             log.error("Comparing different");
             return false;
@@ -61,7 +75,7 @@ public class ARGHistory {
         return false;
     }
 
-    public boolean isEqual(ARGHistory other) {
+    public boolean isEqual(ARGTable other) {
         if (date != other.date) {
             log.error("Comparing different");
             return false;
@@ -69,7 +83,7 @@ public class ARGHistory {
         return true;
     }
 
-    public void copyFrom(ARGHistory other) {
+    public void copyFrom(ARGTable other) {
         if (date != other.date) {
             log.error("Copying different");
             return;
@@ -78,17 +92,17 @@ public class ARGHistory {
         _id = other._id;
     }
 
-    public ARGHistory date(long date) {
+    public ARGTable date(long date) {
         this.date = date;
         return this;
     }
 
-    public ARGHistory date(Date date) {
+    public ARGTable date(Date date) {
         this.date = date.getTime();
         return this;
     }
 
-    public ARGHistory data(String data) {
+    public ARGTable data(String data) {
         this.data = data;
         return this;
     }

@@ -6,6 +6,8 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
 import org.json.JSONException;
+import org.json.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +25,7 @@ import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
-import info.nightscout.androidaps.db.ARGHistory;
+import info.nightscout.androidaps.db.ARGTable;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.interfaces.APSInterface;
 import info.nightscout.androidaps.interfaces.Constraint;
@@ -345,36 +347,39 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 String.valueOf(""),// String.valueOf(nextRecord[0]), tiene que ver con el excel 
                 String.valueOf(resultado)};
 
-        // Prueba ARGHistory : Tomo los datos que carga al excel y los cargo en 
+        // Prueba ARGTable : Tomo los datos que carga al excel y los cargo en 
         // una clase, ésta se sube a NS y a su vez se guarda en la db local del celu
+            String dataToARGTable = new String("{");
+            
+            try{
+                JSONObject argTableJSON = new JSONObject();
+                for (int i=0; i<dataToCSV.length; i++){
+                    argTableJSON.put(headerRecord[i], dataToCSV[i]);
+                }
+                dataToARGTable = argTableJSON.toString();
+            } catch (JSONException e){
 
-            String dataToARGHistory = new String("{");
-            for (int i=0; i<dataToCSV.length; i++)
-            {
-                dataToARGHistory +=  "\"" + headerRecord[i] + "\" : \"" + dataToCSV[i] + "\",";
             }
-            dataToARGHistory += "\"validated\": true }";
 
-            log.debug("[ARGPLUGIN] concat " + dataToARGHistory);
+            log.debug("[ARGPLUGIN] concat " + dataToARGTable);
 
-            ARGHistory historialDeVariables = new ARGHistory();
-            historialDeVariables = historialDeVariables.data(dataToARGHistory).date(now);
+            ARGTable historialDeVariables = new ARGTable();
+            historialDeVariables = historialDeVariables.data(dataToARGTable).date(now);
 
             // Subo a Nightscoute
-            NSUpload.uploadARGHistory(prueba);
+            NSUpload.uploadARGTable(historialDeVariables);
             
             // Actualizo la db local
-            MainApp.getDbHelper().createARGHistoryIfNotExists(prueba, "ARGPlugin.invoke()");
+            MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
 
             // Para obtener desde X tiempo por ejemplo, las ultimas subidas hace 2 minutos
-            List<ARGHistory> argHistoryList = 
-                    MainApp.getDbHelper().getAllARGHistoryFromTime(DateUtil.now() - 2 * 1000L, false);
+            List<ARGTable> argTableList = 
+                    MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
 
-            log.debug("[ARGPLUGIN] Consultando ARGHistoryList hace dos minutos " + String.valueOf(argHistoryList.size()));
+            log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
 
 
-        // Fin de prueba ARGHistory
-
+        // Fin de prueba ARGTable
 
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))

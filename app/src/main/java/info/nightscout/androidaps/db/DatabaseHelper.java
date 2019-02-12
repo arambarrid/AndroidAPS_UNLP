@@ -76,7 +76,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     public static final String DATABASE_CAREPORTALEVENTS = "CareportalEvents";
     public static final String DATABASE_PROFILESWITCHES = "ProfileSwitches";
     public static final String DATABASE_TDDS = "TDDs";
-    public static final String DATABASE_ARGHISTORY = "ARGHistory";
+    public static final String DATABASE_ARGTABLE = "ARGTable";
 
     private static final int DATABASE_VERSION = 10;
 
@@ -116,7 +116,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 log.info("onCreate");
             TableUtils.createTableIfNotExists(connectionSource, TempTarget.class);
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
-            TableUtils.createTableIfNotExists(connectionSource, ARGHistory.class);
+            TableUtils.createTableIfNotExists(connectionSource, ARGTable.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
             TableUtils.createTableIfNotExists(connectionSource, DbRequest.class);
             TableUtils.createTableIfNotExists(connectionSource, TemporaryBasal.class);
@@ -144,7 +144,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 log.info(DatabaseHelper.class.getName(), "onUpgrade");
                 TableUtils.dropTable(connectionSource, TempTarget.class, true);
                 TableUtils.dropTable(connectionSource, BgReading.class, true);
-                TableUtils.dropTable(connectionSource, ARGHistory.class, true);
+                TableUtils.dropTable(connectionSource, ARGTable.class, true);
                 TableUtils.dropTable(connectionSource, DanaRHistoryRecord.class, true);
                 TableUtils.dropTable(connectionSource, DbRequest.class, true);
                 TableUtils.dropTable(connectionSource, TemporaryBasal.class, true);
@@ -186,7 +186,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         try {
             TableUtils.dropTable(connectionSource, TempTarget.class, true);
             TableUtils.dropTable(connectionSource, BgReading.class, true);
-            TableUtils.dropTable(connectionSource, ARGHistory.class, true);
+            TableUtils.dropTable(connectionSource, ARGTable.class, true);
             TableUtils.dropTable(connectionSource, DanaRHistoryRecord.class, true);
             TableUtils.dropTable(connectionSource, DbRequest.class, true);
             TableUtils.dropTable(connectionSource, TemporaryBasal.class, true);
@@ -198,7 +198,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTableIfNotExists(connectionSource, BgReading.class);
             TableUtils.createTableIfNotExists(connectionSource, DanaRHistoryRecord.class);
             TableUtils.createTableIfNotExists(connectionSource, DbRequest.class);
-            TableUtils.createTableIfNotExists(connectionSource, ARGHistory.class);
+            TableUtils.createTableIfNotExists(connectionSource, ARGTable.class);
             TableUtils.createTableIfNotExists(connectionSource, TemporaryBasal.class);
             TableUtils.createTableIfNotExists(connectionSource, ExtendedBolus.class);
             TableUtils.createTableIfNotExists(connectionSource, CareportalEvent.class);
@@ -209,7 +209,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             log.error("Unhandled exception", e);
         }
 
-        // TODO : aca hace falta algo para ARgHistory
+        // TODO : aca hace falta algo para ARGTable
 
         VirtualPumpPlugin.getPlugin().setFakingStatus(true);
         scheduleBgChange(null); // trigger refresh
@@ -301,8 +301,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         return getDao(BgReading.class);
     }
 
-    private Dao<ARGHistory, Long> getDaoARGHistory() throws SQLException {
-        return getDao(ARGHistory.class);
+    private Dao<ARGTable, Long> getDaoARGTable() throws SQLException {
+        return getDao(ARGTable.class);
     }
 
     private Dao<DanaRHistoryRecord, String> getDaoDanaRHistory() throws SQLException {
@@ -1670,15 +1670,15 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
 
 
-    // ARGHistory
+    // ARGTable
 
-    public boolean createARGHistoryIfNotExists(ARGHistory argHistory, String from) {
+    public boolean createARGTableIfNotExists(ARGTable argTable, String from) {
         try {
-            argHistory.date = roundDateToSec(argHistory.date);
+            argTable.date = roundDateToSec(argTable.date);
 
-            getDaoARGHistory().create(argHistory);
+            getDaoARGTable().create(argTable);
             if (L.isEnabled(L.DATABASE))
-                log.debug("[ARGPLUGIN] Agregado a DB local: " + from + " " + argHistory.toString());
+                log.debug("[ARGPLUGIN] Agregado a DB local: " + from + " " + argTable.toString());
             
             // scheduleBgChange(bgReading);
             return true;
@@ -1689,21 +1689,21 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     }
 
 
-    public List<ARGHistory> getAllARGHistoryFromTime(long mills, boolean ascending) {
+    public List<ARGTable> getAllARGTableFromTime(long mills, boolean ascending) {
         try {
-            Dao<ARGHistory, Long> daoARGHistory = getDaoARGHistory();
-            List<ARGHistory> argHistoryList;
-            QueryBuilder<ARGHistory, Long> queryBuilder = daoARGHistory.queryBuilder();
+            Dao<ARGTable, Long> daoARGTable = getDaoARGTable();
+            List<ARGTable> argTableList;
+            QueryBuilder<ARGTable, Long> queryBuilder = daoARGTable.queryBuilder();
             queryBuilder.orderBy("date", ascending);
             Where where = queryBuilder.where();
             where.ge("date", mills);
-            PreparedQuery<ARGHistory> preparedQuery = queryBuilder.prepare();
-            argHistoryList = daoARGHistory.query(preparedQuery);
-            return argHistoryList;
+            PreparedQuery<ARGTable> preparedQuery = queryBuilder.prepare();
+            argTableList = daoARGTable.query(preparedQuery);
+            return argTableList;
         } catch (SQLException e) {
             log.error("Unhandled exception", e);
         }
-        return new ArrayList<ARGHistory>();
+        return new ArrayList<ARGTable>();
     }
 
 }

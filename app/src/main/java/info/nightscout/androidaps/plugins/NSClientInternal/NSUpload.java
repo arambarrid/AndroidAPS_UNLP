@@ -30,7 +30,7 @@ import info.nightscout.androidaps.services.Intents;
 import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
-import info.nightscout.androidaps.db.ARGHistory;
+import info.nightscout.androidaps.db.ARGTable;
 import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.androidaps.db.ProfileSwitch;
@@ -495,7 +495,7 @@ public class NSUpload {
         DbLogger.dbAdd(intent, data.toString());
     }
 
-    public static void uploadARGHistory(ARGHistory arg) {
+    public static void uploadARGTable(ARGTable arg) {
         try {
             Context context = MainApp.instance().getApplicationContext();
             JSONObject data = new JSONObject();
@@ -503,7 +503,7 @@ public class NSUpload {
             data.put("created_at", DateUtil.toISOString(new Date()));
             data.put("enteredBy", "openaps://" + MainApp.gs(R.string.app_name));
 
-            // Datos propios del ARGHistory
+            // Datos propios del ARGTable
             data.put("date", arg.date);
             data.put("dateString", DateUtil.toISOString(arg.date));
             data.put("reason", arg.data); 
