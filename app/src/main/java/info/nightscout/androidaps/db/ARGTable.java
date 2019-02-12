@@ -107,11 +107,7 @@ public class ARGTable {
         return this;
     }
     public ARGTable data(JSONObject data) {
-        try{
-            this.data = data.toString();
-        }catch(JSONException e){
-            
-        }
+        this.data = data.toString();
         return this;
     }
 
