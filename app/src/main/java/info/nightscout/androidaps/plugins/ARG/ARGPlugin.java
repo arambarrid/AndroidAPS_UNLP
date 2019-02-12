@@ -335,7 +335,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         // por lo que si el celular se apaga y no alcanzo a subir a internet, de todas formas,
         // los datos van a estar aca
         // List<ARGTable> argTableList = 
-                MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
+        //        MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
 
         // log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
 
