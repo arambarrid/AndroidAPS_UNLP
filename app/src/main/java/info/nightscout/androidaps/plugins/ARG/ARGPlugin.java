@@ -108,7 +108,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     }
 
     @Override
-    @Override
     public long getLastAPSRun() {
         return lastAPSRun;
     }
@@ -306,7 +305,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 }
             }
         }
-
         //prueba
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
         if (L.isEnabled(L.APS))
