@@ -38,9 +38,39 @@ import java.util.TimeZone;
 import android.app.Notification;
 import android.app.PendingIntent;
 
+import android.content.res.Resources;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+import java.util.Objects;
+
+import org.json.JSONObject;
+import org.json.JSONException;
+
+import info.nightscout.androidaps.Constants;
+import info.nightscout.androidaps.MainApp;
+import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.Profile;
+import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSgv;
+import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
+import info.nightscout.utils.DecimalFormatter;
+import info.nightscout.utils.SP;
+
+
 // ************************************************************************************************************ //
 
 public class IOMain{
+
+
+    private static Logger log = LoggerFactory.getLogger(L.DATABASE);
+
 	
 	// Power management
 	/*
@@ -59,8 +89,9 @@ public class IOMain{
 
 	public void ejecutarCada5Min(GController gController) {
 		// Debug
+		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
+		
 		/*
-		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
 		
 		//
 
@@ -95,7 +126,7 @@ public class IOMain{
 			
 			// Debug
 			
-			Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: New iteration");
+			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: New iteration");
 			
 			//
 			
@@ -103,7 +134,7 @@ public class IOMain{
 				
 				// Debug
 	    		
-	    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Synchronous call");
+	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Synchronous call");
 	    		
 	    		//
 				
@@ -133,7 +164,7 @@ public class IOMain{
 		    		
 					double parameterIOBFactorF = new BigDecimal(Double.toString(0.015957446808511*parameterIOBFactor-1.776595744680853)).setScale(2, RoundingMode.HALF_DOWN).doubleValue();
 					
-		    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"IOB Factor: "+parameterIOBFactorF);
+		    		log.debug("ARG /////// "+"IOB Factor: "+parameterIOBFactorF);
 		    		
 		    		//
 					
@@ -179,7 +210,7 @@ public class IOMain{
 		        				
 		        				// Debug
 		        				
-		        				Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
+		        				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
 		        				
 		        				//
 		        				
@@ -199,7 +230,7 @@ public class IOMain{
 					        	
 					        	// Debug
 					        	
-					        	Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
+					        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
 					        	
 					        	//
 					        	
@@ -213,7 +244,7 @@ public class IOMain{
 	    				
 		        		// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
 			    		
 			    		//
 			    		
@@ -223,7 +254,7 @@ public class IOMain{
 		    		
 		    		// Debug
 		    		
-		    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);
+		    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);
 		    		
 		    		//
 		    		
@@ -234,7 +265,7 @@ public class IOMain{
 		    		
 		    		// Debug
 		    		
-		    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+		    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 		    				+ "Inicio");
 		    		
 		    		//
@@ -254,7 +285,7 @@ public class IOMain{
 			    			
 			    			// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 				    				+ "statusIns: "+statusIns);
 				    		
 				    		//
@@ -280,7 +311,7 @@ public class IOMain{
 	    					        	
 	    					        	// Debug
 							    		
-							    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+							    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 							    				+ "Estados últimos. iobLastTime: "+iobLastTime+
 							    				". iobState1: "+iobState1+". iobState2: "+iobState2+
 							    				". iobState3: "+iobState3+". iobBasal: "+iobBasal+
@@ -299,7 +330,7 @@ public class IOMain{
 		    					        	
 		    					        	// Debug
 								    		
-								    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+								    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 								    				+ "Estados penúltimos. iobLastTime: "+iobLastTime+
 								    				". iobState1: "+iobState1+". iobState2: "+iobState2+
 								    				". iobState3: "+iobState3+". iobBasal: "+iobBasal);
@@ -339,7 +370,7 @@ public class IOMain{
 				    			    		
 			        						// Debug
 								    		
-								    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+								    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 								    				+ "Estados corregidos. iobLastTime: "+iobLastTime+
 								    				". iobState1: "+iobStates[0][0]+". iobState2: "+iobStates[1][0]+
 								    				". iobState3: "+iobStates[2][0]+". iobBasal: "+iobBasal+
@@ -364,7 +395,7 @@ public class IOMain{
 			        						
 			        						// Debug
 								    		
-								    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+								    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 								    				+ "No había estados penúltimos --> IOB = 0");
 				    			    		
 								    		//
@@ -381,7 +412,7 @@ public class IOMain{
 			    				
 			    				// Debug
 					    		
-					    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 					    				+ "El bolo se infundió correctamente");
 	    			    		
 					    		//
@@ -394,7 +425,7 @@ public class IOMain{
 			    			
 			    			// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 				    				+ "sBTime.moveToLast() = false");
 				    		
 				    		//
@@ -407,7 +438,7 @@ public class IOMain{
 		    			
 		    			// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
 			    				+ "sBTime = null");
 			    		
 			    		//
@@ -425,7 +456,7 @@ public class IOMain{
 		    		
 		    		// Debug
 		    		
-		    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob Initialization");
+		    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob Initialization");
 		    		
 		    		//
 		    		
@@ -461,7 +492,7 @@ public class IOMain{
 		        				
 		        				// Debug
 	    			    		
-	    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob last time null! --> Iob = 0");
+	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob last time null! --> Iob = 0");
 	    			    		
 	    			    		//
 	    			    		
@@ -473,7 +504,7 @@ public class IOMain{
 	        				
 	        				// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob table empty! --> Iob = 0");
+				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob table empty! --> Iob = 0");
 				    		
 				    		//	
 				    		
@@ -485,7 +516,7 @@ public class IOMain{
 		        		
 		        		// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Error loading iob table! --> Iob = 0");
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Error loading iob table! --> Iob = 0");
 			    		
 			    		//
 			    		
@@ -497,7 +528,7 @@ public class IOMain{
 		        	
 		        	// Debug
 		        	
-		        	Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Estados capturados --> iobState1: " + iobState1 + ". iobState2: " + iobState2 + ". iobState3: " + iobState3);
+		        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Estados capturados --> iobState1: " + iobState1 + ". iobState2: " + iobState2 + ". iobState3: " + iobState3);
 		        	
 		        	//
 		        	
@@ -536,7 +567,7 @@ public class IOMain{
 			    		
 			    		// Debug
 			    		
-			    		Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Now [sec]: "+timeNowSecs+". UTC_offset_secs: "+UTC_offset_secs+ ". IOB time [min]: " + timeIobSecs/60 + ". Now [min]: " + timeNowSecs/60 + ". timeDiff [sec]: "+timeDiff);
+			    		log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Now [sec]: "+timeNowSecs+". UTC_offset_secs: "+UTC_offset_secs+ ". IOB time [min]: " + timeIobSecs/60 + ". Now [min]: " + timeNowSecs/60 + ". timeDiff [sec]: "+timeDiff);
 			    		
 			    		//
 			    		
@@ -561,7 +592,7 @@ public class IOMain{
 			    			
 			    			// Debug
 			    			
-			    			Debug.e(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Subject database failed to be read...");
+			    			log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Subject database failed to be read...");
 			    			
 			    			//
 			    			
@@ -582,13 +613,13 @@ public class IOMain{
 	    			
 			    		if(timeDiff>14405){ // I added 5 s to take into account minimum differences in time synchronization
 			    			
-			    			Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405");
+			    			log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405");
 			    			
 			    			// Si la hora actual es mayor que las 04 h, entonces busco los índices 4 hs hacia atrás
 			    			
 			    			if(timeNowSecs/60>=240){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. IF");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. IF");
 			    				
 			    				indices1 = subject_data.subjectBasal.find(">", timeNowSecs/60-240, "<=", timeNowSecs/60);
 			    				t0 = timeNowSecs/60-240;
@@ -601,7 +632,7 @@ public class IOMain{
 			    			
 			    			else{
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. ELSE");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. ELSE");
 			    				
 			    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);
 			    				indices2 = subject_data.subjectBasal.find(">", 1440+timeNowSecs/60-240, "<=", 1440); 
@@ -613,7 +644,7 @@ public class IOMain{
 			    			
 			    			if(timeDiff>2*14400+5){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. timeDiff>2*14400+5. IF");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. timeDiff>2*14400+5. IF");
 			    				
 		        				double[][] xTemp1 = {{0.0},{0.0},{0.0}};
 				    			iobState = new Matrix(xTemp1);
@@ -627,7 +658,7 @@ public class IOMain{
 			    			
 			    			else{
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. timeDiff<2*14400+5. IF");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. timeDiff<2*14400+5. IF");
 			    				
 			    				double[][] uTemp = {{0.0}};
 				    			Matrix u = new Matrix(uTemp);
@@ -646,7 +677,7 @@ public class IOMain{
 			    		
 			    		else{
 			    			
-			    			Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405");
+			    			log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405");
 			    			
 		    				t0 = timeIobSecs/60; // El tiempo inicial es el de la última actualización
 		    				
@@ -655,11 +686,11 @@ public class IOMain{
 		    				
 			    			if(timeNowSecs/60>=240 || timeIobSecs/60<timeNowSecs/60){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF");
 			    				
 			    				indices1 = subject_data.subjectBasal.find(">", timeIobSecs/60, "<=", timeNowSecs/60);
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF" + "indices1 null?: " + (indices1 == null));
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF" + "indices1 null?: " + (indices1 == null));
 			    				
 			    			}
 			    			
@@ -668,7 +699,7 @@ public class IOMain{
 			    			
 			    			else{
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. ELSE");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. ELSE");
 			    				
 			    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);
 			    				indices2 = subject_data.subjectBasal.find(">", timeIobSecs/60, "<=", 1440);
@@ -682,13 +713,13 @@ public class IOMain{
 			    		// Si indices1 da null
 			    		if(indices1 == null){
 			    			
-			    			Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null");
+			    			log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null");
 			    			
 			    			// Si además indices2 da null, entonces voy a buscar quedarme con el último índice hasta el tiempo actual
 			    			
 			    			if(indices2 == null){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2 null");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2 null");
 			    				
 			    				// Para quedarme con el último índice hasta el tiempo actual, primero capturo todos los posibles índices anteriores
 			    				
@@ -731,7 +762,7 @@ public class IOMain{
 			    				
 			    				if(indices2.size()==0){
 			    					
-			    					Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2.size 0");
+			    					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2.size 0");
 			    					
 			    					// Aplico el mismo procedimiento que cuando indices2 era null
 			    					
@@ -759,7 +790,7 @@ public class IOMain{
 			    				
 			    				else{
 			    					
-			    					Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2 something");
+			    					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2 something");
 			    					
 			    					indices = indices2;
 			    					
@@ -773,11 +804,11 @@ public class IOMain{
 			    		
 			    		else if (indices1.size() == 0) {
 			    			
-			    			Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0");
+			    			log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0");
 			    			
 			    			if(indices2 == null){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 null");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 null");
 			    				
 			    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 			    				
@@ -803,7 +834,7 @@ public class IOMain{
 			    				
 			    				if(indices2.size()==0){
 			    					
-			    					Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size & indices2.size 0");
+			    					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size & indices2.size 0");
 			    					
 			    					indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 			    					
@@ -827,7 +858,7 @@ public class IOMain{
 			    				
 			    				else{
 			    					
-			    					Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 something");
+			    					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 something");
 			    					
 			    					indices = indices2;
 			    					
@@ -841,13 +872,13 @@ public class IOMain{
 			    		
 			    		else{
 			    			
-			    			Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0");
+			    			log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0");
 			    			
 			    			// Si indices2 es null, defino indices como indices1
 			    			
 			    			if(indices2 == null){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2 null");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2 null");
 			    				
 			    				indices = indices1;
 			    				
@@ -857,7 +888,7 @@ public class IOMain{
 			    			
 			    			else if(indices2.size() == 0){
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2.size 0");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2.size 0");
 			    				
 			    				indices = indices1;
 			    				
@@ -868,7 +899,7 @@ public class IOMain{
 			    			
 			    			else{
 			    				
-			    				Debug.i(TAG, FUNC_TAG, "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2 something");
+			    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2 something");
 			    				
 			    				indices.addAll(indices2);
 			    				indices.addAll(indices1);
@@ -921,7 +952,7 @@ public class IOMain{
 		    			
 		    			// Debug
 		    			
-		    			Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[0]: " + iobInput.get(0).value() + ". indices.get(0): " + indices.get(0));
+		    			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[0]: " + iobInput.get(0).value() + ". indices.get(0): " + indices.get(0));
 		    			
 		    			//
 		    			
@@ -931,7 +962,7 @@ public class IOMain{
 			    		{
 			    			Integer obj = it.next();
 			    			
-			    			Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Indices element: " + obj.intValue());
+			    			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Indices element: " + obj.intValue());
 			    			
 			    			if(ii!=0){
 			    				
@@ -954,7 +985,7 @@ public class IOMain{
 				    			iobInput.add(ii, new Pair()); // Tengo que agregar un nuevo par, no puedo redefinir p
 				    			iobInput.get(ii).put(timef, value);
 				    			
-				    			Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[ii].value: " + iobInput.get(ii).value() + ". iobInput[ii].time: " + iobInput.get(ii).time());
+				    			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[ii].value: " + iobInput.get(ii).value() + ". iobInput[ii].time: " + iobInput.get(ii).time());
 				    			
 			    			}	    			    			
 
@@ -962,7 +993,7 @@ public class IOMain{
 			    			
 			    		}
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. ii: " + ii);
+			    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. ii: " + ii);
 			    		
 			    		// Aplico el posible corrimiento de 1440 min al tiempo final
 			    		
@@ -976,7 +1007,7 @@ public class IOMain{
 			    		iobInput.add(ii, new Pair());
 		    			iobInput.get(ii).put(timef, value); // El último elemento es el tiempo final y el valor de infusión basal del último índice (se mantiene ya que no había otro cambio)
 		    			
-		    			Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[end].value: " + iobInput.get(ii).value() + ". iobInput[end].time: " + iobInput.get(ii).time());	    			    			
+		    			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[end].value: " + iobInput.get(ii).value() + ". iobInput[end].time: " + iobInput.get(ii).time());	    			    			
 		    			
 		    			double uDouble = 0.0;
 			    		int kk = 0;
@@ -987,7 +1018,7 @@ public class IOMain{
 			    			
 			    			totalBasal += (iobInput.get(pp).value()/60.0)*(iobInput.get(pp+1).time()-iobInput.get(pp).time()); // U/min x min
 			    			
-			    			Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput.get(pp).value(): " + iobInput.get(pp).value()+ ". iobInput.get(pp).value()/60.0: " + iobInput.get(pp).value()/60.0 + ". time1: " + iobInput.get(pp+1).time() + ". time2: " + iobInput.get(pp).time() + ". totalBasalSum: " + (iobInput.get(pp).value()/60.0)*(iobInput.get(pp+1).time()-iobInput.get(pp).time()));
+			    			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput.get(pp).value(): " + iobInput.get(pp).value()+ ". iobInput.get(pp).value()/60.0: " + iobInput.get(pp).value()/60.0 + ". time1: " + iobInput.get(pp+1).time() + ". time2: " + iobInput.get(pp).time() + ". totalBasalSum: " + (iobInput.get(pp).value()/60.0)*(iobInput.get(pp+1).time()-iobInput.get(pp).time()));
 			    			
 			    		}
 			    		
@@ -1015,7 +1046,7 @@ public class IOMain{
 			    			
 			    		}
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. totalBasal: " + totalBasal + ". iobInitBolus: " + iobInitBolus + ". iobInput size: " + iobInput.size() + ". timef: " + timef);
+			    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. totalBasal: " + totalBasal + ". iobInitBolus: " + iobInitBolus + ". iobInput size: " + iobInput.size() + ". timef: " + timef);
 			    		
 			    		// ************************************************************************************************************ //
 			    		// Actualizo los estados con la entrada definida anteriormente
@@ -1043,7 +1074,7 @@ public class IOMain{
 			    			}
 			    			
 			    			//iobEst = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-			    			//Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CLOSED_LOOP. uDouble: " + uDouble + ". iobEst: " + iobEst);
+			    			//log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP. uDouble: " + uDouble + ". iobEst: " + iobEst);
 			    			
 			    			double[][] uTemp = {{uDouble/gController.getPatient().getWeight()}}; // La entrada al modelo es en pmol/min/kg
 			    			Matrix u = new Matrix(uTemp);
@@ -1054,7 +1085,7 @@ public class IOMain{
 			    		
 			    		// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Total n iterations: " + timef/gController.getSafe().getTs() + ". kk: " + kk + ". uDouble: " + uDouble);
+			    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Total n iterations: " + timef/gController.getSafe().getTs() + ". kk: " + kk + ". uDouble: " + uDouble);
 			    		
 			    		//
 			    		
@@ -1075,7 +1106,7 @@ public class IOMain{
 						
 						// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
+			    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
 			    		
 			    		//
 			    		
@@ -1087,7 +1118,7 @@ public class IOMain{
 		        	
 		        	else{
 		        		
-		        		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). IobState1: " + iobState1 + ". IobState2: " + iobState2 + ". IobState3: " + iobState3);
+		        		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). IobState1: " + iobState1 + ". IobState2: " + iobState2 + ". IobState3: " + iobState3);
 		        		
 		        	}
 		        	
@@ -1119,7 +1150,7 @@ public class IOMain{
 						
 						// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de corrección). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
+			    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de corrección). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
 			    		
 			    		//
 			    		
@@ -1131,7 +1162,7 @@ public class IOMain{
 		    		
 		    		// Debug
 		    		
-		    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Final). IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
+		    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Final). IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
 					
 		    		//
 		    		
@@ -1183,7 +1214,7 @@ public class IOMain{
 		        				
 		        					// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. timeCGM = null"
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. timeCGM = null"
 		    			    				+ "--> diffCGMTime = currentTime");
 		    			    		
 		    			    		//
@@ -1206,7 +1237,7 @@ public class IOMain{
 		        					
 		        					// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Error. " + 
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Error. " + 
 		    			    		"diffCGMTime: "+diffCGMTime+". state:" +state);
 		    			    		
 		    			    		//
@@ -1225,7 +1256,7 @@ public class IOMain{
 		        					
 		        					// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Warm-up period. " + "diffCGMTime: "+diffCGMTime+". state:" +state);
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Warm-up period. " + "diffCGMTime: "+diffCGMTime+". state:" +state);
 		    			    		
 		    			    		//
 		    			    		
@@ -1251,7 +1282,7 @@ public class IOMain{
 			        					
 			        					// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM connection failed. " +
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM connection failed. " +
 			    			    		"diffCGMTime: "+diffCGMTime);
 			    			    		
 			    			    		//
@@ -1273,7 +1304,7 @@ public class IOMain{
 			        					
 			        					// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM connection stablished. " +
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM connection stablished. " +
 			    			    		"diffCGMTime: "+diffCGMTime);
 			    			    		
 			    			    		//
@@ -1289,7 +1320,7 @@ public class IOMain{
 			        			
 			        			// Debug
 			        			
-	    			    		Debug.e(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM table empty!");
+	    			    		log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM table empty!");
 	    			    		
 	    			    		//
 	    			    		
@@ -1303,7 +1334,7 @@ public class IOMain{
 			        		
 			        		// Debug
 			        		
-				    		Debug.e(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Error loading CGM table!");
+				    		log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Error loading CGM table!");
 				    		
 				    		//
 				    		
@@ -1354,7 +1385,7 @@ public class IOMain{
 				        			
 	    			        		// Debug
 	    			        		
-	    			        		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. diffCGMVTime: "+diffCGMVTime+
+	    			        		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. diffCGMVTime: "+diffCGMVTime+
 	    			        				". CGM Vector: " +" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + 
 	    			        				". [3]: " + cgmVector[3][0] + ". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0]);
 		    			    		
@@ -1385,7 +1416,7 @@ public class IOMain{
 			        						
 			        						// Debug
 			        						
-			        						Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+			        						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
 			        								+ "No corresponde, muestra ya considerada");
 			        						
 			        						//
@@ -1405,7 +1436,7 @@ public class IOMain{
 			        						
 			        						// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.a");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.a");
 				    			    		
 				    			    		//
 			        						
@@ -1462,7 +1493,7 @@ public class IOMain{
 			        												        						
 			        						// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.b1");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.b1");
 				    			    		
 				    			    		//
 			        						
@@ -1477,7 +1508,7 @@ public class IOMain{
 			        						
 			        						// Case 2)b2) = Case 1)a)
 			        						
-			        						Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+			        						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
 					        						+ "Case 2.b2. ARRANCO.");
 					        				
 					        				// Reviso si existen registros previos del CGM 30 min atrás
@@ -1567,12 +1598,12 @@ public class IOMain{
 										    			
 									    			}
 									    			
-									    			Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.b2."
+									    			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.b2."
 									    					+ ". cgm: "+cgmAux1);
 									    			
 									    		}
 									    		
-									    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Prueba. "+
+									    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Prueba. "+
 				    			        				". CGM Vector: " +" [0]: " + cgmVectorAux[0][0] + ". [1]: " + cgmVectorAux[1][0] + ". [2]: " + 
 									    				cgmVectorAux[2][0] + ". [3]: " + cgmVectorAux[3][0] + ". [4]: " + cgmVectorAux[4][0] +
 									    				". [5]: " + cgmVectorAux[5][0]+". jj: "+jj);
@@ -1589,7 +1620,7 @@ public class IOMain{
 								        	
 					        				// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
 				    			    				+ "Case 2.b2. TERMINO.");
 				    			    		
 				    			    		//
@@ -1641,7 +1672,7 @@ public class IOMain{
 		        												        							
 			        						// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c1");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c1");
 				    			    		
 				    			    		//
 				    			    		
@@ -1697,7 +1728,7 @@ public class IOMain{
 				        						
 				        						// Debug
 					    			    		
-					    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c2. "
+					    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c2. "
 					    			    				+ "Flag2c2 activado");
 					    			    		
 					    			    		//
@@ -1707,7 +1738,7 @@ public class IOMain{
 			        						
 			        						// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c2");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c2");
 				    			    		
 				    			    		//
 				    			    		
@@ -1728,7 +1759,7 @@ public class IOMain{
 			        						
 			        						// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c3");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c3");
 				    			    		
 				    			    		//
 			        						
@@ -1751,7 +1782,7 @@ public class IOMain{
 				        				
 				        				// Case 1)a)
 				        				
-		        						Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+		        						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
 				        						+ "Case 1.a. ARRANCO.");
 				        				
 				        				// Reviso si existen registros previos del CGM 30 min atrás
@@ -1841,12 +1872,12 @@ public class IOMain{
 									    			
 								    			}
 								    			
-								    			Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.a."
+								    			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.a."
 								    					+ ". cgm: "+cgmAux1);
 								    			
 								    		}
 								    		
-								    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Prueba. "+
+								    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Prueba. "+
 			    			        				". CGM Vector: " +" [0]: " + cgmVectorAux[0][0] + ". [1]: " + cgmVectorAux[1][0] + ". [2]: " + 
 								    				cgmVectorAux[2][0] + ". [3]: " + cgmVectorAux[3][0] + ". [4]: " + cgmVectorAux[4][0] +
 								    				". [5]: " + cgmVectorAux[5][0]+". jj: "+jj);
@@ -1863,7 +1894,7 @@ public class IOMain{
 							        	
 				        				// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
 			    			    				+ "Case 1.a. TERMINO.");
 			    			    		
 			    			    		//
@@ -1883,7 +1914,7 @@ public class IOMain{
 				        				
 				        				// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
 			    			    		
 			    			    		//
 				        				
@@ -1913,7 +1944,7 @@ public class IOMain{
 			        										        				
 			        				// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.a. cCGMV == null");
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.a. cCGMV == null");
 		    			    		
 		    			    		//
 		    			    		
@@ -1932,7 +1963,7 @@ public class IOMain{
 			        				
 			        				// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
 		    			    		
 		    			    		//
 			        				
@@ -1953,7 +1984,7 @@ public class IOMain{
 		        			
 		        			// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
+				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
 				    		
 				    		//
 
@@ -1980,7 +2011,7 @@ public class IOMain{
 		        			
 		        			// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Save CGM Vector");
+				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Save CGM Vector");
 				    		
 				    		//
 				    		
@@ -1997,7 +2028,7 @@ public class IOMain{
 				    		
 				    		// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM Vector: " +
+				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM Vector: " +
 				    		" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
 				    		". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
 				    		
@@ -2019,7 +2050,7 @@ public class IOMain{
 					        			
 					        			// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
 			    			    				+ " lastTime: "+lastTime+". rCFBolus: "+rCFBolus);
 			    			    		
 			    			    		//
@@ -2030,7 +2061,7 @@ public class IOMain{
 					        				
 					        				// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
 				    			    				+ " lastTime null --> currentTime");
 				    			    		
 				    			    		//
@@ -2045,7 +2076,7 @@ public class IOMain{
 					        			
 					        			// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
 			    			    				+ " moveToLast() null --> currentTime");
 			    			    		
 			    			    		//
@@ -2101,7 +2132,7 @@ public class IOMain{
 	    			    			
 	    			    			// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
 		    			    				+ " Error loading controller's states!");
 		    			    		
 		    			    		//
@@ -2129,7 +2160,7 @@ public class IOMain{
 			    		
 			    		// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&&SS. Actualización luces semáforo. Inicio");
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&&SS. Actualización luces semáforo. Inicio");
 			    		
 			    		//
 			    		
@@ -2209,7 +2240,7 @@ public class IOMain{
 			    		
 			    		// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. gMean: " + 
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. gMean: " + 
 			    		gMean + ". gTrend: " + gTrend + ". gPred: " + gPred+". hypoLight: "+hypoLight+". hyperLight: "+hyperLight);
 			    		
 			    		//
@@ -2229,7 +2260,7 @@ public class IOMain{
 		    			
 		    				// Debug
 		    			
-		    				Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. No hay info suficiente.");
+		    				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. No hay info suficiente.");
 		    			
 		    				//
 		    			
@@ -2265,7 +2296,7 @@ public class IOMain{
 			        	
 			        	// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP & !basalCase. "
+			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP & !basalCase. "
 			    				+ "Detección de anuncio de comida.");
 			    		
 			    		//
@@ -2290,7 +2321,7 @@ public class IOMain{
 					        	
 					        	// Debug
 	    			    		
-	    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. lastTime: "+lastTime+
+	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. lastTime: "+lastTime+
 	    			    				". mealClass: "+mealClass+". forCon: "+forCon);
 	    			    		
 	    			    		//
@@ -2302,7 +2333,7 @@ public class IOMain{
 			        				
 			        				// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal time null! --> Meal time = 0");
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal time null! --> Meal time = 0");
 		    			    		
 		    			    		//
 		    			    		
@@ -2323,7 +2354,7 @@ public class IOMain{
 		        				
 		        				// Debug
 	    			    		
-	    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal table empty! "
+	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal table empty! "
 	    			    				+ "--> Meal time = 0");
 	    			    		
 	    			    		//	
@@ -2336,7 +2367,7 @@ public class IOMain{
 			        		
 			        		// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading Meal table! "
+				    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading Meal table! "
 				    				+ "--> Meal time = 0");
 				    		
 				    		//
@@ -2381,7 +2412,7 @@ public class IOMain{
 					        	
 					        	// Debug
 	    			    		
-	    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. "+
+	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. "+
 	    			    		"tEndAggIni: "+tEndAggIni);
 	    			    		
 	    			    		//
@@ -2396,7 +2427,7 @@ public class IOMain{
 					        			
 					        			// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. "
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. "
 			    			    				+ "lastTime: "+lastTime);
 			    			    		
 			    			    		//
@@ -2407,7 +2438,7 @@ public class IOMain{
 					        				
 					        				// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
 				    			    				+ " lastTime null --> currentTime");
 				    			    		
 				    			    		//
@@ -2422,7 +2453,7 @@ public class IOMain{
 					        			
 					        			// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
 			    			    				+ " moveToLast() null --> currentTime");
 			    			    		
 			    			    		//
@@ -2456,7 +2487,7 @@ public class IOMain{
 	    			    			
 	    			    			// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
 		    			    				+ " Error loading controller's states!");
 		    			    		
 		    			    		//
@@ -2471,7 +2502,7 @@ public class IOMain{
 		        				
 		        				// Debug
 	    			    		
-	    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. No meal bolus detected! ");
+	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. No meal bolus detected! ");
 	    			    		
 	    			    		//	
 	    			    		
@@ -2483,7 +2514,7 @@ public class IOMain{
 			        		
 			        		// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. Error loading Meal table! ");
+				    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. Error loading Meal table! ");
 				    		
 				    		//
 				    		
@@ -2524,7 +2555,7 @@ public class IOMain{
 			        				
 			        				// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states time null! --> x and variables = 0");
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states time null! --> x and variables = 0");
 		    			    		
 		    			    		//
 		    			    		
@@ -2550,7 +2581,7 @@ public class IOMain{
 			        				
 			        				// Debug
 		    			    		
-		    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Updating controller's states. diffKStatesTime: " +
+		    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Updating controller's states. diffKStatesTime: " +
 		    			    		diffKStatesTime+". rCFBolus: "+gController.getrCFBolus()+". tEndAgg: "+gController.gettEndAgg());
 		    			    		
 		    			    		//
@@ -2572,7 +2603,7 @@ public class IOMain{
 			        					
 			        					// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Updating controller's states. diffKStatesTime <455 s");
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Updating controller's states. diffKStatesTime <455 s");
 			    			    		
 			    			    		//
 			    			    		
@@ -2598,7 +2629,7 @@ public class IOMain{
 							        				
 							        				// Debug
 						    			    		
-						    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 time null! --> rTime = 0");
+						    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 time null! --> rTime = 0");
 						    			    		
 						    			    		//
 						    			    		
@@ -2609,7 +2640,7 @@ public class IOMain{
 							        			
 							        			// Debug
 					    			    		
-					    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 table empty! --> rtime = 0");
+					    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 table empty! --> rtime = 0");
 					    			    		
 					    			    		//	
 					    			    		
@@ -2620,7 +2651,7 @@ public class IOMain{
 							        		
 							        		// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading User table 3! --> rtime = 0");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading User table 3! --> rtime = 0");
 				    			    		
 				    			    		//	
 				    			    		
@@ -2636,7 +2667,7 @@ public class IOMain{
 							        		
 							        		// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Reset command detected. Forcing conservative mode");
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Reset command detected. Forcing conservative mode");
 				    			    		
 				    			    		//
 				    			    		
@@ -2706,7 +2737,7 @@ public class IOMain{
 				        					
 				        					// Debug
 				    			    		
-				    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's variables loaded --- tMeal: " + tMeal
+				    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's variables loaded --- tMeal: " + tMeal
 				    			    				+ ". extAgg: "+extAgg +". slqgStateFlag: "+slqgStateFlag+ ". mCount: "+mCount + ". listening: "+listening+". IOBMaxCF: "+iobMaxCF
 				    			    				+ ". IobMax: "+iobMax + ". pCBolus: "+pCBolus);
 				    			    		
@@ -2722,7 +2753,7 @@ public class IOMain{
 						        		
 						        		// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: More than 7.5 min from last CL update. Reinitilizating the controller variables");
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: More than 7.5 min from last CL update. Reinitilizating the controller variables");
 			    			    		
 			    			    		//
 			    			    		
@@ -2770,7 +2801,7 @@ public class IOMain{
 			        					
 			        					// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: More than 12.5 min from last CL update. Reinitilizating the controller states");
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: More than 12.5 min from last CL update. Reinitilizating the controller states");
 			    			    		
 			    			    		//
 			    			    		
@@ -2788,7 +2819,7 @@ public class IOMain{
 		        				
 		        				// Debug
 	    			    		
-	    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states table empty! --> x and variables = 0");
+	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states table empty! --> x and variables = 0");
 	    			    		
 	    			    		//	
 	    			    		
@@ -2800,7 +2831,7 @@ public class IOMain{
 			        		
 			        		// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading controller's states! --> x and variables = 0");
+				    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading controller's states! --> x and variables = 0");
 				    		
 				    		//
 				    		
@@ -2826,7 +2857,7 @@ public class IOMain{
 			        	
 			        	// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Controller State: " + gController.getgControllerState().toString()+ 
+			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Controller State: " + gController.getgControllerState().toString()+ 
 			    				". MealFlag: "+mealFlag +". MealClass: " + mealClass+". yCGM: " +cgmV[gController.getEstimator().getCgmVector().getM()-1][0]+". iobFactor: "+parameterIOBFactorF);
 			    		
 			    		//
@@ -2910,7 +2941,7 @@ public class IOMain{
 		        			
 		        			// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"Transición de Closed-Loop a Pump Mode --> pCBolus = 0");
+				    		log.debug("ARG /////// "+"Transición de Closed-Loop a Pump Mode --> pCBolus = 0");
 				    		
 				    		//
 		        			
@@ -2943,7 +2974,7 @@ public class IOMain{
 				        			
 				        			// Debug
 						    		
-						    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_OPEN_LOOP. endTime: "+endTime+". StartTime: "+startTime+
+						    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. endTime: "+endTime+". StartTime: "+startTime+
 						    				". actualEndTime: "+actualEndTime+". PerTBR: "+perTBR);
 						    		
 						    		//
@@ -2957,7 +2988,7 @@ public class IOMain{
 				        				
 				        				// Debug
 			    			    		
-			    			    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR start time null! --> Per = 100%");
+			    			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR start time null! --> Per = 100%");
 			    			    		
 			    			    		//
 			    			    		
@@ -2969,7 +3000,7 @@ public class IOMain{
 			        				
 				        			// Debug
 						    		
-						    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR table empty! --> Per = 100%");
+						    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR table empty! --> Per = 100%");
 						    		
 						    		//
 						    		
@@ -2981,7 +3012,7 @@ public class IOMain{
 			    				
 				        		// Debug
 					    		
-					    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_OPEN_LOOP. Error loading TBR table! --> Per = 100%");
+					    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. Error loading TBR table! --> Per = 100%");
 					    		
 					    		//
 					    		
@@ -2999,7 +3030,7 @@ public class IOMain{
 				        		
 				        		// Debug
 					    		
-					    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_OPEN_LOOP. actualEndTime!=0");
+					    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. actualEndTime!=0");
 					    		
 					    		//
 					    		
@@ -3034,7 +3065,7 @@ public class IOMain{
 				        	
 				        	// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_OPEN_LOOP. mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
+				    		log.debug("ARG /////// DIAS_STATE_OPEN_LOOP. mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
 				    		perTBR + ". currentTime: " + currentTime + ". startTime: "+ startTime + ". endTime: "+endTime + ". actualEndTime: "+actualEndTime);
 				    		
 				    		//
@@ -3050,7 +3081,7 @@ public class IOMain{
 		        			
 		        			// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. mBasal: "+ mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
+				    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. mBasal: "+ mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
 				    		
 				    		//
 				    		
@@ -3060,7 +3091,7 @@ public class IOMain{
 		        		
 		        		// Debug
 			    		
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// mBasalF: "+ mBasalF + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
+			    		log.debug("ARG /////// mBasalF: "+ mBasalF + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
 			    		
 			    		//
 			    		
@@ -3107,7 +3138,7 @@ public class IOMain{
 							
 							// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. "+"IOB's states updated. "
+				    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. "+"IOB's states updated. "
 				    				+ "basalBolus: " + basalBolus + ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
 				    		
 				    		//	
@@ -3118,7 +3149,7 @@ public class IOMain{
 							
 							// Debug
 				    		
-				    		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_OPEN_LOOP. IOB's states updated. basalBolus: " + basalBolus
+				    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. IOB's states updated. basalBolus: " + basalBolus
 				    				+ ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
 				    		
 				    		//
@@ -3132,7 +3163,7 @@ public class IOMain{
 		        	
 		        	// Debug
 		        	
-		    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP&ST&SS. Final IOB: " + iobEst + ". IOB basal: " + iobBasal);
+		    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Final IOB: " + iobEst + ". IOB basal: " + iobBasal);
 		    		
 		    		//
 		    		
@@ -3156,7 +3187,7 @@ public class IOMain{
 						
 						// Debug
 			        	
-			    		Debug.i(TAG,FUNC_TAG,"ARG /////// DIAS_STATE_CL&OP. IOB states saved!");
+			    		log.debug("ARG /////// DIAS_STATE_CL&OP. IOB states saved!");
 			    		
 			    		//
 						
@@ -3176,7 +3207,7 @@ public class IOMain{
 					// Debug
 				
 	        	
-					Debug.i(TAG,FUNC_TAG,"ARG /////// Error reading subject info!");
+					log.debug("ARG /////// Error reading subject info!");
 	    		
 	    			//
 	    		
@@ -3190,7 +3221,7 @@ public class IOMain{
 				
 				// Debug
 				
-				Debug.i(TAG,FUNC_TAG,"ARG /////// Asynchronous call!");
+				log.debug("ARG /////// Asynchronous call!");
 	    		
 	    		//
 				
@@ -3207,7 +3238,7 @@ public class IOMain{
 			
 			// Debug
 			
-			Debug.i(TAG,FUNC_TAG,"ARG /////// "+"DIAS_STATE_UNKWOWN");
+			log.debug("ARG /////// "+"DIAS_STATE_UNKWOWN");
 			
 			//
 			
@@ -3229,7 +3260,7 @@ public class IOMain{
 		
 		// Debug
 		
-		Debug.i(TAG,FUNC_TAG,"ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE: Respond to DiAs Service. Asynchronous: "+asynchronous+". Recommended_bolus: "+correction+ ". Diff rate: " + diff_rate);
+		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE: Respond to DiAs Service. Asynchronous: "+asynchronous+". Recommended_bolus: "+correction+ ". Diff rate: " + diff_rate);
 		
 		//
 		    
