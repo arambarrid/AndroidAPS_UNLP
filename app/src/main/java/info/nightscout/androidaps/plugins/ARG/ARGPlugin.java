@@ -6,6 +6,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ import info.nightscout.androidaps.data.MealData;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.TempTarget;
+import info.nightscout.androidaps.db.ARGTable;
 import info.nightscout.androidaps.interfaces.APSInterface;
 import info.nightscout.androidaps.interfaces.Constraint;
 import info.nightscout.androidaps.interfaces.PluginBase;
@@ -303,9 +305,60 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+                JSONObject argTableJSON = new JSONObject();
+                try{
+                    argTableJSON.put("time",String.valueOf(DateUtil.now()));
+                    argTableJSON.put("CGM",String.valueOf(data.get(0).raw));
+                    argTableJSON.put("IOB", String.valueOf(xstates[0][0]));
+                    argTableJSON.put("Gpred", String.valueOf(xstates[1][0]));
+                    argTableJSON.put("Gpred_correction", String.valueOf(xstates[2][0]));
+                    argTableJSON.put("Gpred_bolus", String.valueOf(xstates[3][0]));
+                    argTableJSON.put("Xi00", String.valueOf(xstates[4][0]));
+                    argTableJSON.put("Xi01", String.valueOf(xstates[5][0]));
+                    argTableJSON.put("Xi02", String.valueOf(xstates[6][0]));
+                    argTableJSON.put("Xi03", String.valueOf(xstates[7][0]));
+                    argTableJSON.put("Xi04", String.valueOf(xstates[8][0]));
+                    argTableJSON.put("Xi05", String.valueOf(xstates[9][0]));
+                    argTableJSON.put("Xi06", String.valueOf(xstates[10][0]));
+                    argTableJSON.put("Xi07", String.valueOf(xstates[11][0]));
+                    argTableJSON.put("brakes_coeff", String.valueOf(xstates[12][0]));
+                    argTableJSON.put("tMeal",String.valueOf((double) gController.getSlqgController().gettMeal()));
+                    argTableJSON.put("ExtAgg",String.valueOf((double) gController.getSlqgController().getExtAgg()));
+                    argTableJSON.put("pCBolus" ,String.valueOf(gController.getpCBolus()));
+                    argTableJSON.put("IobMax",String.valueOf(gController.getSafe().getIobMax()));
+                    argTableJSON.put("slqgState",String.valueOf(slqgStateFlag));
+                    argTableJSON.put("IOBMaxCF",String.valueOf(gController.getSafe().getIOBMaxCF()));
+                    argTableJSON.put("Listening",String.valueOf((double) gController.getEstimator().getListening()));
+                    argTableJSON.put("MCount", String.valueOf((double) gController.getEstimator().getMCount()));
+                    argTableJSON.put("rCFBolus", String.valueOf((double) gController.getrCFBolus()));
+                    argTableJSON.put("tEndAgg", String.valueOf((double) gController.gettEndAgg()));
+                    argTableJSON.put("iobStates[0][0]", String.valueOf(iobStates[0][0]));
+                    argTableJSON.put("iobStates[1][0]",String.valueOf(iobStates[1][0]));
+                    argTableJSON.put("derivadaIOB", String.valueOf(iobStates[2][0]));
+                    argTableJSON.put("iobEst", String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())));
+                    argTableJSON.put("Gamma", String.valueOf(gController.getSafe().getGamma()));
+                    argTableJSON.put("Anuncio", String.valueOf(nextRecord[0]));
+                    argTableJSON.put("Resultado", String.valueOf(resultado));
+                }catch(JSONException e){
+                    
+                }
+
+                // Este objeto sería la futura nueva fila
+                ARGTable historialDeVariables = new ARGTable();
+
+                // Se asigna el json como data y el tiempo de generacion         
+                historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
+
+                // Subo a Nightscoute
+                NSUpload.uploadARGTable(historialDeVariables);
+                 
+                // Actualizo la db local
+                MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
+
             }
         }
-        
+                        
 
         // En esta sección del codigo podría llamarse a guardar todos los datos que tenga que guardar
         // de todas formas, el JSONObject DATA podría ser global a la clase y actualizarse y guardar
@@ -338,8 +391,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         //        MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
 
         // log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
-
-
 
 
         //prueba
