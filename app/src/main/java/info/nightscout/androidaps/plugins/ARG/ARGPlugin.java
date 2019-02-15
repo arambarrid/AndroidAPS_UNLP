@@ -271,9 +271,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                     double[][] xTemp = {{93.75},{93.75},{0}};
                     Matrix iobState  = new Matrix(xTemp);
                     gController.getSafe().getIob().setX(iobState);
-                    double[][] uTemp = {{93.75}};
-                    Matrix u = new Matrix(uTemp);
-                    gController.getSafe().getIob().stateUpdate(u);
 
                 }
                 long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
