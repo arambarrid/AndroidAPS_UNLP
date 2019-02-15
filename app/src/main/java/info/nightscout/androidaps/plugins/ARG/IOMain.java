@@ -60,6 +60,8 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSgv;
 import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
+import info.nightscout.androidaps.plugins.Treatments.Treatment;
+import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 
@@ -72,7 +74,7 @@ public class IOMain{
     private static Logger log = LoggerFactory.getLogger(L.DATABASE);
 
 	
-	// TODO : podemos cambiar despues el nombre
+	// TODO_AAPS : podemos cambiar despues el nombre
 	enum State {
 		DIAS_STATE_UNKWOWN,
 		DIAS_STATE_CLOSED_LOOP,
@@ -100,7 +102,7 @@ public class IOMain{
 		// Debug
 		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
 
-		// TODO: como determinar esto?
+		// TODO_AAPS: como determinar esto?
 		boolean asynchronous = false; 
 		State DIAS_STATE = State.DIAS_STATE_UNKWOWN;
 
@@ -149,7 +151,7 @@ public class IOMain{
 				/// *********************************************************
 				//Probably best to insert your calculation routine here...
 				
-				// TODO: subject es como la variable de la app del DiAS global que almacenaba informacion
+				// TODO_AAPS: subject es como la variable de la app del DiAS global que almacenaba informacion
 				// creo que aca no vamos a llamar a estas rutinas 
 				// gController.getPatient().setCf(subject.CF);
 				// gController.getPatient().setCr(subject.CR);
@@ -158,7 +160,7 @@ public class IOMain{
 				// gController.setSetpoint(subject.age); // age = setpoint
 				// gController.getPatient().setBasalU(subject.basal);
 	    			
-	    		// TODO: Hardcodeo esto a 1.6 ¿¿??
+	    		// TODO_AAPS: Hardcodeo esto a 1.6 -> ¿¿??
 				double parameterIOBFactor = 1.6; // subject.height;
 				
 				// Debug
@@ -186,24 +188,34 @@ public class IOMain{
 	        	long    timeDiff     = 0;     // Diferencia entre el tiempo actual y el de la infusión
 	        	boolean iobInitFlag  = false; // Flag para indicar que se debe ejecutar la rutina de inicialización de IOB
 	        	
-	        	// Puntero a la tabla de insulina. Capturo las filas cuyo tiempo se del actual hasta 5 min anteriores
+	        	// Puntero a la tabla de insulina. Capturo las filas cuyo tiempo sea del actual hasta 5 min anteriores
 	        	// Consulto la columna deliv_time para asegurarme que el bolo fue infundido
-	        	
-	        	// TODO: por el momento no hay bolos, obtener la lectura y hacer la misma recopilacion
 
 	    		// Cursor aTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
 	    		//         new String("deliv_time") + "> ?", new String[]{Long.toString(currentTime-299)}, null);
 	    		
-	    		/*
-	    		if (aTime != null) {
-		    		while(aTime.moveToNext()){
-		    			
-		    			lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
-			        	delTotal  = aTime.getDouble(aTime.getColumnIndex("deliv_total"));
-			        	statusIns = aTime.getInt(aTime.getColumnIndex("status"));
-			        	type      = aTime.getInt(aTime.getColumnIndex("type"));
-			        	
-			        	if(Objects.equals(lastTime, null)){
+
+	        	// Puntero a la tabla de insulina. Capturo las filas cuyo tiempo sea del actual hasta 5 min anteriores
+	        	// Consulto la columna deliv_time para asegurarme que el bolo fue infundido
+
+
+	        	// TODO_AAPS: La condicion aTime == null derivaba al siguiente mensaje de debug y no entraba
+	        	// al siguiente bloque de codigo
+	        	// log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
+
+        		List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+
+	            for (Treatment t : treatments) {
+	                if (!t.isValid)
+	                    continue;
+
+	                // t.date es UNIX TIME en [ms]
+	                if (t.date > (currentTime - 299) * 1000 && 
+	                	t.insulin > 0 && t.isValid && t.date <= currentTime * 1000)
+	                {
+/*
+						// TODO_AAPS: Esta condición no entiendo bien cuando se daba
+	                	if(Objects.equals(lastTime, null)){
 			        		
 			        		// Si son nulls los seteo en 0
 			        		
@@ -218,51 +230,36 @@ public class IOMain{
 	        				
 	        				//
 	        				
-			        	}else{
-			        		
-				        	if(type==3){ // type==3 indica que el bolo fue de inicialización
-				        		
-				        		iobInitBolus = delTotal; // If there is more than one stop-open or stop-closed transition during the last 5 minutes, I get the last amount of insulin that was MANUALLY injected.
-				        		iobInitFlag  = true; // Activo el flag que dispara la rutina de inicialización
-				        		
-				        	}
-				        	else if(type==2){ // type==2 indica que el bolo fue de corrección
-				        		
-				        		extraBolus += delTotal; // I accumulate all the insulin boluses that were injected during the last 5 minutes.
-				        		
-				        	}
-				        	
-				        	// Debug
-				        	
-				        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
-				        	
-				        	//
-				        	
 			        	}
+*/
+	                	// TODO_AAPS: como indificar si es de correción o inicializacion ?
+	                	type = 2;
+
+			        	if(type==3){ // type==3 indica que el bolo fue de inicialización
+			        		
+			        		iobInitBolus = delTotal; // If there is more than one stop-open or stop-closed transition during the last 5 minutes, I get the last amount of insulin that was MANUALLY injected.
+			        		iobInitFlag  = true; // Activo el flag que dispara la rutina de inicialización
+			        		
+			        	}
+			        	else if(type==2){ // type==2 indica que el bolo fue de corrección
+			        		extraBolus += delTotal; // I accumulate all the insulin boluses that were injected during the last 5 minutes.
+				        }
+
+			        	// Debug
 			        	
-		    		}
-		    		
-	    		}
-	    		
-	    		else{*/
-    				
-	        		// Debug
-		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
-		    		
-		    		//
-		    		
-	        	//}
-	    		
-	    		// TODO: cierra la request de arriba
-	    		// aTime.close();
+			        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
+			        	
+			        	// 
+
+	                }
+	            }
 	    		
 	    		// Debug
 	    		
 	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);
 	    		
 	    		//
-	    		
+/*
 	    		// *********************************************************************************************************** /// 
 	    		// ************************************************************************************************************ //
 
@@ -3204,7 +3201,7 @@ public class IOMain{
 	    		
 	    		// ************************************************************************************************************ //
 	        	// ************************************************************************************************************ //
-
+*/
 			
 			}
 			else{
@@ -3217,7 +3214,7 @@ public class IOMain{
 				
 			}
 	    	
-	    	// TODO: este metodo no esta en esta versión
+	    	// TODO_AAPS: este metodo no esta en esta versión
 			// gController.setDiasState(DIAS_STATE);
 			
 		}
