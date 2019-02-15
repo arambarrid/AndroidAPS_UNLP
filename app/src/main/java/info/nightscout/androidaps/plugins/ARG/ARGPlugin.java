@@ -398,7 +398,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             ioMain = new IOMain();
         }
         
-        ioMain.ejecutarCada5Min();
+        ioMain.ejecutarCada5Min(gController);
 
         //prueba
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
