@@ -65,6 +65,11 @@ import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 
+import info.nightscout.androidaps.MainApp;
+import info.nightscout.androidaps.db.ARGTable;
+import info.nightscout.androidaps.db.BgReading;
+import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
+import info.nightscout.utils.DateUtil;
 
 // ************************************************************************************************************ //
 
@@ -83,14 +88,16 @@ public class IOMain{
 		DIAS_STATE_SENSOR_ONLY
 	}
 
+
+	private int hypoLight  = 0;
+	private int hyperLight = 0;
+
 	// Power management
 	/*
 
 	private PowerManager pm;
 	private PowerManager.WakeLock wl;
 	
-	private int hypoLight  = 0;
-	private int hyperLight = 0;
 	
 	private static final String TAG = "HMSservice";
 	
@@ -98,9 +105,158 @@ public class IOMain{
     private final Messenger mMessengerFromClient = new Messenger(new IncomingHMSHandler());
     */
 
+    // Variables de control en rutinas
+    long lastTimeCGM_get = 0;
+
+
+    IOMain(){
+    	log.debug("[ARGPLUGIN] IOMain instanciada.");
+    }
+
+    public void pruebaARGTable(){
+
+    	return;
+/*
+    	// Agregar un vlaor
+		double  delTotal     = 0.0;   // Variable para capturar cada uno de los posibles bolos asincrónicos
+		int     statusIns    = 0;     // Variable que permite detectar si el bolo es el anunciado en la inicialización o fue dado con el DiAs 
+		int     type         = 0;     // Variable equivalente a statusIns
+		long    lastTime     = 0;     // Tiempo de la infusión del bolo
+
+
+	    JSONObject argTableJSON = new JSONObject();
+	    try{
+	        argTableJSON.put("deliv_time", String.valueOf(lastTime));
+	        argTableJSON.put("deliv_total", String.valueOf(delTotal));
+	        argTableJSON.put("status", String.valueOf(statusIns));
+	        argTableJSON.put("type", String.valueOf(type));
+	   	}catch(JSONException e){
+                    
+		}
+
+		ARGTable argTable = new ARGTable(System.currentTimeMillis(), "Biometrics.INSULIN_URI", argTableJSON);
+
+        MainApp.getDbHelper().createARGTableIfNotExists(argTable, "pruebaARGTable()");
+		NSUpload.uploadARGTable(argTable);
+
+
+		// Por ejemplo par hacer query
+			// Cursor cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
+		
+		long fromTime = DateUtil.now() - (2 * 60 * 1000L);
+        List<ARGTable> cMailList = 
+                MainApp.getDbHelper().getAllARGTableFromTimeByDiASType("Biometrics.USER_TABLE_3_URI",
+                		0, false);
+
+        log.debug("[ARGPLUGIN] Consulta por USER_TABLE_3_URI " 
+        	+ String.valueOf(cMailList.size()) + " resultados.");
+
+
+        List<ARGTable> insulin_URI = 
+                MainApp.getDbHelper().getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI",
+                		0, false);
+
+        log.debug("[ARGPLUGIN] Consulta por INSULIN_URI " 
+        	+ String.valueOf(insulin_URI.size()) + " resultados.");
+
+        	*/
+
+    }
+
+    private void CGM_URI_Clone(){
+	    // #########################################################################################################
+	    // Biometrics.CGM_URI
+	    // #########################################################################################################
+    	// Campos
+    	// cgm 			Valor de CGM
+    	// time 		Tiempo realizado de la muestra
+    	// state 		No se muy bien que significa
+
+    	// Vector de DiAS que tiene las medidas de CGM, trato de
+    	// simular su contenido 
+
+	    long fromTime = 0, now = System.currentTimeMillis() ;
+    	List<BgReading> bgData;
+    	ARGTable cgm_uri_argTable;
+    	int added = 0;
+
+    	// Primera vez
+    	if (lastTimeCGM_get == 0){
+    		// Obtengo lecturas de como mucho hace 6 horas
+    		fromTime = now - 6*3600*1000L;
+
+    		// Verifico cual fue la ultima medida almacenada en el CGM_URI
+    		List<ARGTable> cgm_uri_list = MainApp.getDbHelper()
+    				.getAllARGTableFromTimeByDiASType("Biometrics.CGM_URI", fromTime, false);
+
+    		if (cgm_uri_list.size() > 0){
+	    		cgm_uri_argTable = cgm_uri_list.get(0);
+	    		lastTimeCGM_get = cgm_uri_argTable.getLong("time");
+
+	    		// Entonces a partir de esta ultima medida es que consulto
+		    	bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, true);
+
+	    	}else{
+	    		// no hay medidas desde ese tiempo en CGM_URI, chequeamos en AAPS
+		    	bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(fromTime, false);
+
+	    	}
+    	}else{
+		    bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, false);
+
+    	}
+
+    	// hay nuevas medidas?
+    	if (bgData.size() > 0){
+		    // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
+    		for (int i = 0;i < bgData.size(); i++){
+    			JSONObject cgm_uri_json = new JSONObject();
+    			try{
+	    			cgm_uri_json.put("time", bgData.get(i).date);
+	    			cgm_uri_json.put("cgm", bgData.get(i).value);
+	    			cgm_uri_json.put("state", 0);
+
+					cgm_uri_argTable = new ARGTable(bgData.get(i).date, "Biometrics.CGM_URI", cgm_uri_json);
+			        MainApp.getDbHelper().createARGTableIfNotExists(cgm_uri_argTable, "CGM_URI_Clone()");
+
+			        added++;
+    			}catch(JSONException e){
+
+    			}
+
+
+    		}
+
+    	}
+
+    	log.debug("[ARGPLUGIN] CGM_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeCGM_get) + " currentLastTime: " + String.valueOf(now));
+	    lastTimeCGM_get = now;
+    }
+
+    public void APStoDiAS(){
+	    // Controladas por el IOMain.java
+	    // Biometrics.USER_TABLE_1_URI
+	    // Biometrics.USER_TABLE_3_URI
+	    // Biometrics.USER_TABLE_4_URI
+	    // Biometrics.HMS_STATE_ESTIMATE_URI
+
+
+	    // Controladas por el DiAS
+	    // Biometrics.CGM_URI
+	    this.CGM_URI_Clone();
+	    
+	    // Biometrics.INSULIN_URI
+	    
+	    // Biometrics.TEMP_BASAL_URI
+
+    }
+
 	public void ejecutarCada5Min(GController gController) {
 		// Debug
 		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
+
+		this.pruebaARGTable();
+		this.APStoDiAS();
 
 		// TODO_AAPS: como determinar esto?
 		boolean asynchronous = false; 
@@ -199,61 +355,81 @@ public class IOMain{
 	        	// Consulto la columna deliv_time para asegurarme que el bolo fue infundido
 
 
-	        	// TODO_AAPS: La condicion aTime == null derivaba al siguiente mensaje de debug y no entraba
+	        	// TODO_AAPS: La condicion aTime == null derivaba un mensaje de debug y no entraba
 	        	// al siguiente bloque de codigo
-	        	// log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
 
-        		List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+	        	boolean aTimeNotNull = true;
 
-	            for (Treatment t : treatments) {
-	                if (!t.isValid)
-	                    continue;
+	        	if (aTimeNotNull){
 
-	                // t.date es UNIX TIME en [ms]
-	                if (t.date > (currentTime - 299) * 1000 && 
-	                	t.insulin > 0 && t.isValid && t.date <= currentTime * 1000)
-	                {
-/*
-						// TODO_AAPS: Esta condición no entiendo bien cuando se daba
-	                	if(Objects.equals(lastTime, null)){
-			        		
-			        		// Si son nulls los seteo en 0
-			        		
-	        				lastTime  = 0;
-	        				delTotal  = 0.0;
-	        				statusIns = 0;
-	        				type      = 0;
-	        				
-	        				// Debug
-	        				
-	        				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
-	        				
-	        				//
-	        				
-			        	}
-*/
-	                	// TODO_AAPS: como indificar si es de correción o inicializacion ?
-	                	type = 2;
+	        		List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
 
-			        	if(type==3){ // type==3 indica que el bolo fue de inicialización
-			        		
-			        		iobInitBolus = delTotal; // If there is more than one stop-open or stop-closed transition during the last 5 minutes, I get the last amount of insulin that was MANUALLY injected.
-			        		iobInitFlag  = true; // Activo el flag que dispara la rutina de inicialización
-			        		
-			        	}
-			        	else if(type==2){ // type==2 indica que el bolo fue de corrección
-			        		extraBolus += delTotal; // I accumulate all the insulin boluses that were injected during the last 5 minutes.
-				        }
+		            for (Treatment t : treatments) {
+		                if (!t.isValid)
+		                    continue;
 
-			        	// Debug
-			        	
-			        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
-			        	
-			        	// 
+		                // t.date es UNIX TIME en [ms]
+		                if (t.date > (currentTime - 299) * 1000 && 
+		                	t.insulin > 0 && t.isValid && t.date <= currentTime * 1000)
+		                {
+	/*
+							// TODO_APS: Lectura de DiAS de cada bolo 
+			    			lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
+				        	delTotal  = aTime.getDouble(aTime.getColumnIndex("deliv_total"));
+				        	statusIns = aTime.getInt(aTime.getColumnIndex("status"));
+				        	type      = aTime.getInt(aTime.getColumnIndex("type"));
 
-	                }
-	            }
-	    		
+							// TODO_AAPS: Esta condición no entiendo bien cuando se daba
+		                	if(Objects.equals(lastTime, null)){
+				        		
+				        		// Si son nulls los seteo en 0
+				        		
+		        				lastTime  = 0;
+		        				delTotal  = 0.0;
+		        				statusIns = 0;
+		        				type      = 0;
+		        				
+		        				// Debug
+		        				
+		        				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
+		        				
+		        				//
+		        				
+				        	}else{
+	*/
+			                	// TODO_AAPS: como indificar si es de correción o inicializacion ?
+			                	type = 2;
+
+					        	if(type==3){ // type==3 indica que el bolo fue de inicialización
+					        		
+					        		iobInitBolus = delTotal; // If there is more than one stop-open or stop-closed transition during the last 5 minutes, I get the last amount of insulin that was MANUALLY injected.
+					        		iobInitFlag  = true; // Activo el flag que dispara la rutina de inicialización
+					        		
+					        	}
+					        	else if(type==2){ // type==2 indica que el bolo fue de corrección
+					        		extraBolus += delTotal; // I accumulate all the insulin boluses that were injected during the last 5 minutes.
+						        }
+
+					        	// Debug
+					        	
+					        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
+					        	
+					        	// 
+
+					       // }
+
+		                }
+		            }
+		        }else{
+		    		
+		    		// Debug
+		    		
+						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
+					//
+
+				}
+
+		       		    		
 	    		// Debug
 	    		
 	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);

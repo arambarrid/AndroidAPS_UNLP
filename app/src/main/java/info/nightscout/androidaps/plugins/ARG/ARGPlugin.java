@@ -345,16 +345,16 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 }
 
                 // Este objeto sería la futura nueva fila
-                ARGTable historialDeVariables = new ARGTable();
+                //ARGTable historialDeVariables = new ARGTable();
 
                 // Se asigna el json como data y el tiempo de generacion         
-                historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
+                //historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
 
                 // Subo a Nightscoute
-                NSUpload.uploadARGTable(historialDeVariables);
+                //NSUpload.uploadARGTable(historialDeVariables);
                  
                 // Actualizo la db local
-                MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
+                //MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
 
             }
         }

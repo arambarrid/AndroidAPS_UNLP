@@ -29,37 +29,57 @@ import info.nightscout.utils.SP;
 public class ARGTable {
     private static Logger log = LoggerFactory.getLogger(L.DATABASE);
 
-    @DatabaseField(id = true)
+    @DatabaseField
     public long date;
 
-    @DatabaseField
-    public boolean isValid = true;
+    // La idea de este campo es simular las tablas del DiAS
+    // esto podría unificarse PEERO ahora respetamos tal cual
+    // como estaba hecho (para agilizar). Tipos posibles:
+    // Biometrics.USER_TABLE_1_URI
+    // Biometrics.USER_TABLE_3_URI
+    // Biometrics.USER_TABLE_4_URI
+    // Biometrics.INSULIN_URI
+    // Biometrics.CGM_URI
+    // Biometrics.HMS_STATE_ESTIMATE_URI
+    // Biometrics.TEMP_BASAL_URI
 
+    @DatabaseField 
+    public String diastype;
+    
     @DatabaseField
     public String data;
 
-    @DatabaseField
-    public int source = Source.NONE;
-    @DatabaseField
-    public String _id = null; // NS _id
+    private JSONObject jsonData;
 
-    public ARGTable() {
-        data = new String("");
+    public ARGTable(){
+        
+    }
+
+    public ARGTable(long date, String diastype, JSONObject data) {
+        this.jsonData = data;
+        this.data = data.toString();
+        this.diastype = diastype;
+        this.date = date;
     }
 
     @Override
     public String toString() {
         return "ARGTable{" +
                 "date=" + date +
+                ",diastype=" + diastype +
                 ", date=" + new Date(date).toLocaleString() +
                 ", Data=" + data +
                 '}';
     }
 
-    public JSONObject getData(){
-        JSONObject ret = new JSONObject();
+    public JSONObject getAllData(){
+        return jsonData;
+    }
+
+    public Object getByColumn(String column){
+        Object ret = null;
         try{
-            ret = new JSONObject(data);
+            ret = this.jsonData.get(column);
         }catch (JSONException e){
 
         }
@@ -67,48 +87,62 @@ public class ARGTable {
         return ret;
     }
 
-    public boolean isDataChanging(ARGTable other) {
-        if (date != other.date) {
-            log.error("Comparing different");
-            return false;
+    public boolean getBoolean(String name){
+        boolean ret = false;
+        try{
+            ret = this.jsonData.getBoolean(name);
+        }catch (JSONException e){
+
         }
-        return false;
+        
+        return ret;
     }
 
-    public boolean isEqual(ARGTable other) {
-        if (date != other.date) {
-            log.error("Comparing different");
-            return false;
+    public double  getDouble(String name){
+        double ret = 0;
+        try{
+            ret = this.jsonData.getDouble(name);
+        }catch (JSONException e){
+
         }
-        return true;
+        
+        return ret;
     }
 
-    public void copyFrom(ARGTable other) {
-        if (date != other.date) {
-            log.error("Copying different");
-            return;
+    public int getInt(String name){
+        int ret = 0;
+        try{
+            ret = this.jsonData.getInt(name);
+        }catch (JSONException e){
+
         }
-        data = other.data;
-        _id = other._id;
+        
+        return ret;
     }
 
-    public ARGTable date(long date) {
-        this.date = date;
-        return this;
+
+    public long    getLong(String name){
+        long ret = 0;
+        try{
+            ret = this.jsonData.getLong(name);
+        }catch (JSONException e){
+
+        }
+        
+        return ret;
     }
 
-    public ARGTable date(Date date) {
-        this.date = date.getTime();
-        return this;
+    public String  getString(String name){
+        String ret = null;
+        try{
+            ret = this.jsonData.getString(name);
+        }catch (JSONException e){
+
+        }
+        
+        return ret;
     }
 
-    public ARGTable data(String data) {
-        this.data = data;
-        return this;
-    }
-    public ARGTable data(JSONObject data) {
-        this.data = data.toString();
-        return this;
-    }
+
 
 }

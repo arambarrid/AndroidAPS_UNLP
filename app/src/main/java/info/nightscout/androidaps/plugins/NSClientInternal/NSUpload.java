@@ -507,6 +507,7 @@ public class NSUpload {
             data.put("date", arg.date);
             data.put("dateString", DateUtil.toISOString(arg.date));
             data.put("reason", arg.data); 
+            data.put("type", arg.diastype); 
 
             Bundle bundle = new Bundle();
             bundle.putString("action", "dbAdd");
