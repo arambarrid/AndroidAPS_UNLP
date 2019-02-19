@@ -63,6 +63,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     private static CSVReader reader=null;
     private static boolean firstExecution=true;
     private static Context miContexto;
+    private static boolean comida=false;
     //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
@@ -273,12 +274,16 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                     gController.getSafe().getIob().setX(iobState);
 
                 }
-                long fromtime = DateUtil.now() - 60 * 1000L * 5; //ultimos 5 min
+                long fromtime = DateUtil.now() - 1000L * 12; //ultimos 5 seg
                 List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-                resultado = gController.run(Boolean.valueOf(nextRecord[0]), 3, data.get(0).raw);
+                if(Integer.valueOf(nextRecord[0])==1)
+                    comida=true;
+                else
+                    comida=false;
+                resultado = gController.run(comida, 3, data.get(0).raw);
                 double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
                 double [][] iobStates = gController.getSafe().getIob().getX().getData();
-                String fileName = "TablaDeDatos2.csv";
+                String fileName = "TablaDeDatos.csv";
                 String filePath = baseDir + File.separator + fileName;
                 CSVWriter writer = null;
                 // File exist

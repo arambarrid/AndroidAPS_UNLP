@@ -1,5 +1,10 @@
 package info.nightscout.androidaps.plugins.ARG;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import info.nightscout.androidaps.logging.L;
+
 public class Estimator {
 
 	private Matrix cgmVector; // Vector de muestras de CGM
@@ -9,7 +14,9 @@ public class Estimator {
 	private int mCount;       // Flag inicial anuncio de comida (es int porque se puede regular el tiempo para pasar a listening)
 	private int listening;    // Contador asociado al modo listening
 	private double pred;      // Predicci´n de glucosa
-	
+	private static Logger log = LoggerFactory.getLogger(L.APS);
+
+
 	/**************************************************************************************************************/
 	
 	// Constructor
@@ -92,6 +99,7 @@ public class Estimator {
 		// La condici´n mCount>=1 genera que ni bien se anuncia la comida se verifique el trend para la posible conmutaci´n
 		
 		if(mCount>=1){
+			log.debug("mCount=" + String.valueOf(mCount));
 			
 			// Si hubo un trend superior a 2 mg/dl/5 min durante los ´ltimos 20 min, entonces se conmuta al agresivo
 			
@@ -100,7 +108,7 @@ public class Estimator {
 					mSwitch= mSwitch+1;
 				}
 			}
-			
+			log.debug("mSwitch=" + String.valueOf(mSwitch));
 			if(mSwitch==3){
 				mealFFlag = true; // La activaci´n de este flag indica la conmutaci´n al agresivo
 			}
