@@ -1708,6 +1708,31 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     }
 
 
+    public List<ARGTable> getLastsARGTable(String diastype, int limit) {
+        try {
+            Dao<ARGTable, Long> daoARGTable = getDaoARGTable();
+            List<ARGTable> argTableList;
+            QueryBuilder<ARGTable, Long> queryBuilder = daoARGTable.queryBuilder();
+            queryBuilder.orderBy("date", false);
+            queryBuilder.limit(limit);
+            Where where = queryBuilder.where();
+            where.eq("diastype", diastype);
+
+            PreparedQuery<ARGTable> preparedQuery = queryBuilder.prepare();
+            argTableList = daoARGTable.query(preparedQuery);
+
+            log.debug("[ARGPLUGIN] getLastsARGTable(" + diastype + "," 
+                + String.valueOf(limit) + ") succefully : " + argTableList.size());
+
+            return argTableList;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return new ArrayList<ARGTable>();
+    }
+
+
+
     public List<ARGTable> getAllARGTableFromTimeByDiASType(String diastype, long mills, boolean ascending) {
         try {
             Dao<ARGTable, Long> daoARGTable = getDaoARGTable();

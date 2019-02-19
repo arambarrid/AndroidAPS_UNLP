@@ -170,7 +170,7 @@ public class IOMain{
     	// Campos
     	// cgm 			Valor de CGM
     	// time 		Tiempo realizado de la muestra
-    	// state 		No se muy bien que significa
+    	// state 		No se muy bien que significa, en 1 = error, 10=, 5=warmup
 
     	// Vector de DiAS que tiene las medidas de CGM, trato de
     	// simular su contenido 
@@ -233,7 +233,30 @@ public class IOMain{
 	    lastTimeCGM_get = now;
     }
 
-    public void APStoDiAS(){
+    private void INSULIN_URI_Clone(){
+	    // #########################################################################################################
+	    // Biometrics.INSULIN_URI
+	    // #########################################################################################################
+    	// Campos
+    	// deliv_time 		cuando fue infundido ?
+    	// deliv_total 		cantidad del bolo (double)
+    	// status 			2=se_infundió_correctamente , status!=2 ¿¿¿??? 
+    	// type 			3=bolo_de_inicializacion , 3=bolo_correccion ¿¿¿???
+    	// req_time			calculo que será cuando se solicitó
+    }
+
+    private void TEMP_BASAL_URI_Clone(){
+	    // #########################################################################################################
+	    // Biometrics.TEMP_BASAL_URI
+	    // #########################################################################################################
+    	// Campos
+    	// start_time							Inicio del TBR
+    	// percent_of_profile_basal_rate		Porcentaje por el que se multiplica el perfil de insulina basal
+    	// scheduled_end_time 					Fin del TBR
+    	// actual_end_time						Fin del TBR prematuro por el usuario
+    }
+
+    public void AAPStoDiAS(){
 	    // Controladas por el IOMain.java
 	    // Biometrics.USER_TABLE_1_URI
 	    // Biometrics.USER_TABLE_3_URI
@@ -242,12 +265,15 @@ public class IOMain{
 
 
 	    // Controladas por el DiAS
+
 	    // Biometrics.CGM_URI
 	    this.CGM_URI_Clone();
 	    
 	    // Biometrics.INSULIN_URI
-	    
+	    this.INSULIN_URI_Clone();
+
 	    // Biometrics.TEMP_BASAL_URI
+	    this.TEMP_BASAL_URI_Clone();
 
     }
 
@@ -256,7 +282,7 @@ public class IOMain{
 		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
 
 		this.pruebaARGTable();
-		this.APStoDiAS();
+		this.AAPStoDiAS();
 
 		// TODO_AAPS: como determinar esto?
 		boolean asynchronous = false; 
@@ -278,6 +304,7 @@ public class IOMain{
 		
 		double correction = 0.0, diff_rate = 0.0;
 		boolean new_rate = false;
+		long nowMS = System.currentTimeMillis();
 		
 		// ************************************************************************************************************ //
 		
@@ -294,6 +321,7 @@ public class IOMain{
 			//
 			
 			if (!asynchronous) {
+
 
 				// Debug
 	    		
@@ -350,92 +378,80 @@ public class IOMain{
 	    		// Cursor aTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
 	    		//         new String("deliv_time") + "> ?", new String[]{Long.toString(currentTime-299)}, null);
 	    		
+	    		List<ARGTable> aTime = INSULIN_URI_query_deliv_time((currentTime-299) * 1000L);
 
-	        	// Puntero a la tabla de insulina. Capturo las filas cuyo tiempo sea del actual hasta 5 min anteriores
-	        	// Consulto la columna deliv_time para asegurarme que el bolo fue infundido
+	    		if (aTime.size() > 0) {// if (aTime != null) {
+		    		for (ARGTable item : aTime) { //while(aTime.moveToNext()){
+		    			
+		    			//lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
+			        	//delTotal  = aTime.getDouble(aTime.getColumnIndex("deliv_total"));
+			        	//statusIns = aTime.getInt(aTime.getColumnIndex("status"));
+			        	//type      = aTime.getInt(aTime.getColumnIndex("type"));
+			        	
+			        	lastTime = item.getLong("deliv_time");
+			        	delTotal = item.getDouble("deliv_total");
+			        	statusIns = item.getInt("status");
+			        	type = item.getInt("type");
 
-
-	        	// TODO_AAPS: La condicion aTime == null derivaba un mensaje de debug y no entraba
-	        	// al siguiente bloque de codigo
-
-	        	boolean aTimeNotNull = true;
-
-	        	if (aTimeNotNull){
-
-	        		List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
-
-		            for (Treatment t : treatments) {
-		                if (!t.isValid)
-		                    continue;
-
-		                // t.date es UNIX TIME en [ms]
-		                if (t.date > (currentTime - 299) * 1000 && 
-		                	t.insulin > 0 && t.isValid && t.date <= currentTime * 1000)
-		                {
-	/*
-							// TODO_APS: Lectura de DiAS de cada bolo 
-			    			lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
-				        	delTotal  = aTime.getDouble(aTime.getColumnIndex("deliv_total"));
-				        	statusIns = aTime.getInt(aTime.getColumnIndex("status"));
-				        	type      = aTime.getInt(aTime.getColumnIndex("type"));
-
-							// TODO_AAPS: Esta condición no entiendo bien cuando se daba
-		                	if(Objects.equals(lastTime, null)){
+			        	// TODO_APS: este caso no va a darse
+			        	if(Objects.equals(lastTime, null)){
+			        		
+			        		// Si son nulls los seteo en 0
+			        		
+	        				lastTime  = 0;
+	        				delTotal  = 0.0;
+	        				statusIns = 0;
+	        				type      = 0;
+        				
+	        				// Debug
+	        				
+	        				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
+	        				
+	        				//
+	        				
+	        				
+			        	}else{
+			        		
+				        	if(type==3){ // type==3 indica que el bolo fue de inicialización
 				        		
-				        		// Si son nulls los seteo en 0
+				        		iobInitBolus = delTotal; // If there is more than one stop-open or stop-closed transition during the last 5 minutes, I get the last amount of insulin that was MANUALLY injected.
+				        		iobInitFlag  = true; // Activo el flag que dispara la rutina de inicialización
 				        		
-		        				lastTime  = 0;
-		        				delTotal  = 0.0;
-		        				statusIns = 0;
-		        				type      = 0;
-		        				
-		        				// Debug
-		        				
-		        				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
-		        				
-		        				//
-		        				
-				        	}else{
-	*/
-			                	// TODO_AAPS: como indificar si es de correción o inicializacion ?
-			                	type = 2;
-
-					        	if(type==3){ // type==3 indica que el bolo fue de inicialización
-					        		
-					        		iobInitBolus = delTotal; // If there is more than one stop-open or stop-closed transition during the last 5 minutes, I get the last amount of insulin that was MANUALLY injected.
-					        		iobInitFlag  = true; // Activo el flag que dispara la rutina de inicialización
-					        		
-					        	}
-					        	else if(type==2){ // type==2 indica que el bolo fue de corrección
-					        		extraBolus += delTotal; // I accumulate all the insulin boluses that were injected during the last 5 minutes.
-						        }
-
-					        	// Debug
+				        	}
+				        	else if(type==2){ // type==2 indica que el bolo fue de corrección
+				        		
+				        		extraBolus += delTotal; // I accumulate all the insulin boluses that were injected during the last 5 minutes.
+				        		
+				        	}
+			        	
+				 			// Debug
 					        	
-					        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
-					        	
-					        	// 
-
-					       // }
-
-		                }
-		            }
-		        }else{
+				        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
+				        	
+				        	// 
+			        	}
+			        	
+		    		}
 		    		
+	    		}else{
+    				
+	        
 		    		// Debug
 		    		
 						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
 					//
-
-				}
-
-		       		    		
-	    		// Debug
+		    		
+	        	}
+	    		
+	    		//aTime.close();
+	 			
+	 			// Debug
 	    		
 	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);
 	    		
 	    		//
-/*
+
+
 	    		// *********************************************************************************************************** /// 
 	    		// ************************************************************************************************************ //
 
@@ -450,17 +466,20 @@ public class IOMain{
 	    		
 	    		// Puntero al último bolo de insulina sincrónico
 	    		
-	    		Cursor sBTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
-	    		         "req_time>? AND type=?" , new String[]{Long.toString(currentTime-305),"1"}, null);
-	    		
-	    		
-	    		if (sBTime != null) {
-		    		if (sBTime.moveToLast()){
+	    		// Cursor sBTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
+	    		//         "req_time>? AND type=?" , new String[]{Long.toString(currentTime-305),"1"}, null);
+	   
+	    		List<ARGTable> sBTime = INSULIN_URI_query_reqtime_and_type((currentTime-305) * 1000L, 1);
+
+
+	    		if (sBTime.size() > 0) { //(sBTime != null) {
+		    		//if (sBTime.moveToLast()){
 		    			
 		    			// Capturo el estado
 		    			
-		    			statusIns = sBTime.getInt(sBTime.getColumnIndex("status"));
-		    			
+		    			//statusIns = sBTime.getInt(sBTime.getColumnIndex("status"));
+		    			statusIns = sBTime.get(0).getInt("status");
+
 		    			// Debug
 			    		
 			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
@@ -472,20 +491,30 @@ public class IOMain{
 		    			if(statusIns!=2){
 		    				
 		    				// Puntero a la tabla de IOB
-		    				Cursor cIob = getContentResolver().query(Biometrics.USER_TABLE_1_URI, null, null, null, null);
+		    				// Cursor cIob = getContentResolver().query(Biometrics.USER_TABLE_1_URI, null, null, null, null);
 		    				
-		    				if (cIob != null) {
+		    				List<ARGTable> cIob = MainApp.getDbHelper()
+		    							.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
+
+		    				if (cIob.size() > 0){ //(cIob != null) {
     			        		
 		    					// Voy a la última fila
-    			        		if (cIob.moveToLast()) {
+    			        		//if (cIob.moveToLast()) {
 		    			        	
     			        			// Capturo los elementos de la última fila
-		    			        	long iobLastTime = cIob.getLong(cIob.getColumnIndex("time"));
-    					        	double iobState1 = cIob.getDouble(cIob.getColumnIndex("d0"));
-    					        	double iobState2 = cIob.getDouble(cIob.getColumnIndex("d1"));
-    					        	double iobState3 = cIob.getDouble(cIob.getColumnIndex("d2"));
-    					        	double iobEst    = cIob.getDouble(cIob.getColumnIndex("d3"));
-    					        	double iobBasal  = cIob.getDouble(cIob.getColumnIndex("d4"));
+		    			        	//long iobLastTime = cIob.getLong(cIob.getColumnIndex("time"));
+    					        	//double iobState1 = cIob.getDouble(cIob.getColumnIndex("d0"));
+    					        	//double iobState2 = cIob.getDouble(cIob.getColumnIndex("d1"));
+    					        	//double iobState3 = cIob.getDouble(cIob.getColumnIndex("d2"));
+    					        	//double iobEst    = cIob.getDouble(cIob.getColumnIndex("d3"));
+    					        	//double iobBasal  = cIob.getDouble(cIob.getColumnIndex("d4"));
+
+		    			        	long iobLastTime = cIob.get(0).getLong("time");
+    					        	double iobState1 = cIob.get(0).getDouble("d0");
+    					        	double iobState2 = cIob.get(0).getDouble("d1");
+    					        	double iobState3 = cIob.get(0).getDouble("d2");
+    					        	double iobEst    = cIob.get(0).getDouble("d3");
+    					        	double iobBasal  = cIob.get(0).getDouble("d4");
     					        	
     					        	// Debug
 						    		
@@ -498,13 +527,18 @@ public class IOMain{
 						    		//
 						    		
     					        	// Voy a la anteúltima fila
-    			        			if(cIob.moveToPrevious()){
+    			        			if (cIob.size() > 1){ // (cIob.moveToPrevious()){
     			        				
     			        				// Capturo los elementos de la penúltima fila
-	    					        	iobState1   = cIob.getDouble(cIob.getColumnIndex("d0"));
-	    					        	iobState2   = cIob.getDouble(cIob.getColumnIndex("d1"));
-	    					        	iobState3   = cIob.getDouble(cIob.getColumnIndex("d2"));
-	    					        	iobBasal    = cIob.getDouble(cIob.getColumnIndex("d4"));
+	    					        	//iobState1   = cIob.getDouble(cIob.getColumnIndex("d0"));
+	    					        	//iobState2   = cIob.getDouble(cIob.getColumnIndex("d1"));
+	    					        	//iobState3   = cIob.getDouble(cIob.getColumnIndex("d2"));
+	    					        	//iobBasal    = cIob.getDouble(cIob.getColumnIndex("d4"));
+	    					        	
+	    					        	iobState1 = cIob.get(1).getDouble("d0");
+	    					        	iobState2 = cIob.get(1).getDouble("d1");
+	    					        	iobState3 = cIob.get(1).getDouble("d2");
+	    					        	iobBasal  = cIob.get(1).getDouble("d4");
 	    					        	
 	    					        	// Debug
 							    		
@@ -536,15 +570,19 @@ public class IOMain{
 			    			    		// Recalculo el iobEst
 			    			    		iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
 			    			    		
+
+		        			    		// TODO_APS: insercion de valores
+
 			    			    		// Guardo los estados de IOB corregidos
-			    			    		ContentValues statesTableIOB = new ContentValues();
-		        			    		TableShortCut scTableIOB = new TableShortCut(); 
+			    			    		//ContentValues statesTableIOB = new ContentValues();
+		        			    		//TableShortCut scTableIOB = new TableShortCut(); 
 		        			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
-		        			    		statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
-		        			    				iobBasal, 0.0, 0.0, 0.0, 0.0, 
-		        			    				0.0, 0.0, 0.0, 0.0);
-		        			    		statesTableIOB.put("time", iobLastTime);
-		        						getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
+		        			    		
+		        			    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
+		        			    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
+		        			    		//		0.0, 0.0, 0.0, 0.0);
+		        			    		//statesTableIOB.put("time", iobLastTime);
+		        						//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
 			    			    		
 		        						// Debug
 							    		
@@ -556,20 +594,20 @@ public class IOMain{
 			    			    		
 							    		//
 							    		
-    			        			}
-    			        			
-    			        			else{
+    			        			}else{
 	    			        			
     			        				// Si no hay anteúltima fila (muy poco probable), significa que los estados
     			        				// antepenúltimos eran 0. Por lo tanto, grabo 0.
+
+    			        				// TODO_APS: implementar inserción
     			        				
-    			        				ContentValues statesTableIOB = new ContentValues();
-		        			    		TableShortCut scTableIOB = new TableShortCut(); 
-		        			    		statesTableIOB = scTableIOB.insertValue(statesTableIOB, 0.0, 0.0, 0.0, 0.0, 
-		        			    				iobBasal, 0.0, 0.0, 0.0, 0.0, 
-		        			    				0.0, 0.0, 0.0, 0.0);
-		        			    		statesTableIOB.put("time", iobLastTime);
-		        						getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
+    			        				//ContentValues statesTableIOB = new ContentValues();
+		        			    		//TableShortCut scTableIOB = new TableShortCut(); 
+		        			    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, 0.0, 0.0, 0.0, 0.0, 
+		        			    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
+		        			    		//		0.0, 0.0, 0.0, 0.0);
+		        			    		//statesTableIOB.put("time", iobLastTime);
+		        						//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
 		        						
 		        						// Debug
 							    		
@@ -579,14 +617,13 @@ public class IOMain{
 							    		//
 							    		
     			        			}
-    			        			
-    			        		}
+    			        		
+    			        		// TODO_APS: Este if ya no tiene sentido	
+    			        		//}
     			        		
 		    				}
 		    				
-		    			}
-		    			
-		    			else{
+		    			}else{
 		    				
 		    				// Debug
 				    		
@@ -597,22 +634,21 @@ public class IOMain{
 		    				
 		    			}
 		    			
-		    		}
+		    		//}
 		    		
-		    		else{
+		    		// TODO_APS: Este else tampoco tiene sentido, 
+		    		//else{
 		    			
 		    			// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-			    				+ "sBTime.moveToLast() = false");
+			    	//	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
+			    	//			+ "sBTime.moveToLast() = false");
 			    		
 			    		//
 		    			
-		    		}
+		    		//}
 		    	
-	    		}
-	    		
-	    		else{
+	    		}else{
 	    			
 	    			// Debug
 		    		
@@ -623,7 +659,7 @@ public class IOMain{
 	    			
 	    		}
 	    		
-	    		sBTime.close();
+	    		// sBTime.close();
 	    		
 	        	// ************************************************************************************************************ //
 	    		// ************************************************************************************************************ //
@@ -645,21 +681,33 @@ public class IOMain{
 	        	
 	        	// Puntero a la tabla de IOB
 	        	
-	    		Cursor cIob = getContentResolver().query(Biometrics.USER_TABLE_1_URI, null, null, null, null);
+	    		// Cursor cIob = getContentResolver().query(Biometrics.USER_TABLE_1_URI, null, null, null, null);
+
+				List<ARGTable> cIob = MainApp.getDbHelper()
+							.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
+
 	    		
+	    		// TODO_APS: revisar esta logica ya que nuestra base de datos siempre va a devolver los datos
+				// asi hayan pasado 80 años
+
 	    		// Cuando se prende el smartphone luego de mucho tiempo el moveToLast devuelve null por más que haya registros
 	    		// en la tabla. Esto origina que iobLastTime = 0, al igual que los estados. No es un problema, ya que de esta forma 
 	    		// se comienza el proceso de inicialización con los estados en 0, que es lo que adecuado por la diferencia temporal
 	    		// que existe
 	    		
-	        	if (cIob != null) {
+	        	if (cIob.size() > 0) {// (cIob != null) {
 	        		
-	        		if (cIob.moveToLast()) {
+	        		//if (cIob.moveToLast()) {
 	        			
-	        			iobLastTime = cIob.getLong(cIob.getColumnIndex("time"));
-			        	iobState1   = cIob.getDouble(cIob.getColumnIndex("d0"));
-			        	iobState2   = cIob.getDouble(cIob.getColumnIndex("d1"));
-			        	iobState3   = cIob.getDouble(cIob.getColumnIndex("d2"));
+	        			//iobLastTime = cIob.getLong(cIob.getColumnIndex("time"));
+			        	//iobState1   = cIob.getDouble(cIob.getColumnIndex("d0"));
+			        	//iobState2   = cIob.getDouble(cIob.getColumnIndex("d1"));
+			        	//iobState3   = cIob.getDouble(cIob.getColumnIndex("d2"));
+
+	        			iobLastTime = cIob.get(0).getLong("time");
+			        	iobState1   = cIob.get(0).getDouble("d0");
+			        	iobState2   = cIob.get(0).getDouble("d1");
+			        	iobState3   = cIob.get(0).getDouble("d2");
 
 	        			if(Objects.equals(iobLastTime, null)){
 	        				
@@ -676,21 +724,19 @@ public class IOMain{
     			    		
 	        			}
 	        			
-	        		}
+	        		//}
 	        		
-	        		else{
+	        		//else{
         				
         				// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob table empty! --> Iob = 0");
+			    	//	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob table empty! --> Iob = 0");
 			    		
 			    		//	
 			    		
-	        		}
+	        		//}
 	        		
-	        	}
-	        	
-	        	else{	
+	        	}else{	
 	        		
 	        		// Debug
 		    		
@@ -698,11 +744,10 @@ public class IOMain{
 		    		
 		    		//
 		    		
-		    		Toast.makeText(IOMain.this, "Error loading iob table!" , Toast.LENGTH_SHORT).show();
+		    		//Toast.makeText(IOMain.this, "Error loading iob table!" , Toast.LENGTH_SHORT).show();
 		    	
 	        	} 
-	        	
-	        	cIob.close();
+	        	//cIob.close();
 	        	
 	        	// Debug
 	        	
@@ -717,7 +762,9 @@ public class IOMain{
 	        	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
     			Matrix iobState  = new Matrix(xTemp);
 	    		gController.getSafe().getIob().setX(iobState);
-	    		
+	  
+	        	/*
+
 	    		// ************************************************************************************************************ //
 	    		// ************************************************************************************************************ //
 	    		
@@ -3379,8 +3426,7 @@ public class IOMain{
 	        	// ************************************************************************************************************ //
 */
 			
-			}
-			else{
+			}else{
 				
 				// Debug
 				
@@ -3392,13 +3438,12 @@ public class IOMain{
 	    	
 	    	// TODO_AAPS: este metodo no esta en esta versión
 			// gController.setDiasState(DIAS_STATE);
-			
-		}
 		
 		// All other modes...
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		
-		else{
+			
+		}else{
 			
 			// Debug
 			
@@ -3452,4 +3497,46 @@ public class IOMain{
 		break;
 		*/
 	}
+
+	private List<ARGTable> INSULIN_URI_query_deliv_time(long greaterTime){
+		List<ARGTable> ret = MainApp.getDbHelper()
+		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
+	    		// Cursor aTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
+	    		//         new String("deliv_time") + "> ?", new String[]{Long.toString(currentTime-299)}, null);
+	    		
+		return ret;
+	}		
+
+	private List<ARGTable> INSULIN_URI_query_reqtime_and_type(long greaterTime, int type){
+		List<ARGTable> ret = MainApp.getDbHelper()
+		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
+
+	//	Cursor sBTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
+	//	        "req_time>? AND type=?" , new String[]{Long.toString(currentTime-305),"1"}, null);  
+
+		return ret;
+	}
+
+	private List<ARGTable> CGM_URI_query_between_desc_order(long greaterTime, long lowerTime){
+		List<ARGTable> ret = MainApp.getDbHelper()
+		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
+		
+
+	//	Cursor cCGMAux = getContentResolver().query(Biometrics.CGM_URI,null,
+	//	         "time>?" + " AND " + "time<?", new String[]{ Long.toString(timeCGM-1505) , Long.toString(timeCGM-1) }, "time DESC");
+
+		return ret;
+	}
+
+	
+	private List<ARGTable> USER_TABLE_3_query_l1_and_d2(long greaterTime, int d2){
+		List<ARGTable> ret = MainApp.getDbHelper()
+		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
+	
+	//	cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, 
+    // 	   "l1>? AND d2!=?" , new String[]{Long.toString(currentTime-305),"0"}, null);
+		return ret;
+	}
+
+
 }
