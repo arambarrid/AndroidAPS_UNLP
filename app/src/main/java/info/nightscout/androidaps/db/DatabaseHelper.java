@@ -1683,7 +1683,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             // scheduleBgChange(bgReading);
             return true;
         } catch (SQLException e) {
-            log.error("[ARGPLUGIN] Unhandled exception", e);
+            log.error("[ARGPLUGIN] Unhandled exception " + e.getSQLState() + " code " + e.getErrorCode() +
+                " toString " + e.toString());
         }
         return false;
     }
@@ -1706,4 +1707,25 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         return new ArrayList<ARGTable>();
     }
 
+
+    public List<ARGTable> getAllARGTableFromTimeByDiASType(String diastype, long mills, boolean ascending) {
+        try {
+            Dao<ARGTable, Long> daoARGTable = getDaoARGTable();
+            List<ARGTable> argTableList;
+            QueryBuilder<ARGTable, Long> queryBuilder = daoARGTable.queryBuilder();
+            queryBuilder.orderBy("date", ascending);
+            Where where = queryBuilder.where();
+            where.ge("date", mills).and().eq("diastype", diastype);
+            PreparedQuery<ARGTable> preparedQuery = queryBuilder.prepare();
+            argTableList = daoARGTable.query(preparedQuery);
+
+            log.debug("[ARGPLUGIN] getAllARGTableFromTimeByDiASType(" + diastype + "," 
+                + String.valueOf(mills) + ") succeful : " + argTableList.size());
+
+            return argTableList;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return new ArrayList<ARGTable>();
+    }
 }
