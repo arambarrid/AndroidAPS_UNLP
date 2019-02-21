@@ -76,12 +76,26 @@ public class ARGTable {
         return jsonData;
     }
 
+    private void checkUpdateStringDataToJsonData(){
+        if (jsonData == null && data.length() > 0){
+            try{
+                jsonData = new JSONObject(data);
+            }catch(JSONException e){
+                log.error("[ARGPLUGIN] ARGTable Error al convertir string en json cuando jsonData == null."
+                    + e.toString());
+            }
+        }
+    }
+
     public Object getByColumn(String column){
         Object ret = null;
+        checkUpdateStringDataToJsonData();
         try{
-            ret = this.jsonData.get(column);
+            if (jsonData != null)
+                ret = this.jsonData.get(column);
         }catch (JSONException e){
-
+                log.error("[ARGPLUGIN] ARGTable - getByColumn() " + column
+                    + e.toString());
         }
         
         return ret;
@@ -89,9 +103,13 @@ public class ARGTable {
 
     public boolean getBoolean(String name){
         boolean ret = false;
+        checkUpdateStringDataToJsonData();
         try{
-            ret = this.jsonData.getBoolean(name);
+            if (jsonData != null)
+                ret = this.jsonData.getBoolean(name);
         }catch (JSONException e){
+                log.error("[ARGPLUGIN] ARGTable - getBoolean() " + name
+                    + e.toString());
 
         }
         
@@ -100,9 +118,13 @@ public class ARGTable {
 
     public double  getDouble(String name){
         double ret = 0;
+        checkUpdateStringDataToJsonData();
         try{
-            ret = this.jsonData.getDouble(name);
+            if (jsonData != null)
+                ret = this.jsonData.getDouble(name);
         }catch (JSONException e){
+                log.error("[ARGPLUGIN] ARGTable - getDouble() " + name
+                    + e.toString());
 
         }
         
@@ -111,9 +133,13 @@ public class ARGTable {
 
     public int getInt(String name){
         int ret = 0;
+        checkUpdateStringDataToJsonData();
         try{
-            ret = this.jsonData.getInt(name);
+            if (jsonData != null)
+                ret = this.jsonData.getInt(name);
         }catch (JSONException e){
+                log.error("[ARGPLUGIN] ARGTable - getInt() " + name
+                    + e.toString());
 
         }
         
@@ -123,9 +149,13 @@ public class ARGTable {
 
     public long    getLong(String name){
         long ret = 0;
+        checkUpdateStringDataToJsonData();
         try{
-            ret = this.jsonData.getLong(name);
+            if (jsonData != null)
+                ret = this.jsonData.getLong(name);
         }catch (JSONException e){
+                log.error("[ARGPLUGIN] ARGTable - getLong() " + name
+                    + e.toString());
 
         }
         
@@ -134,9 +164,13 @@ public class ARGTable {
 
     public String  getString(String name){
         String ret = null;
+        checkUpdateStringDataToJsonData();
         try{
-            ret = this.jsonData.getString(name);
+            if (jsonData != null)
+                ret = this.jsonData.getString(name);
         }catch (JSONException e){
+                log.error("[ARGPLUGIN] ARGTable - getString() " + name
+                    + e.toString());
 
         }
         
