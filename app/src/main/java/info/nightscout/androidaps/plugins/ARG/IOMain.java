@@ -3499,42 +3499,55 @@ public class IOMain{
 	}
 
 	private List<ARGTable> INSULIN_URI_query_deliv_time(long greaterTime){
+		// deliv_time: cuando lo termino dar
+		// supongo que como maximo lo solicitó dos horas antes
+		// obtengo todo esos bolos y los filtro por el verdadero campo
+
 		List<ARGTable> ret = MainApp.getDbHelper()
-		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
-	    		// Cursor aTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
-	    		//         new String("deliv_time") + "> ?", new String[]{Long.toString(currentTime-299)}, null);
-	    		
+			.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", 
+					greaterTime - (2*3600*1000L), false);
+
+		ret.removeIf(item -> item.getLong("deliv_time") < greaterTime);
+
 		return ret;
 	}		
 
 	private List<ARGTable> INSULIN_URI_query_reqtime_and_type(long greaterTime, int type){
-		List<ARGTable> ret = MainApp.getDbHelper()
-		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
+		// req: cuando lo solicito, la tabla seguramente se cree despues
+		// pero  agrego inconsistencia de 10 minutos,
+		// obtengo todo esos bolos y los filtro por el verdadero campo
 
-	//	Cursor sBTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
-	//	        "req_time>? AND type=?" , new String[]{Long.toString(currentTime-305),"1"}, null);  
+		List<ARGTable> ret = MainApp.getDbHelper()
+			.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", 
+					greaterTime - (10*60*1000L), false);
+
+		ret.removeIf(item -> (
+			(item.getLong("deliv_time") < greaterTime) && 
+			(item.getInt("type") == 2)
+		));
 
 		return ret;
 	}
 
 	private List<ARGTable> CGM_URI_query_between_desc_order(long greaterTime, long lowerTime){
 		List<ARGTable> ret = MainApp.getDbHelper()
-		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
-		
+			.getAllARGTableFromTimeByDiASType("Biometrics.CGM_URI", greaterTime, false);
 
-	//	Cursor cCGMAux = getContentResolver().query(Biometrics.CGM_URI,null,
-	//	         "time>?" + " AND " + "time<?", new String[]{ Long.toString(timeCGM-1505) , Long.toString(timeCGM-1) }, "time DESC");
-
+		ret.removeIf(item -> (item.date > lowerTime));
 		return ret;
 	}
 
 	
 	private List<ARGTable> USER_TABLE_3_query_l1_and_d2(long greaterTime, int d2){
 		List<ARGTable> ret = MainApp.getDbHelper()
-		    							.getLastsARGTable("Biometrics.INSULIN_URI", 2);
-	
-	//	cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, 
-    // 	   "l1>? AND d2!=?" , new String[]{Long.toString(currentTime-305),"0"}, null);
+			.getAllARGTableFromTimeByDiASType("Biometrics.USER_TABLE_3_URI", 
+					greaterTime - (10*60*1000L), false);
+
+		ret.removeIf(item -> (
+			(item.getLong("l1") < greaterTime) && 
+			(item.getInt("d2") == d2)
+		));
+
 		return ret;
 	}
 
