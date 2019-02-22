@@ -1,4 +1,4 @@
- package info.nightscout.androidaps.plugins.ARG;
+package info.nightscout.androidaps.plugins.ARG;
 
 import android.content.Context;
 
@@ -64,6 +64,8 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     private static boolean firstExecution=true;
     private static Context miContexto;
     private static boolean comida=false;
+    private static int cantComidas=0;
+    private static int tamanio;
     //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
@@ -253,7 +255,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         long now = System.currentTimeMillis();
         //-------------prueba------------
         String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-        String anuncioFileName = "anuncio2.csv";
+        String anuncioFileName = "anuncioDeComidas.csv";
         String anuncioFilePath = baseDir + File.separator + anuncioFileName;
         String[] nextRecord;
         if(reader==null) {
@@ -267,20 +269,36 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         else {
             if ((nextRecord = reader.readNext()) != null) {
                 if (gController == null) {
-                    gController = new GController(120.0, 25.0, 20.0, 20.0, 80.0, 1.22, miContexto);
+                    gController = new GController(120.0, 72, 8.995080905333818, 25.889600543516560, 73.007221559706540, 1.902187239282904, miContexto);
 
-                    double[][] xTemp = {{93.75},{93.75},{0}};
+                    double[][] xTemp = {{159.8611008725862},{159.8611008725862},{0}};
                     Matrix iobState  = new Matrix(xTemp);
                     gController.getSafe().getIob().setX(iobState);
 
                 }
-                long fromtime = DateUtil.now() - 1000L * 12; //ultimos 5 seg
+                long fromtime = DateUtil.now() - 1000L * 23; //ultimos 12 seg
                 List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-                if(Integer.valueOf(nextRecord[0])==1)
-                    comida=true;
+                if(Integer.valueOf(nextRecord[0])==1) {
+                    comida = true;
+                }
                 else
                     comida=false;
-                resultado = gController.run(comida, 3, data.get(0).raw);
+
+                //Hago esto como prueba para asegurarme que es entero. ----A CORREGIR----
+                switch (Integer.valueOf(nextRecord[1])){
+                    case 1:
+                        tamanio=1;
+                        break;
+                    case 2:
+                        tamanio=2;
+                        break;
+                    case 3:
+                        tamanio=3;
+                        break;
+                    case 0:
+                        break;
+                }
+                resultado = gController.run(comida, tamanio, data.get(0).raw);
                 double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
                 double [][] iobStates = gController.getSafe().getIob().getX().getData();
                 String fileName = "TablaDeDatos.csv";
@@ -291,8 +309,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                     FileWriter mFileWriter = new FileWriter(filePath, true);
                     writer = new CSVWriter(mFileWriter);
                     if(firstExecution) {
-                        String[] headerRecord = {"time", "CGM", "IOB", "Gpred", "Gpred_correction", "Gpred_bolus", "Xi00", "Xi01", "Xi02", "Xi03", "Xi04", "Xi05", "Xi06", "Xi07", "brakes" +
-                                "_coeff",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Resultado"};
+                        String[] headerRecord = {"time", "CGM", "xstates[0][0]", "xstates[1][0]", "xstates[2][0]", "xstates[3][0]", "xstates[4][0]", "xstates[5][0]", "xstates[6][0]", "xstates[7][0]", "xstates[8][0]", "xstates[9][0]", "xstates[10][0]", "xstates[11][0]", "xstates[12][0]",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Tamaño", "Resultado"};
                         writer.writeNext(headerRecord);
                         firstExecution=false;
                     }
@@ -302,7 +319,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 int slqgStateFlag = 0;
                 if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
                     slqgStateFlag = 1;
-                String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(nextRecord[0]), String.valueOf(resultado)};
+                String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(comida),String.valueOf(tamanio),  String.valueOf(resultado)};
 
                 writer.writeNext(dataToCSV);
                 try {
@@ -315,19 +332,19 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 try{
                     argTableJSON.put("time",String.valueOf(DateUtil.now()));
                     argTableJSON.put("CGM",String.valueOf(data.get(0).raw));
-                    argTableJSON.put("IOB", String.valueOf(xstates[0][0]));
-                    argTableJSON.put("Gpred", String.valueOf(xstates[1][0]));
-                    argTableJSON.put("Gpred_correction", String.valueOf(xstates[2][0]));
-                    argTableJSON.put("Gpred_bolus", String.valueOf(xstates[3][0]));
-                    argTableJSON.put("Xi00", String.valueOf(xstates[4][0]));
-                    argTableJSON.put("Xi01", String.valueOf(xstates[5][0]));
-                    argTableJSON.put("Xi02", String.valueOf(xstates[6][0]));
-                    argTableJSON.put("Xi03", String.valueOf(xstates[7][0]));
-                    argTableJSON.put("Xi04", String.valueOf(xstates[8][0]));
-                    argTableJSON.put("Xi05", String.valueOf(xstates[9][0]));
-                    argTableJSON.put("Xi06", String.valueOf(xstates[10][0]));
-                    argTableJSON.put("Xi07", String.valueOf(xstates[11][0]));
-                    argTableJSON.put("brakes_coeff", String.valueOf(xstates[12][0]));
+                    argTableJSON.put("xstates[0][0]", String.valueOf(xstates[0][0]));
+                    argTableJSON.put("xstates[1][0]", String.valueOf(xstates[1][0]));
+                    argTableJSON.put("xstates[2][0]", String.valueOf(xstates[2][0]));
+                    argTableJSON.put("xstates[3][0]", String.valueOf(xstates[3][0]));
+                    argTableJSON.put("xstates[4][0]", String.valueOf(xstates[4][0]));
+                    argTableJSON.put("xstates[5][0]", String.valueOf(xstates[5][0]));
+                    argTableJSON.put("xstates[6][0]", String.valueOf(xstates[6][0]));
+                    argTableJSON.put("xstates[7][0]", String.valueOf(xstates[7][0]));
+                    argTableJSON.put("xstates[8][0]", String.valueOf(xstates[8][0]));
+                    argTableJSON.put("xstates[9][0]", String.valueOf(xstates[9][0]));
+                    argTableJSON.put("xstates[10][0]", String.valueOf(xstates[10][0]));
+                    argTableJSON.put("xstates[11][0]", String.valueOf(xstates[11][0]));
+                    argTableJSON.put("xstates[12][0]", String.valueOf(xstates[12][0]));
                     argTableJSON.put("tMeal",String.valueOf((double) gController.getSlqgController().gettMeal()));
                     argTableJSON.put("ExtAgg",String.valueOf((double) gController.getSlqgController().getExtAgg()));
                     argTableJSON.put("pCBolus" ,String.valueOf(gController.getpCBolus()));
@@ -344,26 +361,28 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                     argTableJSON.put("iobEst", String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())));
                     argTableJSON.put("Gamma", String.valueOf(gController.getSafe().getGamma()));
                     argTableJSON.put("Anuncio", String.valueOf(nextRecord[0]));
+                    argTableJSON.put("Tamanio", String.valueOf(nextRecord[1]));
                     argTableJSON.put("Resultado", String.valueOf(resultado));
                 }catch(JSONException e){
-                    
-                }
 
+                }
+                ARGTable argTable = new ARGTable(DateUtil.now(), "ARG History", argTableJSON);
+                MainApp.getDbHelper().createARGTableIfNotExists(argTable, "ARGPlugin.invoke()");
                 // Este objeto sería la futura nueva fila
                 //ARGTable historialDeVariables = new ARGTable();
 
-                // Se asigna el json como data y el tiempo de generacion         
+                // Se asigna el json como data y el tiempo de generacion
                 //historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
 
                 // Subo a Nightscoute
-                //NSUpload.uploadARGTable(historialDeVariables);
-                 
+                NSUpload.uploadARGTable(argTable);
+
                 // Actualizo la db local
                 //MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
 
             }
         }
-                        
+
 
         // En esta sección del codigo podría llamarse a guardar todos los datos que tenga que guardar
         // de todas formas, el JSONObject DATA podría ser global a la clase y actualizarse y guardar
@@ -379,12 +398,12 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         // para agregar un campo a la table
         // argTableJSON.put("campo", valor);
 
-        // Se asigna el json como data y el tiempo de generacion         
+        // Se asigna el json como data y el tiempo de generacion
         // historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
 
         // Subo a Nightscoute
         // NSUpload.uploadARGTable(historialDeVariables);
-         
+
         // Actualizo la db local
         // MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
 
@@ -392,17 +411,17 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         // Para consultar ARGTables viejas desde la DB local (esta es la primera que guarda),
         // por lo que si el celular se apaga y no alcanzo a subir a internet, de todas formas,
         // los datos van a estar aca
-        // List<ARGTable> argTableList = 
+        // List<ARGTable> argTableList =
         //        MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
 
         // log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
 
 
-        
+
         if (ioMain == null){
             ioMain = new IOMain();
         }
-        
+
         ioMain.ejecutarCada5Min(gController);
 
         //prueba
