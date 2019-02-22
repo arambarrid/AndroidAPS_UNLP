@@ -429,9 +429,9 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         ioMain.ejecutarCada5Min(gController);
 
         //prueba
-        DetermineBasalResultARG determineBasalResultARG
-                = new DetermineBasalResultARG();// = determineBasalAdapterARG.invoke();
-      /*  if (L.isEnabled(L.APS))
+        DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
+       
+       if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);
         // TODO still needed with oref1?
         // Fix bug determine basal
@@ -447,7 +447,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             log.error("Unhandled exception", e);
         }
 
-        determineBasalResultARG.inputConstraints = inputConstraints;*/
+        determineBasalResultARG.inputConstraints = inputConstraints;
 
         // ###################### HARD CODE RESULTADO ######################
 
