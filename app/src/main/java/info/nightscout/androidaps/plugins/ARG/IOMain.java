@@ -671,9 +671,30 @@ public class IOMain{
     	//
     	
     	//double[][] xTemp = {{0.0},{0.0},{0.0}};
+    	
+    	// Seteo los estados del IOB capturados
+    	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
+		Matrix iobState  = new Matrix(xTemp);
+		gController.getSafe().getIob().setX(iobState);
+
     }
 
     private void rutina_4_inicializacion_iob(){
+
+		// TODO_APS: obtener valores del perfil de basal, chequear
+		// me robo del codigo(DiAS) que está en internet la clase TVector
+		// y genero el mismo tipo de datos que utiliza este codigo
+		// de esa forma, nos aseguramos el mismo funcionamiento
+		// siempre y cuando la adaptacion de los datos sea correcta
+			subjectBasal = new Tvector();
+        for (int i = 0; i < 24; i++) {
+        	// obtengo basal de la hora i
+            double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
+
+			subjectBasal.put_with_replace(i*60, rate);
+        }
+    	
+    	
 		// ************************************************************************************************************ //
 		// ************************************************************************************************************ //
 		
@@ -3415,26 +3436,6 @@ public class IOMain{
 	    		rutina_2_correccion_iob_bolos_sincronicos_no_infundidos();
 	    		
 	    		rutina_3_captura_estados_modelo_iob();
-	        	
-	        	// Seteo los estados del IOB capturados
-	        	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
-    			Matrix iobState  = new Matrix(xTemp);
-	    		gController.getSafe().getIob().setX(iobState);
-
-
-	    		// TODO_APS: obtener valores del perfil de basal, chequear
-	    		// me robo del codigo(DiAS) que está en internet la clase TVector
-	    		// y genero el mismo tipo de datos que utiliza este codigo
-	    		// de esa forma, nos aseguramos el mismo funcionamiento
-	    		// siempre y cuando la adaptacion de los datos sea correcta
-	   			subjectBasal = new Tvector();
-		        for (int i = 0; i < 24; i++) {
-		        	// obtengo basal de la hora i
-		            double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
-
-					subjectBasal.put_with_replace(i*60, rate);
-		        }
-	        	
 	        	
 	        	rutina_4_inicializacion_iob();
 
