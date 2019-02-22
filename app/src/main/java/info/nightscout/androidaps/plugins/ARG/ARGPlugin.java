@@ -251,138 +251,142 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             return;
         }
 
-
         long now = System.currentTimeMillis();
-        //-------------prueba------------
-        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-        String anuncioFileName = "anuncioDeComidas.csv";
-        String anuncioFilePath = baseDir + File.separator + anuncioFileName;
-        String[] nextRecord;
-        if(reader==null) {
-            try {
-                reader = new CSVReader(new FileReader(anuncioFilePath));
-                nextRecord = reader.readNext(); //leo la primera linea porque sino no estan sincronizados cgm con anuncio
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        else {
-            if ((nextRecord = reader.readNext()) != null) {
-                if (gController == null) {
-                    gController = new GController(120.0, 72, 8.995080905333818, 25.889600543516560, 73.007221559706540, 1.902187239282904, miContexto);
+        long fromtime = DateUtil.now() - 1000L * 23; //ultimos 12 seg
+        List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
+        
+        if (data.size() > 0){
 
-                    double[][] xTemp = {{159.8611008725862},{159.8611008725862},{0}};
-                    Matrix iobState  = new Matrix(xTemp);
-                    gController.getSafe().getIob().setX(iobState);
 
-                }
-                long fromtime = DateUtil.now() - 1000L * 23; //ultimos 12 seg
-                List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
-                if(Integer.valueOf(nextRecord[0])==1) {
-                    comida = true;
-                }
-                else
-                    comida=false;
-
-                //Hago esto como prueba para asegurarme que es entero. ----A CORREGIR----
-                switch (Integer.valueOf(nextRecord[1])){
-                    case 1:
-                        tamanio=1;
-                        break;
-                    case 2:
-                        tamanio=2;
-                        break;
-                    case 3:
-                        tamanio=3;
-                        break;
-                    case 0:
-                        break;
-                }
-                resultado = gController.run(comida, tamanio, data.get(0).raw);
-                double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
-                double [][] iobStates = gController.getSafe().getIob().getX().getData();
-                String fileName = "TablaDeDatos.csv";
-                String filePath = baseDir + File.separator + fileName;
-                CSVWriter writer = null;
-                // File exist
+            //-------------prueba------------
+            String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+            String anuncioFileName = "anuncioDeComidas.csv";
+            String anuncioFilePath = baseDir + File.separator + anuncioFileName;
+            String[] nextRecord;
+            if(reader==null) {
                 try {
-                    FileWriter mFileWriter = new FileWriter(filePath, true);
-                    writer = new CSVWriter(mFileWriter);
-                    if(firstExecution) {
-                        String[] headerRecord = {"time", "CGM", "xstates[0][0]", "xstates[1][0]", "xstates[2][0]", "xstates[3][0]", "xstates[4][0]", "xstates[5][0]", "xstates[6][0]", "xstates[7][0]", "xstates[8][0]", "xstates[9][0]", "xstates[10][0]", "xstates[11][0]", "xstates[12][0]",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Tamaño", "Resultado"};
-                        writer.writeNext(headerRecord);
-                        firstExecution=false;
+                    reader = new CSVReader(new FileReader(anuncioFilePath));
+                    nextRecord = reader.readNext(); //leo la primera linea porque sino no estan sincronizados cgm con anuncio
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                if ((nextRecord = reader.readNext()) != null) {
+                    if (gController == null) {
+                        gController = new GController(120.0, 72, 8.995080905333818, 25.889600543516560, 73.007221559706540, 1.902187239282904, miContexto);
+
+                        double[][] xTemp = {{159.8611008725862},{159.8611008725862},{0}};
+                        Matrix iobState  = new Matrix(xTemp);
+                        gController.getSafe().getIob().setX(iobState);
+
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                   
+                    if(Integer.valueOf(nextRecord[0])==1) {
+                        comida = true;
+                    }
+                    else
+                        comida=false;
+
+                    //Hago esto como prueba para asegurarme que es entero. ----A CORREGIR----
+                    switch (Integer.valueOf(nextRecord[1])){
+                        case 1:
+                            tamanio=1;
+                            break;
+                        case 2:
+                            tamanio=2;
+                            break;
+                        case 3:
+                            tamanio=3;
+                            break;
+                        case 0:
+                            break;
+                    }
+                    resultado = gController.run(comida, tamanio, data.get(0).raw);
+                    double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
+                    double [][] iobStates = gController.getSafe().getIob().getX().getData();
+                    String fileName = "TablaDeDatos.csv";
+                    String filePath = baseDir + File.separator + fileName;
+                    CSVWriter writer = null;
+                    // File exist
+                    try {
+                        FileWriter mFileWriter = new FileWriter(filePath, true);
+                        writer = new CSVWriter(mFileWriter);
+                        if(firstExecution) {
+                            String[] headerRecord = {"time", "CGM", "xstates[0][0]", "xstates[1][0]", "xstates[2][0]", "xstates[3][0]", "xstates[4][0]", "xstates[5][0]", "xstates[6][0]", "xstates[7][0]", "xstates[8][0]", "xstates[9][0]", "xstates[10][0]", "xstates[11][0]", "xstates[12][0]",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Tamaño", "Resultado"};
+                            writer.writeNext(headerRecord);
+                            firstExecution=false;
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    int slqgStateFlag = 0;
+                    if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
+                        slqgStateFlag = 1;
+                    String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(comida),String.valueOf(tamanio),  String.valueOf(resultado)};
+
+                    writer.writeNext(dataToCSV);
+                    try {
+                        writer.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    JSONObject argTableJSON = new JSONObject();
+                    try{
+                        argTableJSON.put("time",String.valueOf(DateUtil.now()));
+                        argTableJSON.put("CGM",String.valueOf(data.get(0).raw));
+                        argTableJSON.put("xstates[0][0]", String.valueOf(xstates[0][0]));
+                        argTableJSON.put("xstates[1][0]", String.valueOf(xstates[1][0]));
+                        argTableJSON.put("xstates[2][0]", String.valueOf(xstates[2][0]));
+                        argTableJSON.put("xstates[3][0]", String.valueOf(xstates[3][0]));
+                        argTableJSON.put("xstates[4][0]", String.valueOf(xstates[4][0]));
+                        argTableJSON.put("xstates[5][0]", String.valueOf(xstates[5][0]));
+                        argTableJSON.put("xstates[6][0]", String.valueOf(xstates[6][0]));
+                        argTableJSON.put("xstates[7][0]", String.valueOf(xstates[7][0]));
+                        argTableJSON.put("xstates[8][0]", String.valueOf(xstates[8][0]));
+                        argTableJSON.put("xstates[9][0]", String.valueOf(xstates[9][0]));
+                        argTableJSON.put("xstates[10][0]", String.valueOf(xstates[10][0]));
+                        argTableJSON.put("xstates[11][0]", String.valueOf(xstates[11][0]));
+                        argTableJSON.put("xstates[12][0]", String.valueOf(xstates[12][0]));
+                        argTableJSON.put("tMeal",String.valueOf((double) gController.getSlqgController().gettMeal()));
+                        argTableJSON.put("ExtAgg",String.valueOf((double) gController.getSlqgController().getExtAgg()));
+                        argTableJSON.put("pCBolus" ,String.valueOf(gController.getpCBolus()));
+                        argTableJSON.put("IobMax",String.valueOf(gController.getSafe().getIobMax()));
+                        argTableJSON.put("slqgState",String.valueOf(slqgStateFlag));
+                        argTableJSON.put("IOBMaxCF",String.valueOf(gController.getSafe().getIOBMaxCF()));
+                        argTableJSON.put("Listening",String.valueOf((double) gController.getEstimator().getListening()));
+                        argTableJSON.put("MCount", String.valueOf((double) gController.getEstimator().getMCount()));
+                        argTableJSON.put("rCFBolus", String.valueOf((double) gController.getrCFBolus()));
+                        argTableJSON.put("tEndAgg", String.valueOf((double) gController.gettEndAgg()));
+                        argTableJSON.put("iobStates[0][0]", String.valueOf(iobStates[0][0]));
+                        argTableJSON.put("iobStates[1][0]",String.valueOf(iobStates[1][0]));
+                        argTableJSON.put("derivadaIOB", String.valueOf(iobStates[2][0]));
+                        argTableJSON.put("iobEst", String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())));
+                        argTableJSON.put("Gamma", String.valueOf(gController.getSafe().getGamma()));
+                        argTableJSON.put("Anuncio", String.valueOf(nextRecord[0]));
+                        argTableJSON.put("Tamanio", String.valueOf(nextRecord[1]));
+                        argTableJSON.put("Resultado", String.valueOf(resultado));
+                    }catch(JSONException e){
+
+                    }
+                    ARGTable argTable = new ARGTable(DateUtil.now(), "ARG History", argTableJSON);
+                    MainApp.getDbHelper().createARGTableIfNotExists(argTable, "ARGPlugin.invoke()");
+                    // Este objeto sería la futura nueva fila
+                    //ARGTable historialDeVariables = new ARGTable();
+
+                    // Se asigna el json como data y el tiempo de generacion
+                    //historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
+
+                    // Subo a Nightscoute
+                    NSUpload.uploadARGTable(argTable);
+
+                    // Actualizo la db local
+                    //MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
+
                 }
-                int slqgStateFlag = 0;
-                if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
-                    slqgStateFlag = 1;
-                String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(comida),String.valueOf(tamanio),  String.valueOf(resultado)};
-
-                writer.writeNext(dataToCSV);
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                JSONObject argTableJSON = new JSONObject();
-                try{
-                    argTableJSON.put("time",String.valueOf(DateUtil.now()));
-                    argTableJSON.put("CGM",String.valueOf(data.get(0).raw));
-                    argTableJSON.put("xstates[0][0]", String.valueOf(xstates[0][0]));
-                    argTableJSON.put("xstates[1][0]", String.valueOf(xstates[1][0]));
-                    argTableJSON.put("xstates[2][0]", String.valueOf(xstates[2][0]));
-                    argTableJSON.put("xstates[3][0]", String.valueOf(xstates[3][0]));
-                    argTableJSON.put("xstates[4][0]", String.valueOf(xstates[4][0]));
-                    argTableJSON.put("xstates[5][0]", String.valueOf(xstates[5][0]));
-                    argTableJSON.put("xstates[6][0]", String.valueOf(xstates[6][0]));
-                    argTableJSON.put("xstates[7][0]", String.valueOf(xstates[7][0]));
-                    argTableJSON.put("xstates[8][0]", String.valueOf(xstates[8][0]));
-                    argTableJSON.put("xstates[9][0]", String.valueOf(xstates[9][0]));
-                    argTableJSON.put("xstates[10][0]", String.valueOf(xstates[10][0]));
-                    argTableJSON.put("xstates[11][0]", String.valueOf(xstates[11][0]));
-                    argTableJSON.put("xstates[12][0]", String.valueOf(xstates[12][0]));
-                    argTableJSON.put("tMeal",String.valueOf((double) gController.getSlqgController().gettMeal()));
-                    argTableJSON.put("ExtAgg",String.valueOf((double) gController.getSlqgController().getExtAgg()));
-                    argTableJSON.put("pCBolus" ,String.valueOf(gController.getpCBolus()));
-                    argTableJSON.put("IobMax",String.valueOf(gController.getSafe().getIobMax()));
-                    argTableJSON.put("slqgState",String.valueOf(slqgStateFlag));
-                    argTableJSON.put("IOBMaxCF",String.valueOf(gController.getSafe().getIOBMaxCF()));
-                    argTableJSON.put("Listening",String.valueOf((double) gController.getEstimator().getListening()));
-                    argTableJSON.put("MCount", String.valueOf((double) gController.getEstimator().getMCount()));
-                    argTableJSON.put("rCFBolus", String.valueOf((double) gController.getrCFBolus()));
-                    argTableJSON.put("tEndAgg", String.valueOf((double) gController.gettEndAgg()));
-                    argTableJSON.put("iobStates[0][0]", String.valueOf(iobStates[0][0]));
-                    argTableJSON.put("iobStates[1][0]",String.valueOf(iobStates[1][0]));
-                    argTableJSON.put("derivadaIOB", String.valueOf(iobStates[2][0]));
-                    argTableJSON.put("iobEst", String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())));
-                    argTableJSON.put("Gamma", String.valueOf(gController.getSafe().getGamma()));
-                    argTableJSON.put("Anuncio", String.valueOf(nextRecord[0]));
-                    argTableJSON.put("Tamanio", String.valueOf(nextRecord[1]));
-                    argTableJSON.put("Resultado", String.valueOf(resultado));
-                }catch(JSONException e){
-
-                }
-                ARGTable argTable = new ARGTable(DateUtil.now(), "ARG History", argTableJSON);
-                MainApp.getDbHelper().createARGTableIfNotExists(argTable, "ARGPlugin.invoke()");
-                // Este objeto sería la futura nueva fila
-                //ARGTable historialDeVariables = new ARGTable();
-
-                // Se asigna el json como data y el tiempo de generacion
-                //historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
-
-                // Subo a Nightscoute
-                NSUpload.uploadARGTable(argTable);
-
-                // Actualizo la db local
-                //MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
-
             }
         }
-
 
         // En esta sección del codigo podría llamarse a guardar todos los datos que tenga que guardar
         // de todas formas, el JSONObject DATA podría ser global a la clase y actualizarse y guardar
@@ -425,8 +429,9 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         ioMain.ejecutarCada5Min(gController);
 
         //prueba
-        DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
-        if (L.isEnabled(L.APS))
+        DetermineBasalResultARG determineBasalResultARG
+                = new DetermineBasalResultARG();// = determineBasalAdapterARG.invoke();
+      /*  if (L.isEnabled(L.APS))
             Profiler.log(log, "SMB calculation", start);
         // TODO still needed with oref1?
         // Fix bug determine basal
@@ -442,7 +447,22 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             log.error("Unhandled exception", e);
         }
 
-        determineBasalResultARG.inputConstraints = inputConstraints;
+        determineBasalResultARG.inputConstraints = inputConstraints;*/
+
+        // ###################### HARD CODE RESULTADO ######################
+
+        determineBasalResultARG.hasPredictions = false;
+
+        determineBasalResultARG.tempBasalRequested = true;
+        determineBasalResultARG.rate = 1.6;
+        determineBasalResultARG.duration = 10;
+
+        determineBasalResultARG.bolusRequested = true;
+        determineBasalResultARG.smb = 0.7;
+
+        determineBasalResultARG.reason = "no reason.....";
+        // ###################### HARD CODE RESULTADO ######################
+
 
         lastDetermineBasalAdapterARG = determineBasalAdapterARG;
         lastAPSResult = determineBasalResultARG;

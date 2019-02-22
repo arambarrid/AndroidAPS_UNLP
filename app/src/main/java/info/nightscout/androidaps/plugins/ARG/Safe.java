@@ -234,6 +234,24 @@ public class Safe {
 		
 	}
 	
+
+	/****************************************************************************************************************/
+	// TODO_APS: esto no esta en JavaVersion, pero si en DiASVersion
+	
+	public double getIobBasal(double uBasal, double weight){
+		
+		double[][] uTemp = {{uBasal*100.0/weight}};
+		Matrix u         = new Matrix(uTemp); // [pmol/kg/min]
+		Matrix xIobIni   = Matrix.identity(iob.getAMatrix().getM()).minus(iob.getAMatrix()).solve(iob.getBMatrix()).times(u);
+	
+		Matrix iobTemp      = this.iob.getCMatrix().times(xIobIni);
+		double[][] iobTemp1 = iobTemp.getData();
+		double iobBasal     = iobTemp1[0][0]*weight/6000.0;
+		
+		return iobBasal;
+		
+	}
+
 	/****************************************************************************************************************/
 	
 	// GETTERS Y SETTERS

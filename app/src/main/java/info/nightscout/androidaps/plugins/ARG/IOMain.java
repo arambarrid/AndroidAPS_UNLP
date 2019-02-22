@@ -278,6 +278,8 @@ public class IOMain{
     }
 
 	public void ejecutarCada5Min(GController gController) {
+        Profile profile = ProfileFunctions.getInstance().getProfile();
+
 		// Debug
 		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
 
@@ -762,8 +764,22 @@ public class IOMain{
 	        	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
     			Matrix iobState  = new Matrix(xTemp);
 	    		gController.getSafe().getIob().setX(iobState);
-	  
-	        	/*
+
+	    		// TODO_APS: obtener valores del perfil de basal, chequear
+	    		// me robo del codigo(DiAS) que está en internet la clase TVector
+	    		// y genero el mismo tipo de datos que utiliza este codigo
+	    		// de esa forma, nos aseguramos el mismo funcionamiento
+	    		// siempre y cuando la adaptacion de los datos sea correcta
+	   			Tvector subjectBasal = new Tvector();
+
+
+		        for (int i = 0; i < 24; i++) {
+		        	// obtengo basal de la hora i
+		            double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
+
+					subjectBasal.put_with_replace(i*60, rate);
+		        }
+	        	
 
 	    		// ************************************************************************************************************ //
 	    		// ************************************************************************************************************ //
@@ -812,22 +828,22 @@ public class IOMain{
 		    													 // la velocidad de infusión y el tiempo que se aplica
 		    		
 		    		// Get the latest subject data and profiles from biometricsContentProvider
-		    		DiAsSubjectData subject_data;
-		    		if ((subject_data = DiAsSubjectData.readDiAsSubjectData(getApplicationContext())) == null) {
+		    		//DiAsSubjectData subject_data;
+		    		//if ((subject_data = DiAsSubjectData.readDiAsSubjectData(getApplicationContext())) == null) {
 		    			
 		    			// Debug
 		    			
-		    			log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Subject database failed to be read...");
+		    		//	log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Subject database failed to be read...");
 		    			
 		    			//
 		    			
-		    			Toast.makeText(IOMain.this, "Error reading subject information!" , Toast.LENGTH_SHORT).show();
+		    		//	Toast.makeText(IOMain.this, "Error reading subject information!" , Toast.LENGTH_SHORT).show();
 		    			
-		    		}
+		    		//}
 		    			    			    		
 		    		// Get basal values
 		    		List<Integer> indicesAux  = new ArrayList<Integer>();
-    				indicesAux = subject_data.subjectBasal.find(">", -1, "<", -1); // Cargo todos los índices del vector de insulina basal
+    				indicesAux = subjectBasal.find(">", -1, "<", -1); // Cargo todos los índices del vector de insulina basal
     				
     				long t0 = 0;
     				long tf = timeNowSecs/60; // Paso segundos a minutos que es cómo está informado en el DiAs
@@ -846,7 +862,7 @@ public class IOMain{
 		    				
 		    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. IF");
 		    				
-		    				indices1 = subject_data.subjectBasal.find(">", timeNowSecs/60-240, "<=", timeNowSecs/60);
+		    				indices1 = subjectBasal.find(">", timeNowSecs/60-240, "<=", timeNowSecs/60);
 		    				t0 = timeNowSecs/60-240;
 		    				
 		    			}
@@ -859,8 +875,8 @@ public class IOMain{
 		    				
 		    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. ELSE");
 		    				
-		    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);
-		    				indices2 = subject_data.subjectBasal.find(">", 1440+timeNowSecs/60-240, "<=", 1440); 
+		    				indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);
+		    				indices2 = subjectBasal.find(">", 1440+timeNowSecs/60-240, "<=", 1440); 
 		    				t0 = 1440+timeNowSecs/60-240;
 		    				
 		    			}
@@ -913,7 +929,7 @@ public class IOMain{
 		    				
 		    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF");
 		    				
-		    				indices1 = subject_data.subjectBasal.find(">", timeIobSecs/60, "<=", timeNowSecs/60);
+		    				indices1 = subjectBasal.find(">", timeIobSecs/60, "<=", timeNowSecs/60);
 		    				
 		    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF" + "indices1 null?: " + (indices1 == null));
 		    				
@@ -926,8 +942,8 @@ public class IOMain{
 		    				
 		    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. ELSE");
 		    				
-		    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);
-		    				indices2 = subject_data.subjectBasal.find(">", timeIobSecs/60, "<=", 1440);
+		    				indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);
+		    				indices2 = subjectBasal.find(">", timeIobSecs/60, "<=", 1440);
 		    				
 		    			}	
 		    		}
@@ -948,13 +964,13 @@ public class IOMain{
 		    				
 		    				// Para quedarme con el último índice hasta el tiempo actual, primero capturo todos los posibles índices anteriores
 		    				
-		    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
+		    				indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 		    				
 		    				// Si indices1 resulta null amplio la búsqueda a todos los índices
 		    				
 		    				if (indices1 == null) {
 		    					
-		    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+		    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 		    					
 		    				}
 		    				
@@ -962,7 +978,7 @@ public class IOMain{
 		    				
 		    				else if (indices1.size() == 0) {
 		    					
-		    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+		    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 		    					
 		    				}
 		    				
@@ -991,17 +1007,17 @@ public class IOMain{
 		    					
 		    					// Aplico el mismo procedimiento que cuando indices2 era null
 		    					
-		    					indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
+		    					indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 		    					
 			    				if (indices1 == null) {
 			    					
-			    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+			    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 			    					
 			    				}
 			    				
 			    				else if (indices1.size() == 0) {
 			    					
-			    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+			    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 			    					
 			    				}
 			    				
@@ -1035,17 +1051,17 @@ public class IOMain{
 		    				
 		    				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 null");
 		    				
-		    				indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
+		    				indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 		    				
 		    				if (indices1 == null) {
 		    					
-		    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+		    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 		    					
 		    				}
 		    				
 		    				else if (indices1.size() == 0) {
 		    					
-		    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+		    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 		    					
 		    				}
 		    				
@@ -1061,17 +1077,17 @@ public class IOMain{
 		    					
 		    					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size & indices2.size 0");
 		    					
-		    					indices1 = subject_data.subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
+		    					indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 		    					
 			    				if (indices1 == null) {
 			    					
-			    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+			    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 			    					
 			    				}
 			    				
 			    				else if (indices1.size() == 0) {
 			    					
-			    					indices1 = subject_data.subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
+			    					indices1 = subjectBasal.find(">", -1, "<", -1);				// Use final value from the previous day's profile
 			    					
 			    				}
 			    				
@@ -1171,7 +1187,7 @@ public class IOMain{
 		    		// Defino el primer par, que estará dado por la insulina basal del primer elemento de indices, con tiempo
 		    		// inicial 0
 		    		
-		    		value = subject_data.subjectBasal.get_value(indices.get(0));
+		    		value = subjectBasal.get_value(indices.get(0));
 	    			p.put(time, value);
 	    			iobInput.add(ii, p);
 	    			
@@ -1193,7 +1209,7 @@ public class IOMain{
 		    				
 		    				// Capturo el tiempo del segundo índice
 		    				
-		    				time = subject_data.subjectBasal.get_time(obj.intValue());
+		    				time = subjectBasal.get_time(obj.intValue());
 		    				
 		    				// Si el tiempo que capturé es menor que el inicial, entonces hago el corrimiento de 1440 min
 		    				
@@ -1206,7 +1222,7 @@ public class IOMain{
 		    				// Calculo el tiempo en que se aplicará esa infusión basal
 		    				
 		    				timef = time-t0;
-			    			value = subject_data.subjectBasal.get_value(obj.intValue());
+			    			value = subjectBasal.get_value(obj.intValue());
 			    			iobInput.add(ii, new Pair()); // Tengo que agregar un nuevo par, no puedo redefinir p
 			    			iobInput.get(ii).put(timef, value);
 			    			
@@ -1317,21 +1333,23 @@ public class IOMain{
 		    		
 		    		// ************************************************************************************************************ //
 		    		// Guardo el IOB actualizado
-		    				    			    		
-		    		double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-		    		double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+		    				
+		    		// TODO_APS: insercion de datos
+
+		    		//double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+		    		//double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 		    		
-		    		ContentValues statesTableIOB = new ContentValues();
-		    		TableShortCut scTableIOB = new TableShortCut(); 
-		    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
-		    		statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
-		    				iobBasal, 0.0, 0.0, 0.0, 0.0, 
-		    				0.0, 0.0, 0.0, 0.0);
-					getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
+		    		//ContentValues statesTableIOB = new ContentValues();
+		    		//TableShortCut scTableIOB = new TableShortCut(); 
+		    		//double[][] iobStates = gController.getSafe().getIob().getX().getData();
+		    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
+		    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
+		    		//		0.0, 0.0, 0.0, 0.0);
+					//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
 					
 					// Debug
-		    		
-		    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
+		    	// TODO_APS: revisar este debug	
+		    	//	log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
 		    		
 		    		//
 		    		
@@ -1362,25 +1380,26 @@ public class IOMain{
 	    			// ************************************************************************************************************ //
 		    		// Guardo el IOB actualizado
 		        	
-	    			double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-	    			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+		        	// TODO_APS: inserción!
+	    			//double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+	    			//double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 	    			
-		    		ContentValues statesTableIOB = new ContentValues();
-		    		TableShortCut scTableIOB     = new TableShortCut(); 
-		    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
-		    		statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
-		    				iobBasal, 0.0, 0.0, 0.0, 0.0, 
-		    				0.0, 0.0, 0.0, 0.0);
-					getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
+		    		//ContentValues statesTableIOB = new ContentValues();
+		    		//TableShortCut scTableIOB     = new TableShortCut(); 
+		    		//double[][] iobStates = gController.getSafe().getIob().getX().getData();
+		    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
+		    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
+		    		//		0.0, 0.0, 0.0, 0.0);
+					//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
 					
 					// Debug
 		    		
-		    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de corrección). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
+		    		//log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de corrección). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
 		    		
 		    		//
 		    		
 	        	}
-	        	
+	        	/*
 	    		double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
 	    		double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 	    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
@@ -1422,18 +1441,23 @@ public class IOMain{
 		    		// Puntero a la tabla de CGM
 		    		
 		    		Cursor cCGM = getContentResolver().query(Biometrics.CGM_URI, null, null, null, null);
-		    		
+			
+
+					List<ARGTable> cCGM = MainApp.getDbHelper()
+								.getLastsARGTable("Biometrics.CGM_URI", 1);
+
 		    		long offsetR = 300; // Offset para considerar la diferencia temporal en segundos entre que el receptor
 		    						    // envía una nueva muestra y el APC se ejecuta. Como máximo, dado que ambas cosas ocurren
 		    							// cada 5 min, la diferencia será de 5 min
 		    		
-		        	if (cCGM != null) {
-		        		if (cCGM.moveToLast()) {
+		        	if (cCGM.size() > 0) {
+		        //		if (cCGM.moveToLast()) {
+
 		        			
-		        			yCGM        = cCGM.getDouble(cCGM.getColumnIndex("cgm"));
-		        			timeCGM     = cCGM.getLong(cCGM.getColumnIndex("time"));
+		        			yCGM        = cCGM.getDouble("cgm");
+		        			timeCGM     = cCGM.getLong("time");
 		        			cgmF        = yCGM;
-	        				state       = cCGM.getInt(cCGM.getColumnIndex("state"));
+	        				state       = cCGM.getInt("state");
 	        				
 	        				if(Objects.equals(timeCGM, null)){
 	        				
@@ -1537,19 +1561,19 @@ public class IOMain{
 		        				}
 
 			        		}
-		        		}
+		    //    		}
 		        		
-		        		else{
+		        		//else{
 		        			
-		        			cgmOK = false;
+		        		//	cgmOK = false;
 		        			
-		        			// Debug
+		        		//	// Debug
 		        			
-    			    		log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM table empty!");
+    			    	//	log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM table empty!");
     			    		
     			    		//
     			    		
-		        		}
+		        		//}
 		        		
 		        	}
 		        	
@@ -1563,7 +1587,7 @@ public class IOMain{
 			    		
 			    		//
 			    		
-			    		Toast.makeText(IOMain.this, "Error loading CGM table!" , Toast.LENGTH_SHORT).show();
+			    		// Toast.makeText(IOMain.this, "Error loading CGM table!" , Toast.LENGTH_SHORT).show();
 			    		
 		        	}  
 		        	
@@ -1571,8 +1595,8 @@ public class IOMain{
 		        	// el flag cgmOK se setea a false, ya que en esas situaciones no se puede armar el vector
 		        	// CGM
 		        	
-		        	cCGM.close();
-		        	
+		        	// cCGM.close();
+		        	/*
 		        	// ************************************************************************************************************ //
 		        	// Acá se actualiza el vector de muestras del CGM si es posible (depende del cgmOK)
 	        		
@@ -1584,8 +1608,9 @@ public class IOMain{
 	        		long   timeStampCgmV = currentTime; // Time-stamp que para el caso 2c2
 	        		
 	        		// Puntero a la tabla del vector de CGM (tabla de usuario 4)
-	        		Cursor cCGMV = getContentResolver().query(Biometrics.USER_TABLE_4_URI, null, null, null, null);
-	        		
+	        		//Cursor cCGMV = getContentResolver().query(Biometrics.USER_TABLE_4_URI, null, null, null, null);
+	        		List<ARGTable> cCGMV = MainApp.getDbHelper().getLastsARGTable("Biometrics.USER_TABLE_4_URI", 1);
+
 	        		// Si existe la tabla CGM está OK se procede con la actualización
 	        		if (cgmOK){
 			        	if (cCGMV != null) {
