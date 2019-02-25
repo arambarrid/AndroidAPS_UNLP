@@ -318,7 +318,9 @@ public class IOMain{
 	        	statusIns = item.getInt("status");
 	        	type = item.getInt("type");
 
-	        	// TODO_APS: este caso no va a darse
+	        	// TODO_APS: este caso no va a darse ¡REVISAR!
+	        	// o SI, en caso de agregarse una tabla de insulin 
+	        	// que no contenga ese campo
 	        	if(Objects.equals(lastTime, null)){
 	        		
 	        		// Si son nulls los seteo en 0
@@ -496,19 +498,41 @@ public class IOMain{
 	    			    		iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
 	    			    		
 
-	    			    		// TODO_APS: insercion de valores
-
+		        				// TODO_APS: ver insercion 
+		        				
 	    			    		// Guardo los estados de IOB corregidos
-	    			    		//ContentValues statesTableIOB = new ContentValues();
-	    			    		//TableShortCut scTableIOB = new TableShortCut(); 
 	    			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
 	    			    		
-	    			    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
-	    			    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
-	    			    		//		0.0, 0.0, 0.0, 0.0);
-	    			    		//statesTableIOB.put("time", iobLastTime);
-	    						//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
+	    			    		JSONObject statesTableIOB = new JSONObject();
+	    			    		try{
+									statesTableIOB.put("l0", 0);
+									statesTableIOB.put("l1", 0);	
+									statesTableIOB.put("d0", iobStates[0][0]);
+									statesTableIOB.put("d1", iobStates[1][0]);
+									statesTableIOB.put("d2", iobStates[2][0]);
+									statesTableIOB.put("d3", iobEst);
+									statesTableIOB.put("d4", iobBasal);	
+									statesTableIOB.put("d5", 0.0);
+									statesTableIOB.put("d6", 0.0);
+									statesTableIOB.put("d7", 0.0);
+									statesTableIOB.put("d8", 0.0);	
+									statesTableIOB.put("d9", 0.0);
+									statesTableIOB.put("d10", 0.0);
+									statesTableIOB.put("d11", 0.0);
+									statesTableIOB.put("d12", 0.0);
+									statesTableIOB.put("d13", 0.0);
+									statesTableIOB.put("d14", 0.0);
+									statesTableIOB.put("d15", 0.0);
+									statesTableIOB.put("send_attempts_server", 1);	
+									statesTableIOB.put("received_server", true);
 	    			    		
+	    			    			statesTableIOB.put("time", iobLastTime);
+								}catch(JSONException e){
+
+								}
+
+								this.inserNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+
 	    						// Debug
 					    		
 					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
@@ -524,16 +548,38 @@ public class IOMain{
 		        				// Si no hay anteúltima fila (muy poco probable), significa que los estados
 		        				// antepenúltimos eran 0. Por lo tanto, grabo 0.
 
-		        				// TODO_APS: implementar inserción
-		        				
-		        				//ContentValues statesTableIOB = new ContentValues();
-	    			    		//TableShortCut scTableIOB = new TableShortCut(); 
-	    			    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, 0.0, 0.0, 0.0, 0.0, 
-	    			    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
-	    			    		//		0.0, 0.0, 0.0, 0.0);
-	    			    		//statesTableIOB.put("time", iobLastTime);
-	    						//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
-	    						
+		        				// TODO_APS: ver insercion 
+
+		        				JSONObject statesTableIOB = new JSONObject();
+	    			    		try{
+									statesTableIOB.put("l0", 0);
+									statesTableIOB.put("l1", 0);	
+									statesTableIOB.put("d0", 0);
+									statesTableIOB.put("d1", 0);
+									statesTableIOB.put("d2", 0);
+									statesTableIOB.put("d3", 0);
+									statesTableIOB.put("d4", iobBasal);	
+									statesTableIOB.put("d5", 0.0);
+									statesTableIOB.put("d6", 0.0);
+									statesTableIOB.put("d7", 0.0);
+									statesTableIOB.put("d8", 0.0);	
+									statesTableIOB.put("d9", 0.0);
+									statesTableIOB.put("d10", 0.0);
+									statesTableIOB.put("d11", 0.0);
+									statesTableIOB.put("d12", 0.0);
+									statesTableIOB.put("d13", 0.0);
+									statesTableIOB.put("d14", 0.0);
+									statesTableIOB.put("d15", 0.0);
+									statesTableIOB.put("send_attempts_server", 1);	
+									statesTableIOB.put("received_server", true);
+	    			    		
+	    			    			statesTableIOB.put("time", iobLastTime);
+								}catch(JSONException e){
+
+								}
+
+								this.inserNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+
 	    						// Debug
 					    		
 					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
@@ -2156,9 +2202,8 @@ public class IOMain{
 	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Save CGM Vector");
 	    		
 	    		//
-	    		
-
 	    		// TODO_APS: insercion
+
 	    		//ContentValues cgmVectorTable = new ContentValues();
 	    		//TableShortCut scTableCgm = new TableShortCut(); 
 	    		//double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
@@ -2179,105 +2224,50 @@ public class IOMain{
 	    		
 	    		//
 	    		
-	    		// TODO_APS: terminar esto
+	    		// TODO_APS terminar
  	    		if(rCFBolusIni!=0){
-
-	    			/*
-
 		    		// Puntero a la tabla del controlador
 		    		
-		    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
+		    		//Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
+		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI",1);
 		    		int rCFBolus = 0;
 		    		
-		    		if (cKStates != null) {
-		        		
-		        		if (cKStates.moveToLast()) {
-		        									        				
-		        			lastTime = cKStates.getLong(cKStates.getColumnIndex("time"));
-		        			rCFBolus = (int)cKStates.getDouble(cKStates.getColumnIndex("correction_in_units"));
-		        			
-		        			// Debug
+		    		if (cKStates.size() > 0) { // (cKStates != null) {			        				
+	        			lastTime = cKStates.get(0).getLong("time");
+	        			rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
+	        			
+	        			// Debug
+			    		
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+			    				+ " lastTime: "+lastTime+". rCFBolus: "+rCFBolus);
+			    		
+			    		//
+			    		
+	        			if (Objects.equals(lastTime, null)){
+	        				
+	        				lastTime = currentTime;
+	        				
+	        				// Debug
     			    		
     			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
-    			    				+ " lastTime: "+lastTime+". rCFBolus: "+rCFBolus);
+    			    				+ " lastTime null --> currentTime");
     			    		
     			    		//
-    			    		
-		        			if (Objects.equals(lastTime, null)){
-		        				
-		        				lastTime = currentTime;
-		        				
-		        				// Debug
-	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
-	    			    				+ " lastTime null --> currentTime");
-	    			    		
-	    			    		//
-		        				
-		        			}
-		        			
-		        		}
-		        		
-		        		else{
-		        			
-		        			lastTime = currentTime;
-		        			
-		        			// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
-    			    				+ " moveToLast() null --> currentTime");
-    			    		
-    			    		//
-		        			
-		        		}
-		        		
-		        		if(lastTime == currentTime){
-				        	
-    			    		ContentValues statesTableK = new ContentValues();
-    			    		
-    			    		statesTableK.put("time", currentTime);
-    			    		statesTableK.put("correction_in_units", (double)rCFBolusIni);
-
-    						getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-    						
-		        		}
-		        		
-		        		else{
-		        			
-		        			ContentValues statesTableK = new ContentValues();
-    			    		
-		        			long diffT = currentTime-lastTime;
-			        		
-			        		int nIter = (int)Math.round(diffT/300.0);
-			        		
-			        		
-			        		if (nIter-1>0){
-			        			if(rCFBolus>=rCFBolusIni+nIter-1){
-			        				statesTableK.put("correction_in_units", (double)(rCFBolus));
-			        			}
-			        			else{
-			        				statesTableK.put("correction_in_units", (double)(rCFBolusIni+nIter-1));
-			        			}
-			        		}
-			        		else{
-			        			if(rCFBolus>=rCFBolusIni){
-			        				statesTableK.put("correction_in_units", (double)rCFBolus);
-			        			}
-			        			else{
-			        				statesTableK.put("correction_in_units", (double)(rCFBolusIni));
-			        			}
-			        			
-			        		}
-    			    		
-
-    						getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-    					
-		        		}
-		        		
+	        				
+	        			}
 		    		}
 		    		
 		    		else{
-		    			
+	    			
+	        			lastTime = currentTime;
+	        			
+	        			// Debug
+			    		
+			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+			    				+ " moveToLast() null --> currentTime");
+			    		
+			    		//
+	        			
 		    			// Debug
 			    		
 			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
@@ -2285,11 +2275,52 @@ public class IOMain{
 			    		
 			    		//
 			    		
-			    		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
+			    		//Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
 		    			
 		    		}
-	    		*/
 
+		    		if(lastTime == currentTime){
+			        	
+			    		//ContentValues statesTableK = new ContentValues();
+			    		
+			    		//statesTableK.put("time", currentTime);
+			    		//statesTableK.put("correction_in_units", (double)rCFBolusIni);
+
+						//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+						
+	        		}
+	        		
+	        		else{
+	        			
+	        			//ContentValues statesTableK = new ContentValues();
+			    		
+	        			long diffT = currentTime-lastTime;
+		        		
+		        		int nIter = (int)Math.round(diffT/300.0);
+		        		
+		        		
+		        		/*if (nIter-1>0){
+		        			if(rCFBolus>=rCFBolusIni+nIter-1){
+		        				statesTableK.put("correction_in_units", (double)(rCFBolus));
+		        			}
+		        			else{
+		        				statesTableK.put("correction_in_units", (double)(rCFBolusIni+nIter-1));
+		        			}
+		        		}
+		        		else{
+		        			if(rCFBolus>=rCFBolusIni){
+		        				statesTableK.put("correction_in_units", (double)rCFBolus);
+		        			}
+		        			else{
+		        				statesTableK.put("correction_in_units", (double)(rCFBolusIni));
+		        			}
+		        			
+		        		}
+			    		
+
+						getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
+					*/
+	        		}
 	    		}
 	        			
     		}
@@ -3671,6 +3702,12 @@ public class IOMain{
 		return ret;
 	}
 
+	private void inserNewTable(String table, JSONObject argTableJSON){
+		ARGTable argTable = new ARGTable(System.currentTimeMillis(), table, argTableJSON);
+
+		MainApp.getDbHelper().createARGTableIfNotExists(argTable, "inserNewTable()");
+		NSUpload.uploadARGTable(argTable);
+	}
 
     public void pruebaARGTable(){
 
