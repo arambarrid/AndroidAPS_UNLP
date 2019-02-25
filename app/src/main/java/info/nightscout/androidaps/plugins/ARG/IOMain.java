@@ -140,6 +140,18 @@ public class IOMain{
 	double iobState1, iobState2, iobState3, iobEst;
 	double iobBasal;
 	Matrix iobState;
+	
+
+	// Rutina 4
+	boolean basalCase   = false; 
+	int     rCFBolusIni = 0; // Variable para retardar el posible BAC en la inicialización
+
+
+	int mealClass    = 1;     // Clase de comida
+	boolean mealFlag = false; // Flag de anuncio
+	int forCon       = 0;     // Flag para indicar si se forzó el reseteo
+							  // No se declara boolean por cómo se termina guardando en la tabla
+							  // 0: No se forzó, 1: Se forzó el reseteo
 
     // #####################################################################
     // ############ Variables pertenecientes al IOMain original ############
@@ -589,10 +601,10 @@ public class IOMain{
 		
 		//
 		
-    	long   iobLastTime = 0;
-    	double iobState1   = 0.0;
-    	double iobState2   = 0.0;
-    	double iobState3   = 0.0;
+    	iobLastTime = 0;
+    	iobState1   = 0.0;
+    	iobState2   = 0.0;
+    	iobState3   = 0.0;
     	
     	// Puntero a la tabla de IOB
     	
@@ -686,7 +698,7 @@ public class IOMain{
 		// y genero el mismo tipo de datos que utiliza este codigo
 		// de esa forma, nos aseguramos el mismo funcionamiento
 		// siempre y cuando la adaptacion de los datos sea correcta
-			subjectBasal = new Tvector();
+		subjectBasal = new Tvector();
         for (int i = 0; i < 24; i++) {
         	// obtengo basal de la hora i
             double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
@@ -1291,8 +1303,8 @@ public class IOMain{
 		// El flag basalCase se utiliza para a través de su activación indicar la falta de información para computar
 		// la acción de control, y por ende, el paso a la infusión a lazo abierto si el sistema está en Closed-Loop Mode
 		
-		boolean basalCase   = false; 
-		int     rCFBolusIni = 0; // Variable para retardar el posible BAC en la inicialización
+		basalCase   = false; 
+		rCFBolusIni = 0; // Variable para retardar el posible BAC en la inicialización
 		
 		// Este if es redundante, pero lo dejo para remarcar que la actualización del vector de muestras del CGM se
 		// realiza en cualquier modo dado con el sensor conectado recibiendo información
@@ -1466,7 +1478,7 @@ public class IOMain{
         	// CGM
         	
         	// cCGM.close();
-        /*
+        
 
         	// ************************************************************************************************************ //
         	// Acá se actualiza el vector de muestras del CGM si es posible (depende del cgmOK)
@@ -1482,13 +1494,16 @@ public class IOMain{
     		//Cursor cCGMV = getContentResolver().query(Biometrics.USER_TABLE_4_URI, null, null, null, null);
     		List<ARGTable> cCGMV = MainApp.getDbHelper().getLastsARGTable("Biometrics.USER_TABLE_4_URI", 1);
 
+    		boolean hayResultadosEnDB = (cCGMV.size() > 0);
+    		boolean ultimoResultado = true;
+
     		// Si existe la tabla CGM está OK se procede con la actualización
     		if (cgmOK){
-	        	if (cCGMV != null) {
-	        		if (cCGMV.moveToLast()) {
+	        	if (hayResultadosEnDB){ //(cCGMV != null) {
+	        		if (ultimoResultado){ // (cCGMV.moveToLast()) {
 	        			
-	        			timeCGMV = cCGMV.getLong(cCGMV.getColumnIndex("time"));
-	        			flag2c2  = cCGMV.getDouble(cCGMV.getColumnIndex("d15"));
+	        			timeCGMV = cCGMV.get(0).getLong("time");
+	        			flag2c2  = cCGMV.get(0).getDouble("d15");
 	        			
 	        			// Cargo todos las mediciones almacenadas en la tabla
 	        			// Desde "d0": muestra más antigua, hasta "d5": muestra más reciente
@@ -1496,7 +1511,7 @@ public class IOMain{
 	        			double cgmAux = 0.0;
 	        			
 	        			for(int ii = 0; ii < gController.getEstimator().getCgmVector().getM(); ++ii){
-	        				cgmAux = cCGMV.getDouble(cCGMV.getColumnIndex("d"+ii));
+	        				cgmAux = cCGMV.get(0).getDouble("d"+ii);
 	        				gController.getEstimator().insert(cgmAux);
 	        			}
 	        			
@@ -1646,9 +1661,9 @@ public class IOMain{
 					        	
 					        	// Puntero con los 25 min anteriores al último registro actual en forma descendiente
 					        	
-					        	Cursor cCGMAux = getContentResolver().query(Biometrics.CGM_URI,null,
-					    		         "time>?" + " AND " + "time<?", new String[]{ Long.toString(timeCGM-1505) , Long.toString(timeCGM-1) }, "time DESC");
-					        	
+					        	//Cursor cCGMAux = getContentResolver().query(Biometrics.CGM_URI,null,
+					    		//         "time>?" + " AND " + "time<?", new String[]{ Long.toString(timeCGM-1505) , Long.toString(timeCGM-1) }, "time DESC");
+					        	List<ARGTable> cCGMAux = CGM_URI_query_between_desc_order(timeCGM-1505, timeCGM-1);
 					        	// Flag para indicar el fin del bucle
 					        	
 					        	boolean flagEndIni = false;
@@ -1661,11 +1676,13 @@ public class IOMain{
 					        	
 					        	// Busco actualizar las muestras anteriores a la reciente si es que se puede
 					        	
-					        	if (cCGMAux != null) {
-						    		while(cCGMAux.moveToNext() && !flagEndIni){
+					        	if (cCGMAux.size() > 0) { //(cCGMAux != null) {
+						    		// while(cCGMAux.moveToNext() && !flagEndIni){
+					        		for (int ii = 0; ii < cCGMAux.size(); ii++){
+					        			if (flagEndIni) break;
 						    			
-						    			timeCGMAux2 = cCGMAux.getLong(cCGMAux.getColumnIndex("time"));
-						    			cgmAux1     = cCGMAux.getDouble(cCGMAux.getColumnIndex("cgm"));
+						    			timeCGMAux2 = cCGMAux.get(ii).getLong("time");
+						    			cgmAux1     = cCGMAux.get(ii).getDouble("cgm");
 						    			
 						    			if(Objects.equals(timeCGMAux2, null)){
 						    				
@@ -1746,7 +1763,7 @@ public class IOMain{
 	    			    		
 	    			    		//
 	    			    		
-	    			    		cCGMAux.close();
+	    			    		//cCGMAux.close();
 	    			    		
         					}
         					
@@ -1920,9 +1937,11 @@ public class IOMain{
 				        	
 				        	// Puntero con los 25 min anteriores al último registro actual en forma descendiente
 				        	
-				        	Cursor cCGMAux = getContentResolver().query(Biometrics.CGM_URI,null,
-				    		         "time>?" + " AND " + "time<?", new String[]{ Long.toString(timeCGM-1505) , Long.toString(timeCGM-1) }, "time DESC");
+				        	//Cursor cCGMAux = getContentResolver().query(Biometrics.CGM_URI,null,
+				    		//         "time>?" + " AND " + "time<?", new String[]{ Long.toString(timeCGM-1505) , Long.toString(timeCGM-1) }, "time DESC");
 				        	
+				        	List<ARGTable> cCGMAux = CGM_URI_query_between_desc_order(timeCGM-1505, timeCGM-1);
+		
 				        	// Flag para indicar el fin del bucle
 				        	
 				        	boolean flagEndIni = false;
@@ -1934,12 +1953,14 @@ public class IOMain{
 			        		}
 				        	
 				        	// Busco actualizar las muestras anteriores a la reciente si es que se puede
-				        	
-				        	if (cCGMAux != null) {
-					    		while(cCGMAux.moveToNext() && !flagEndIni){
-					    			
-					    			timeCGMAux2 = cCGMAux.getLong(cCGMAux.getColumnIndex("time"));
-					    			cgmAux1     = cCGMAux.getDouble(cCGMAux.getColumnIndex("cgm"));
+			        	
+				        	if (cCGMAux.size() > 0) { //(cCGMAux != null) {
+					    		// while(cCGMAux.moveToNext() && !flagEndIni){
+				        		for (int ii = 0; ii < cCGMAux.size(); ii++){
+				        			if (flagEndIni) break;
+
+					    			timeCGMAux2 = cCGMAux.get(ii).getLong("time");
+					    			cgmAux1     = cCGMAux.get(ii).getDouble("cgm");
 					    			
 					    			if(Objects.equals(timeCGMAux2, null)){
 					    				
@@ -2020,7 +2041,7 @@ public class IOMain{
     			    		
     			    		//
     			    		
-    			    		cCGMAux.close();
+    			    		//cCGMAux.close();
     			    		
 	        			}
 	        			
@@ -2069,7 +2090,7 @@ public class IOMain{
 			    		
 			    		//
 			    		
-			    		Toast.makeText(IOMain.this, "Error loading User Table 4: CGM Vector" , Toast.LENGTH_SHORT).show();
+			    		//Toast.makeText(IOMain.this, "Error loading User Table 4: CGM Vector" , Toast.LENGTH_SHORT).show();
 			    		
         			}
 	        		
@@ -2111,7 +2132,7 @@ public class IOMain{
 
     		}
     		
-    		cCGMV.close();
+    		//cCGMV.close();
     		
     		// ************************************************************************************************************ //
 
@@ -2136,27 +2157,33 @@ public class IOMain{
 	    		
 	    		//
 	    		
-	    		ContentValues cgmVectorTable = new ContentValues();
-	    		TableShortCut scTableCgm = new TableShortCut(); 
-	    		double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
-	    		cgmVectorTable = scTableCgm.insertValue(cgmVectorTable, cgmVector[0][0], cgmVector[1][0], cgmVector[2][0], 
-	    				cgmVector[3][0], cgmVector[4][0], cgmVector[5][0], 0.0, 0.0, 0.0, 
-	    				0.0, 0.0, 0.0, 0.0);
-	    		cgmVectorTable.put("time", timeStampCgmV);
-	    		cgmVectorTable.put("d15", flag2c2);
+
+	    		// TODO_APS: insercion
+	    		//ContentValues cgmVectorTable = new ContentValues();
+	    		//TableShortCut scTableCgm = new TableShortCut(); 
+	    		//double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
+	    		//cgmVectorTable = scTableCgm.insertValue(cgmVectorTable, cgmVector[0][0], cgmVector[1][0], cgmVector[2][0], 
+	    		//		cgmVector[3][0], cgmVector[4][0], cgmVector[5][0], 0.0, 0.0, 0.0, 
+	    		//		0.0, 0.0, 0.0, 0.0);
+	    		//cgmVectorTable.put("time", timeStampCgmV);
+	    		//cgmVectorTable.put("d15", flag2c2);
 	    		
-	    		getContentResolver().insert(Biometrics.USER_TABLE_4_URI, cgmVectorTable);
+	    		//getContentResolver().insert(Biometrics.USER_TABLE_4_URI, cgmVectorTable);
 	    		
 	    		// Debug
-	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM Vector: " +
-	    		" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
-	    		". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
+	    	
+	    		// TODO_APS: ver este debug	
+	    	//	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM Vector: " +
+	    	//	" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
+	    	//	". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
 	    		
 	    		//
 	    		
-	    		if(rCFBolusIni!=0){
-	    			
+	    		// TODO_APS: terminar esto
+ 	    		if(rCFBolusIni!=0){
+
+	    			/*
+
 		    		// Puntero a la tabla del controlador
 		    		
 		    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
@@ -2261,18 +2288,18 @@ public class IOMain{
 			    		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
 		    			
 		    		}
-	    		
+	    		*/
+
 	    		}
 	        			
     		}
     	
-    	*/		
+    		
 		}
     }
 
     private void rutina_6_deteccion_comida(){
     
-    	/*
 		// ************************************************************************************************************ //
 		// ************************************************************************************************************ //
     		
@@ -2305,22 +2332,24 @@ public class IOMain{
     		//
     		
         	lastTime         = 0;     // Última actualización de la tabla de anuncio
-        	int mealClass    = 1;     // Clase de comida
-        	boolean mealFlag = false; // Flag de anuncio
+        	mealClass    = 1;     // Clase de comida
+        	mealFlag = false; // Flag de anuncio
         	int forCon       = 0;     // Flag para indicar si se forzó el reseteo
         							  // No se declara boolean por cómo se termina guardando en la tabla
         							  // 0: No se forzó, 1: Se forzó el reseteo
         	
         	// Puntero a la tabla de anuncio de comida
         	
-        	Cursor cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
-        	
-        	if (cMeal != null) {
-        		if (cMeal.moveToLast()) {
+        	//Cursor cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
+        	List<ARGTable> cMeal = MainApp.getDbHelper()
+								.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
+
+        	if (cMeal.size() > 0) { //(cMeal != null) {
+      //  		if (cMeal.moveToLast()) {
         			
-        			lastTime  = cMeal.getLong(cMeal.getColumnIndex("time"));
-		        	mealClass = (int)cMeal.getDouble(cMeal.getColumnIndex("d0"));
-		        	forCon    = (int)cMeal.getDouble(cMeal.getColumnIndex("d1"));
+        			lastTime  = cMeal.get(0).getLong("time");
+		        	mealClass = (int)cMeal.get(0).getDouble("d0");
+		        	forCon    = (int)cMeal.get(0).getDouble("d1");
 		        	
 		        	// Debug
 		    		
@@ -2351,18 +2380,18 @@ public class IOMain{
 			        	}
         				
         			}
-        		}
+        	//	}
         		
-        		else{
+        		//else{
     				
-    				// Debug
+    			//	// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal table empty! "
-		    				+ "--> Meal time = 0");
+		    	//	log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal table empty! "
+		    	//			+ "--> Meal time = 0");
 		    		
-		    		//	
+		    	//	//	
 		    		
-        		}
+        		//}
         		
         	}
         	
@@ -2377,7 +2406,7 @@ public class IOMain{
 	    	
         	} 
 
-        	cMeal.close();
+        	//cMeal.close();
         	
         	timeDiff = currentTime - lastTime; // Diferencia temporal entre el tiempo actual y el último
         									   // registro de la tabla de anuncio
@@ -2402,16 +2431,18 @@ public class IOMain{
         	}
         	
         	// Puntero a la tabla de anuncio de comida
+        	// cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, 
+        	//		"l1>? AND d2!=?" , new String[]{Long.toString(currentTime-305),"0"}, null);
         	
-        	cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, 
-        			"l1>? AND d2!=?" , new String[]{Long.toString(currentTime-305),"0"}, null);
+        	cMeal = USER_TABLE_3_query_l1_and_d2(currentTime - 305, 0);
         	
+
         	int tEndAggIni = 0;
         	
-        	if (cMeal != null) {
-        		if (cMeal.moveToLast()) {
+        	if (cMeal.size() > 0) // (cMeal != null) {
+        //		if (cMeal.moveToLast()) {
         			
-		        	tEndAggIni = (int)cMeal.getDouble(cMeal.getColumnIndex("d2"));
+		        	tEndAggIni = (int)cMeal.get(0).getDouble("d2");
 		        	
 		        	// Debug
 		    		
@@ -2420,13 +2451,16 @@ public class IOMain{
 		    		
 		    		//
 		    		
-		    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
-		    		
-		    		if (cKStates != null) {
+		    		// Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
+		    		List<ARGTable> cKStates = MainApp.getDbHelper()
+								.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+
+
+		    		if (cKStates.size() > 0) { // (cKStates != null) {
 		        		
-		        		if (cKStates.moveToLast()) {
+		        		//if (cKStates.moveToLast()) {
 		        									        				
-		        			lastTime = cKStates.getLong(cKStates.getColumnIndex("time"));
+		        			lastTime = cKStates.get(0).getLong("time");
 		        			
 		        			// Debug
     			    		
@@ -2448,46 +2482,29 @@ public class IOMain{
 		        				
 		        			}
 		        			
-		        		}
+		        		//}
 		        		
-		        		else{
+		        		//else{
 		        			
-		        			lastTime = currentTime;
+		        		//	lastTime = currentTime;
 		        			
-		        			// Debug
+		        		//	// Debug
     			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
-    			    				+ " moveToLast() null --> currentTime");
+    			    	//	log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
+    			    	//			+ " moveToLast() null --> currentTime");
     			    		
-    			    		//
+    			    	//	//
 		        			
-		        		}
+		        		//}
 		        		
-		        		if(lastTime == currentTime){
-				        	
-    			    		ContentValues statesTableK = new ContentValues();
-    			    		
-    			    		statesTableK.put("time", currentTime);
-    			    		statesTableK.put("creditRequest", (double)tEndAggIni);
-
-    						getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-    						
-		        		}
-		        		
-		        		else{
-		        			
-		        			ContentValues statesTableK = new ContentValues();
-    			    		
-		        			statesTableK.put("creditRequest", (double)tEndAggIni);
-    			    		
-    						getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-    					
-		        		}
 		        		
 		    		}
 		    		
 		    		else{
 		    			
+	        			lastTime = currentTime;
+	        			
+
 		    			// Debug
 			    		
 			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
@@ -2495,21 +2512,43 @@ public class IOMain{
 			    		
 			    		//
 			    		
-			    		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
+			    //		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
 		    			
 		    		}
+
+		    		// TODO_APS: insercion, actualizacion
+	        		if(lastTime == currentTime){
+			        	
+			    		//ContentValues statesTableK = new ContentValues();
+			    		
+			    		//statesTableK.put("time", currentTime);
+			    		//statesTableK.put("creditRequest", (double)tEndAggIni);
+
+						//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+						
+	        		}
+	        		
+	        		else{
+	        			
+	        			//ContentValues statesTableK = new ContentValues();
+			    		
+	        			//statesTableK.put("creditRequest", (double)tEndAggIni);
+			    		
+						//getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
+					
+	        		}
         			
-        		}
+        	//	}
         		
-        		else{
+        	//	else{
     				
-    				// Debug
+    		//		// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. No meal bolus detected! ");
+		    //		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. No meal bolus detected! ");
 		    		
-		    		//	
+		    //		//	
 		    		
-        		}
+        	//	}
         		
         	}
         	
@@ -2521,13 +2560,11 @@ public class IOMain{
 	    		
 	    		//
 	    		
-	    		Toast.makeText(IOMain.this, "Error loading Meal table!" , Toast.LENGTH_SHORT).show();
+	    	//	Toast.makeText(IOMain.this, "Error loading Meal table!" , Toast.LENGTH_SHORT).show();
 	    	
         	} 
 
-        	cMeal.close();
-		*/
-    
+        	//cMeal.close();
     }
 
     private void rutina_luces_semaforo(){
@@ -2661,7 +2698,6 @@ public class IOMain{
 
     private void rutina_7_cargar_estados_controlador(){
 
-		/*
 		// ************************************************************************************************************ //
 		// ************************************************************************************************************ //
 		// Rutina para cargar los estados y variables del controlador
@@ -2672,19 +2708,22 @@ public class IOMain{
     		
     		// Puntero a la tabla del controlador
     		
-    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
-    		
-        	if (cKStates != null) {
+//    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
+    		List<ARGTable> cKStates = MainApp.getDbHelper()
+								.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+
+        	if (cKStates.size() > 0) 
+        	{ //(cKStates != null) {
         		
-        		if (cKStates.moveToLast()) {
+        	//	if (cKStates.moveToLast()) {
         			
         			// rCFBolus y tEndAgg son los contadores asociados a los BACs
     				
     				// Si hay registros guardados los capturo, luego los actualizo al tiempo actual
         			
-        			lastTime     = cKStates.getLong(cKStates.getColumnIndex("time"));
-        			int rCFBolus = (int)cKStates.getDouble(cKStates.getColumnIndex("correction_in_units"));
-        			int tEndAgg  = (int)cKStates.getDouble(cKStates.getColumnIndex("creditRequest"));
+        			lastTime     = cKStates.get(0).getLong("time");
+        			int rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
+        			int tEndAgg  = (int)cKStates.get(0).getDouble("creditRequest");
 					
         			if(Objects.equals(lastTime, null)){
         				
@@ -2751,13 +2790,16 @@ public class IOMain{
     			    		int rFlag  = 0;
     			    		lastTime   = 0;
     			    		
-    			    		Cursor cReset = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
-				        	if (cReset != null) {
-				        		if (cReset.moveToLast()) {
+    			    	//	Cursor cReset = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
+				        	List<ARGTable> cReset = MainApp.getDbHelper()
+								.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
+
+				        	if (cReset.size() > 0){ //} (cReset != null) {
+				        		//if (cReset.moveToLast()) {
 				        			
-				        			rTime    = cReset.getLong(cReset.getColumnIndex("time")); // Tiempo en que se forzó el modo conservador o se anunció una comida
-				        			rFlag    = (int)cReset.getDouble(cReset.getColumnIndex("d1")); // Flag para forzar el modo conservador
-				        			lastTime = cReset.getLong(cReset.getColumnIndex("l0")); // Tiempo de la última sincronización previa al momento de actualizar la User Table 3
+				        			rTime    = cReset.get(0).getLong("time"); // Tiempo en que se forzó el modo conservador o se anunció una comida
+				        			rFlag    = (int)cReset.get(0).getDouble("d1"); // Flag para forzar el modo conservador
+				        			lastTime = cReset.get(0).getLong("l0"); // Tiempo de la última sincronización previa al momento de actualizar la User Table 3
 				        			
 				        			if(Objects.equals(rTime, null)){
 				        				
@@ -2772,17 +2814,17 @@ public class IOMain{
 			    			    		//
 			    			    		
 				        			}
-				        		}
+				        		//}
 				        		
-				        		else{
+				        		//else{
 				        			
-				        			// Debug
+				        		//	// Debug
 		    			    		
-		    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 table empty! --> rtime = 0");
+		    			    	//	log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 table empty! --> rtime = 0");
 		    			    		
-		    			    		//	
+		    			    	//	//	
 		    			    		
-				        		}
+				        		//}
 				        	}
 				        	
 				        	else{
@@ -2792,12 +2834,12 @@ public class IOMain{
 	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading User table 3! --> rtime = 0");
 	    			    		
 	    			    		//	
-	    			    		
-	    			    		Toast.makeText(IOMain.this, "Checking Force Reset: Error loading User Table 3" , Toast.LENGTH_SHORT).show();
+	    			    		////
+	    			    		// Toast.makeText(IOMain.this, "Checking Force Reset: Error loading User Table 3" , Toast.LENGTH_SHORT).show();
 	    			    		
 				        	}
 				        	
-				        	cReset.close();
+				        	//cReset.close();
 				        	
 				        	if(currentTime-rTime<305 && rFlag == 1){
 				        		
@@ -2809,7 +2851,7 @@ public class IOMain{
 	    			    		
 	    			    		//
 	    			    		
-	    			    		Toast.makeText(IOMain.this, "Reset command detected. Forcing conservative mode" , Toast.LENGTH_SHORT).show();
+	    			    	//	Toast.makeText(IOMain.this, "Reset command detected. Forcing conservative mode" , Toast.LENGTH_SHORT).show();
 	    			    		
 	        					gController.getSlqgController().settMeal(0);
 	        					gController.getSlqgController().setExtAgg(0);	
@@ -2820,29 +2862,36 @@ public class IOMain{
         						gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
         						gController.setpCBolus(0.0);
         						
-        						ContentValues userTable = new ContentValues();
-        						userTable.put("time", rTime);
-        						userTable.put("l0", lastTime);
-        						userTable.put("l1", 0);	
-        						userTable.put("d0", 1.0);
-        						userTable.put("d1", 0.0); // Reset-flag is reseted
-        						userTable.put("d2", 0.0);
-        						userTable.put("d3", 0.0);
-        						userTable.put("d4", 0.0);	
-        						userTable.put("d5", 0.0);
-        						userTable.put("d6", 0.0);
-        						userTable.put("d7", 0.0);
-        						userTable.put("d8", 0.0);	
-        						userTable.put("d9", 0.0);
-        						userTable.put("d10", 0.0);
-        						userTable.put("d11", 0.0);
-        						userTable.put("d12", 0.0);
-        						userTable.put("d13", 0.0);
-        						userTable.put("d14", 0.0);
-        						userTable.put("d15", 0.0);
-        						userTable.put("send_attempts_server", 1);	
-        						userTable.put("received_server", true);
-        			    		getContentResolver().insert(Biometrics.USER_TABLE_3_URI, userTable);
+        						//ContentValues userTable = new ContentValues();
+
+        						// TODO_APS: insercion
+        						JSONObject userTable = new JSONObject();
+        						try{
+	        						userTable.put("time", rTime);
+	        						userTable.put("l0", lastTime);
+	        						userTable.put("l1", 0);	
+	        						userTable.put("d0", 1.0);
+	        						userTable.put("d1", 0.0); // Reset-flag is reseted
+	        						userTable.put("d2", 0.0);
+	        						userTable.put("d3", 0.0);
+	        						userTable.put("d4", 0.0);	
+	        						userTable.put("d5", 0.0);
+	        						userTable.put("d6", 0.0);
+	        						userTable.put("d7", 0.0);
+	        						userTable.put("d8", 0.0);	
+	        						userTable.put("d9", 0.0);
+	        						userTable.put("d10", 0.0);
+	        						userTable.put("d11", 0.0);
+	        						userTable.put("d12", 0.0);
+	        						userTable.put("d13", 0.0);
+	        						userTable.put("d14", 0.0);
+	        						userTable.put("d15", 0.0);
+	        						userTable.put("send_attempts_server", 1);	
+	        						userTable.put("received_server", true);
+        			    		}catch(JSONException e){
+
+        			    		}
+        			    		// getContentResolver().insert(Biometrics.USER_TABLE_3_URI, userTable);
         			    		
 				        	}
 				        	
@@ -2850,14 +2899,14 @@ public class IOMain{
 				        		
 				        		// No se pulsó el botón de reset, por ende se cargan las variables guardadas
 				        		
-	        					int tMeal          = (int)cKStates.getDouble(cKStates.getColumnIndex("bolus_amount"));
-	        					int extAgg         = (int)cKStates.getDouble(cKStates.getColumnIndex("MealBolusA"));
-	        					int slqgStateFlag  = (int)cKStates.getDouble(cKStates.getColumnIndex("IOBrem"));
-	        					int listening      = (int)cKStates.getDouble(cKStates.getColumnIndex("hmin"));
-	        					int mCount         = (int)cKStates.getDouble(cKStates.getColumnIndex("Hmax"));
-	        					double iobMaxCF    = cKStates.getDouble(cKStates.getColumnIndex("d"));
-	        					double iobMax      = cKStates.getDouble(cKStates.getColumnIndex("CORRA"));
-	        					double pCBolus     = cKStates.getDouble(cKStates.getColumnIndex("MealBolusArem"));
+	        					int tMeal          = (int)cKStates.get(0).getDouble("bolus_amount");
+	        					int extAgg         = (int)cKStates.get(0).getDouble("MealBolusA");
+	        					int slqgStateFlag  = (int)cKStates.get(0).getDouble("IOBrem");
+	        					int listening      = (int)cKStates.get(0).getDouble("hmin");
+	        					int mCount         = (int)cKStates.get(0).getDouble("Hmax");
+	        					double iobMaxCF    = cKStates.get(0).getDouble("d");
+	        					double iobMax      = cKStates.get(0).getDouble("CORRA");
+	        					double pCBolus     = cKStates.get(0).getDouble("MealBolusArem");
 					        	
 	        					gController.getSlqgController().settMeal(tMeal);
 	        					gController.getSlqgController().setExtAgg(extAgg);
@@ -2895,7 +2944,7 @@ public class IOMain{
     			    		
     			    		//
     			    		
-    			    		Toast.makeText(IOMain.this, "More than 7.5 min from last CL update. Reinitilizating the controller variables" , Toast.LENGTH_SHORT).show();
+    			    		// Toast.makeText(IOMain.this, "More than 7.5 min from last CL update. Reinitilizating the controller variables" , Toast.LENGTH_SHORT).show();
     			    		
         					gController.getSlqgController().settMeal(0);
         					gController.getSlqgController().setExtAgg(0);	
@@ -2917,19 +2966,19 @@ public class IOMain{
 				        	
         					double[][] kStatesAux = new double[13][1];
 		        			
-		        			kStatesAux[0][0]  = cKStates.getDouble(cKStates.getColumnIndex("IOB"));
-		        			kStatesAux[1][0]  = cKStates.getDouble(cKStates.getColumnIndex("GPred"));
-		        			kStatesAux[2][0]  = cKStates.getDouble(cKStates.getColumnIndex("GPred_correction"));
-		        			kStatesAux[3][0]  = cKStates.getDouble(cKStates.getColumnIndex("Gpred_bolus"));
-		        			kStatesAux[4][0]  = cKStates.getDouble(cKStates.getColumnIndex("Xi00"));
-		        			kStatesAux[5][0]  = cKStates.getDouble(cKStates.getColumnIndex("Xi01"));
-		        			kStatesAux[6][0]  = cKStates.getDouble(cKStates.getColumnIndex("Xi02"));
-		        			kStatesAux[7][0]  = cKStates.getDouble(cKStates.getColumnIndex("Xi03"));
-		        			kStatesAux[8][0]  = cKStates.getDouble(cKStates.getColumnIndex("Xi04"));
-		        			kStatesAux[9][0]  = cKStates.getDouble(cKStates.getColumnIndex("Xi05"));
-		        			kStatesAux[10][0] = cKStates.getDouble(cKStates.getColumnIndex("Xi06"));
-		        			kStatesAux[11][0] = cKStates.getDouble(cKStates.getColumnIndex("Xi07"));
-		        			kStatesAux[12][0] = cKStates.getDouble(cKStates.getColumnIndex("brakes_coeff"));
+		        			kStatesAux[0][0]  = cKStates.get(0).getDouble("IOB");
+		        			kStatesAux[1][0]  = cKStates.get(0).getDouble("GPred");
+		        			kStatesAux[2][0]  = cKStates.get(0).getDouble("GPred_correction");
+		        			kStatesAux[3][0]  = cKStates.get(0).getDouble("Gpred_bolus");
+		        			kStatesAux[4][0]  = cKStates.get(0).getDouble("Xi00");
+		        			kStatesAux[5][0]  = cKStates.get(0).getDouble("Xi01");
+		        			kStatesAux[6][0]  = cKStates.get(0).getDouble("Xi02");
+		        			kStatesAux[7][0]  = cKStates.get(0).getDouble("Xi03");
+		        			kStatesAux[8][0]  = cKStates.get(0).getDouble("Xi04");
+		        			kStatesAux[9][0]  = cKStates.get(0).getDouble("Xi05");
+		        			kStatesAux[10][0] = cKStates.get(0).getDouble("Xi06");
+		        			kStatesAux[11][0] = cKStates.get(0).getDouble("Xi07");
+		        			kStatesAux[12][0] = cKStates.get(0).getDouble("brakes_coeff");
 		        			
 		        			kStates = new Matrix(kStatesAux);
 		        			
@@ -2943,7 +2992,7 @@ public class IOMain{
     			    		
     			    		//
     			    		
-    			    		Toast.makeText(IOMain.this, "More than 12.5 min from last CL update. Reinitilizating the controller states" , Toast.LENGTH_SHORT).show();
+    			    		//Toast.makeText(IOMain.this, "More than 12.5 min from last CL update. Reinitilizating the controller states" , Toast.LENGTH_SHORT).show();
         					
         				}
         				
@@ -2951,17 +3000,17 @@ public class IOMain{
 			        				
 			        }
 
-        		}
+        		//}
         		
-        		else{
+        	//	else{
     				
-    				// Debug
+    		//		// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states table empty! --> x and variables = 0");
+		    //		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states table empty! --> x and variables = 0");
 		    		
-		    		//	
+		    //		//	
 		    		
-        		}
+        	//	}
         		
         	}
         	
@@ -2973,11 +3022,11 @@ public class IOMain{
 	    		
 	    		//
 	    		
-	    		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
+//	    		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
 	    	
         	}
     		
-        	cKStates.close();
+        	//cKStates.close();
         	
         	// ************************************************************************************************************ //
         	// ************************************************************************************************************ //
@@ -2999,8 +3048,9 @@ public class IOMain{
     				". MealFlag: "+mealFlag +". MealClass: " + mealClass+". yCGM: " +cgmV[gController.getEstimator().getCgmVector().getM()-1][0]+". iobFactor: "+parameterIOBFactorF);
     		
     		//
-    				    			    		
-    		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0],parameterIOBFactorF); 
+    		
+    		// TODO_APS: ver argumentos de la funcion run		    			    		
+    		//uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0],parameterIOBFactorF); 
     								        	
     		// Insulin signal is divided into basal and correction channels
     		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints
@@ -3023,329 +3073,331 @@ public class IOMain{
         	
     		// Guardo los estados y variables actualizadas del controlador
         	
-    		ContentValues statesTableK = new ContentValues();
+    		//ContentValues statesTableK = new ContentValues();
+    		JSONObject statesTableK = new JSONObject();
     		double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
-    		statesTableK.put("IOB", xstates[0][0]);
-    		statesTableK.put("Gpred", xstates[1][0]);
-    		statesTableK.put("Gpred_correction", xstates[2][0]);
-    		statesTableK.put("Gpred_bolus", xstates[3][0]);
-    		statesTableK.put("Xi00", xstates[4][0]);
-    		statesTableK.put("Xi01", xstates[5][0]);
-    		statesTableK.put("Xi02", xstates[6][0]);
-    		statesTableK.put("Xi03", xstates[7][0]);
-    		statesTableK.put("Xi04", xstates[8][0]);
-    		statesTableK.put("Xi05", xstates[9][0]);
-    		statesTableK.put("Xi06", xstates[10][0]);
-    		statesTableK.put("Xi07", xstates[11][0]);
-    		statesTableK.put("brakes_coeff", xstates[12][0]);
-    		statesTableK.put("time", currentTime);
-    		statesTableK.put("bolus_amount", (double)gController.getSlqgController().gettMeal());
-    		statesTableK.put("MealBolusA", (double)gController.getSlqgController().getExtAgg());
-    		statesTableK.put("MealBolusArem", gController.getpCBolus());
-    		statesTableK.put("CORRA", gController.getSafe().getIobMax());
-    		int slqgStateFlag = 0;
-    		if(Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive")){
-    			slqgStateFlag = 1;
+
+    		try{
+		    		statesTableK.put("IOB", xstates[0][0]);
+		    		statesTableK.put("Gpred", xstates[1][0]);
+		    		statesTableK.put("Gpred_correction", xstates[2][0]);
+		    		statesTableK.put("Gpred_bolus", xstates[3][0]);
+		    		statesTableK.put("Xi00", xstates[4][0]);
+		    		statesTableK.put("Xi01", xstates[5][0]);
+		    		statesTableK.put("Xi02", xstates[6][0]);
+		    		statesTableK.put("Xi03", xstates[7][0]);
+		    		statesTableK.put("Xi04", xstates[8][0]);
+		    		statesTableK.put("Xi05", xstates[9][0]);
+		    		statesTableK.put("Xi06", xstates[10][0]);
+		    		statesTableK.put("Xi07", xstates[11][0]);
+		    		statesTableK.put("brakes_coeff", xstates[12][0]);
+		    		statesTableK.put("time", currentTime);
+		    		statesTableK.put("bolus_amount", (double)gController.getSlqgController().gettMeal());
+		    		statesTableK.put("MealBolusA", (double)gController.getSlqgController().getExtAgg());
+		    		statesTableK.put("MealBolusArem", gController.getpCBolus());
+		    		statesTableK.put("CORRA", gController.getSafe().getIobMax());
+		    		int slqgStateFlag = 0;
+		    		if(Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive")){
+		    			slqgStateFlag = 1;
+		    		}
+		    		statesTableK.put("IOBrem", (double)slqgStateFlag);
+		    		statesTableK.put("d", gController.getSafe().getIOBMaxCF());
+		    		statesTableK.put("hmin", (double)gController.getEstimator().getListening());
+		    		statesTableK.put("Hmax", (double)gController.getEstimator().getMCount());
+		    		statesTableK.put("correction_in_units", (double)gController.getrCFBolus());
+		    		statesTableK.put("creditRequest", (double)gController.gettEndAgg());
+    		}catch(JSONException e){
+
     		}
-    		statesTableK.put("IOBrem", (double)slqgStateFlag);
-    		statesTableK.put("d", gController.getSafe().getIOBMaxCF());
-    		statesTableK.put("hmin", (double)gController.getEstimator().getListening());
-    		statesTableK.put("Hmax", (double)gController.getEstimator().getMCount());
-    		statesTableK.put("correction_in_units", (double)gController.getrCFBolus());
-    		statesTableK.put("creditRequest", (double)gController.gettEndAgg());
     		
-			getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+    		// TODO_APS: insercion
+			//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
 	
-		}
-
-		*/
-
     }
 
     private void rutina_8(){
-   		
-   		/*
-        		// ************************************************************************************************************ //
-	        	// ************************************************************************************************************ //
+	
+		// ************************************************************************************************************ //
+    	// ************************************************************************************************************ //
 
-        		// Ambos casos el DiAs está en Pump Mode o si el DiAs está en Closed Mode con el flag basalCase activado
-        		// implican que se infunde la insulina basal
-        		
-        		// El caso en que el DiAs está en Pump Mode se agrega aquí para actualizar el IOB correctamente
-        		
-	        	if (DIAS_STATE == State.DIAS_STATE_OPEN_LOOP || (DIAS_STATE == State.DIAS_STATE_CLOSED_LOOP && basalCase)){
-	        		
-	        		// When the open-loop mode is selected the system does not take into account how much insulin 
-	        		// the controller requested, so pCBolus should be 0 the first time.
-	        		
-	        		// gController.getDiasState()==2 cuando en la iteración anterior estaba en Closed Loop Mode
-	        		
-	        		if(gController.getDiasState()==2 && DIAS_STATE == State.DIAS_STATE_OPEN_LOOP){ 
+		// Ambos casos el DiAs está en Pump Mode o si el DiAs está en Closed Mode con el flag basalCase activado
+		// implican que se infunde la insulina basal
+		
+		// El caso en que el DiAs está en Pump Mode se agrega aquí para actualizar el IOB correctamente
+		
+    	if (DIAS_STATE == State.DIAS_STATE_OPEN_LOOP || (DIAS_STATE == State.DIAS_STATE_CLOSED_LOOP && basalCase)){
+    		
+    		// When the open-loop mode is selected the system does not take into account how much insulin 
+    		// the controller requested, so pCBolus should be 0 the first time.
+    		
+    		// gController.getDiasState()==2 cuando en la iteración anterior estaba en Closed Loop Mode
+    		
+    		//if(gController.getDiasState()==2 && DIAS_STATE == State.DIAS_STATE_OPEN_LOOP){ 
+    		if(DIAS_STATE == State.DIAS_STATE_OPEN_LOOP){ 
+    			
+    			gController.setpCBolus(0.0);
+    			
+    			// Debug
+	    		
+	    		log.debug("ARG /////// "+"Transición de Closed-Loop a Pump Mode --> pCBolus = 0");
+	    		
+	    		//
+    			
+    		}
+    		
+    		double pcb    = gController.getpCBolus(); // Capturo el pCBolus
+    		double mBasal = 0.0; 					  // Bolo de infusión basal
+    		
+    		// Si estoy en Pump Mode no genero el bolo basal acá, pero tengo que actualizar el IOB
+    		// Para eso también tomo en cuenta si se definio un TBR
+    		
+    		if (DIAS_STATE == State.DIAS_STATE_OPEN_LOOP){
+    			
+        		int  perTBR        = 100; // Porcentaje por el que se multiplica el perfil de insulina basal
+	    		long endTime       = 0;   // Fin del TBR
+	    		long startTime     = 0;   // Inicio del TBR
+	    		long actualEndTime = 0;   // Fin del TBR prematuro por el usuario
+	    		
+	    		// Puntero a la tabla de TBR
+	    		// Cursor bTime = getContentResolver().query(Biometrics.TEMP_BASAL_URI, null, null, null, null);
+	    		List<ARGTable> bTime = MainApp.getDbHelper().getLastsARGTable("Biometrics.TEMP_BASAL_URI", 1);
+
+	        	if (bTime.size() > 0){ //(bTime != null) {
+	        		//if (bTime.moveToLast()) {
 	        			
-	        			gController.setpCBolus(0.0);
+	        			endTime       = bTime.get(0).getLong("scheduled_end_time");
+	        			startTime     = bTime.get(0).getLong("start_time");
+	        			actualEndTime = bTime.get(0).getLong("actual_end_time");
+	        			perTBR        = bTime.get(0).getInt("percent_of_profile_basal_rate");
 	        			
 	        			// Debug
 			    		
-			    		log.debug("ARG /////// "+"Transición de Closed-Loop a Pump Mode --> pCBolus = 0");
-			    		
-			    		//
-	        			
-	        		}
-	        		
-	        		double pcb    = gController.getpCBolus(); // Capturo el pCBolus
-	        		double mBasal = 0.0; 					  // Bolo de infusión basal
-	        		
-	        		// Si estoy en Pump Mode no genero el bolo basal acá, pero tengo que actualizar el IOB
-	        		// Para eso también tomo en cuenta si se definio un TBR
-	        		
-	        		if (DIAS_STATE == State.DIAS_STATE_OPEN_LOOP){
-	        			
-		        		int  perTBR        = 100; // Porcentaje por el que se multiplica el perfil de insulina basal
-			    		long endTime       = 0;   // Fin del TBR
-			    		long startTime     = 0;   // Inicio del TBR
-			    		long actualEndTime = 0;   // Fin del TBR prematuro por el usuario
-			    		
-			    		// Puntero a la tabla de TBR
-			    		
-			    		Cursor bTime = getContentResolver().query(Biometrics.TEMP_BASAL_URI, null, null, null, null);
-			    		
-			        	if (bTime != null) {
-			        		if (bTime.moveToLast()) {
-			        			
-			        			endTime       = bTime.getLong(bTime.getColumnIndex("scheduled_end_time"));
-			        			startTime     = bTime.getLong(bTime.getColumnIndex("start_time"));
-			        			actualEndTime = bTime.getLong(bTime.getColumnIndex("actual_end_time"));
-			        			perTBR        = bTime.getInt(bTime.getColumnIndex("percent_of_profile_basal_rate"));
-			        			
-			        			// Debug
-					    		
-					    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. endTime: "+endTime+". StartTime: "+startTime+
-					    				". actualEndTime: "+actualEndTime+". PerTBR: "+perTBR);
-					    		
-					    		//
-					    		
-			        			if(Objects.equals(startTime, null)){
-			        				
-			        				perTBR        = 100;
-			        				actualEndTime = 0;
-			        				startTime     = 0;
-			        				endTime       = 0;
-			        				
-			        				// Debug
-		    			    		
-		    			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR start time null! --> Per = 100%");
-		    			    		
-		    			    		//
-		    			    		
-			        			}
-			        			
-			        		}
-			        		
-			        		else{
-		        				
-			        			// Debug
-					    		
-					    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR table empty! --> Per = 100%");
-					    		
-					    		//
-					    		
-			        		}
-			        		
-			        	}
-			        	
-			        	else{
-		    				
-			        		// Debug
-				    		
-				    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. Error loading TBR table! --> Per = 100%");
-				    		
-				    		//
-				    		
-				    		Toast.makeText(IOMain.this, "Error loading TBR table!" , Toast.LENGTH_SHORT).show();
-				    		
-			        	}
-			        	
-			        	bTime.close();
-			        	
-			        	// ************************************************************************************************************ //
-			        	
-			        	// Si se forzó el fin del TBR antes de tiempo
-			        	
-			        	if (actualEndTime!=0){
-			        		
-			        		// Debug
-				    		
-				    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. actualEndTime!=0");
-				    		
-				    		//
-				    		
-			        		if (currentTime<=actualEndTime && currentTime>=startTime){
-			        			
-			        			mBasal = perTBR*gController.getPatient().getBasalU()/(12.0)/(100.0);
-			        			
-			        		}
-			        		
-			        		else{
-			        			
-			        			mBasal = gController.getPatient().getBasalU()/(12.0);
-			        			
-			        		}
-			        		
-			        	}
-			        	
-			        	// Si el actualEndTime es 0 solo comparo el tiempo actual 
-			        	// con el de inicio y fin primero establecidos
-			        	
-			        	else if (currentTime<=endTime && currentTime>=startTime){
-			        		
-			        		mBasal = perTBR*gController.getPatient().getBasalU()/(12.0)/(100.0);
-			        		
-			        	}
-			        	
-			        	else{
-			        		
-			        		mBasal = gController.getPatient().getBasalU()/(12.0);
-			        		
-			        	}
-			        	
-			        	// Debug
-			    		
-			    		log.debug("ARG /////// DIAS_STATE_OPEN_LOOP. mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
-			    		perTBR + ". currentTime: " + currentTime + ". startTime: "+ startTime + ". endTime: "+endTime + ". actualEndTime: "+actualEndTime);
+			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. endTime: "+endTime+". StartTime: "+startTime+
+			    				". actualEndTime: "+actualEndTime+". PerTBR: "+perTBR);
 			    		
 			    		//
 			    		
-	        		}
+	        			if(Objects.equals(startTime, null)){
+	        				
+	        				perTBR        = 100;
+	        				actualEndTime = 0;
+	        				startTime     = 0;
+	        				endTime       = 0;
+	        				
+	        				// Debug
+    			    		
+    			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR start time null! --> Per = 100%");
+    			    		
+    			    		//
+    			    		
+	        			}
+	        			
+	        		//}
 	        		
-	        		// Si estoy en Closed Loop Mode con el flag basalCase activado
-	        		// infundo la insulina basal
+	        		//else{
+        				
+	        		//	// Debug
+			    		
+			    	//	log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR table empty! --> Per = 100%");
+			    		
+			    	//	//
+			    		
+	        		//}
+	        		
+	        	}
+	        	
+	        	else{
+    				
+	        		// Debug
+		    		
+		    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. Error loading TBR table! --> Per = 100%");
+		    		
+		    		//
+		    		
+		    		//Toast.makeText(IOMain.this, "Error loading TBR table!" , Toast.LENGTH_SHORT).show();
+		    		
+	        	}
+	        	
+	        //	bTime.close();
+	        	
+	        	// ************************************************************************************************************ //
+	        	
+	        	// Si se forzó el fin del TBR antes de tiempo
+	        	
+	        	if (actualEndTime!=0){
+	        		
+	        		// Debug
+		    		
+		    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. actualEndTime!=0");
+		    		
+		    		//
+		    		
+	        		if (currentTime<=actualEndTime && currentTime>=startTime){
+	        			
+	        			mBasal = perTBR*gController.getPatient().getBasalU()/(12.0)/(100.0);
+	        			
+	        		}
 	        		
 	        		else{
 	        			
 	        			mBasal = gController.getPatient().getBasalU()/(12.0);
 	        			
-	        			// Debug
-			    		
-			    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. mBasal: "+ mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
-			    		
-			    		//
-			    		
 	        		}
-		    		
-	        		double mBasalF = new BigDecimal(Double.toString(mBasal)).setScale(16, RoundingMode.HALF_DOWN).doubleValue(); // Redondeo el mBasal
-	        		
-	        		// Debug
-		    		
-		    		log.debug("ARG /////// mBasalF: "+ mBasalF + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
-		    		
-		    		//
-		    		
-		    		double basalBolus = gController.getPump().quantizeBolus(mBasalF+pcb); // Cuantizo el bolo
-		    			    				    		
-		    		double nPcb = new BigDecimal(Double.toString(mBasalF+pcb-basalBolus)).setScale(16, RoundingMode.HALF_DOWN).doubleValue(); // Genero el pCBolus
-        			
-		    		gController.setpCBolus(nPcb);
-        			
-		    		// Actualizo los estados del IOB
-		    		
-	        		double uAux      = 12.0*100.0*(basalBolus);
-	        		double[][] uTemp = {{uAux/gController.getPatient().getWeight()}};
-	    			Matrix u         = new Matrix(uTemp);
-	    			
-	        		for(int ii = 0; ii < gController.getSlqgController().getTs()/gController.getSafe().getTs(); ++ii){
-	        			
-		    			gController.getSafe().getIob().stateUpdate(u);  
-		    			
-	        		}
-					
-	        		// Si estoy en Closed Loop con el basalCase activado, además tengo que informar al SSMservice que 
-	        		// tiene que infundir la insulina basal
-	        		
-					if (DIAS_STATE == State.DIAS_STATE_CLOSED_LOOP && basalCase){
-						
-						// El basalBolus no puede ser mayor que 0.5, pero por las dudas...
-						
-						if(basalBolus>0.5){
-							
-			        		diff_rate  = 0.5;
-			        		correction = basalBolus-diff_rate;
-			        		
-			        	}
-						
-			        	else{
-			        		
-			        		diff_rate  = basalBolus;
-			        		correction = 0.0;
-			        		
-			        	}
-						
-			        	new_rate = true;
-						
-						// Debug
-			    		
-			    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. "+"IOB's states updated. "
-			    				+ "basalBolus: " + basalBolus + ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
-			    		
-			    		//	
-			    		
-					}
-					
-					else{
-						
-						// Debug
-			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. IOB's states updated. basalBolus: " + basalBolus
-			    				+ ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
-			    		
-			    		//
-			    		
-					}
 	        		
 	        	}
 	        	
-	        	iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-	        	iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+	        	// Si el actualEndTime es 0 solo comparo el tiempo actual 
+	        	// con el de inicio y fin primero establecidos
+	        	
+	        	else if (currentTime<=endTime && currentTime>=startTime){
+	        		
+	        		mBasal = perTBR*gController.getPatient().getBasalU()/(12.0)/(100.0);
+	        		
+	        	}
+	        	
+	        	else{
+	        		
+	        		mBasal = gController.getPatient().getBasalU()/(12.0);
+	        		
+	        	}
 	        	
 	        	// Debug
-	        	
-	    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Final IOB: " + iobEst + ". IOB basal: " + iobBasal);
+	    		
+	    		log.debug("ARG /////// DIAS_STATE_OPEN_LOOP. mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
+	    		perTBR + ". currentTime: " + currentTime + ". startTime: "+ startTime + ". endTime: "+endTime + ". actualEndTime: "+actualEndTime);
 	    		
 	    		//
 	    		
-	    		// ************************************************************************************************************ //
-	        	// ************************************************************************************************************ //
+    		}
+    		
+    		// Si estoy en Closed Loop Mode con el flag basalCase activado
+    		// infundo la insulina basal
+    		
+    		else{
+    			
+    			mBasal = gController.getPatient().getBasalU()/(12.0);
+    			
+    			// Debug
 	    		
-	    		// Guardo los estados del IOB si estoy en Pump o Closed Loop Mode
-	        		    			    		
-	    		if(DIAS_STATE != State.DIAS_STATE_SENSOR_ONLY && DIAS_STATE != State.DIAS_STATE_STOPPED)
-	    		{
-		    		
-	    			ContentValues statesTableIOB1 = new ContentValues();
-		    		TableShortCut scTableIOB1     = new TableShortCut(); 
-		    		double[][] iobStates1         = gController.getSafe().getIob().getX().getData();
-		    		
-		    		statesTableIOB1 = scTableIOB1.insertValue(statesTableIOB1, iobStates1[0][0], iobStates1[1][0], iobStates1[2][0], iobEst, 
-		    				iobBasal, 0.0, 0.0, 0.0, 0.0, 
-		    				0.0, 0.0, 0.0, 0.0);
-		    		
-					getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB1);
+	    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. mBasal: "+ mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
+	    		
+	    		//
+	    		
+    		}
+    		
+    		double mBasalF = new BigDecimal(Double.toString(mBasal)).setScale(16, RoundingMode.HALF_DOWN).doubleValue(); // Redondeo el mBasal
+    		
+    		// Debug
+    		
+    		log.debug("ARG /////// mBasalF: "+ mBasalF + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
+    		
+    		//
+    		
+    		double basalBolus = gController.getPump().quantizeBolus(mBasalF+pcb); // Cuantizo el bolo
+    			    				    		
+    		double nPcb = new BigDecimal(Double.toString(mBasalF+pcb-basalBolus)).setScale(16, RoundingMode.HALF_DOWN).doubleValue(); // Genero el pCBolus
+			
+    		gController.setpCBolus(nPcb);
+			
+    		// Actualizo los estados del IOB
+    		
+    		double uAux      = 12.0*100.0*(basalBolus);
+    		double[][] uTemp = {{uAux/gController.getPatient().getWeight()}};
+			Matrix u         = new Matrix(uTemp);
+			
+    		for(int ii = 0; ii < gController.getSlqgController().getTs()/gController.getSafe().getTs(); ++ii){
+    			
+    			gController.getSafe().getIob().stateUpdate(u);  
+    			
+    		}
+			
+    		// Si estoy en Closed Loop con el basalCase activado, además tengo que informar al SSMservice que 
+    		// tiene que infundir la insulina basal
+    		
+			if (DIAS_STATE == State.DIAS_STATE_CLOSED_LOOP && basalCase){
+				
+				// El basalBolus no puede ser mayor que 0.5, pero por las dudas...
+				
+				if(basalBolus>0.5){
 					
-					// Debug
-		        	
-		    		log.debug("ARG /////// DIAS_STATE_CL&OP. IOB states saved!");
-		    		
-		    		//
-					
-	    		}
+	        		diff_rate  = 0.5;
+	        		correction = basalBolus-diff_rate;
+	        		
+	        	}
+				
+	        	else{
+	        		
+	        		diff_rate  = basalBolus;
+	        		correction = 0.0;
+	        		
+	        	}
+				
+	        	new_rate = true;
+				
+				// Debug
 	    		
-	    		if(DIAS_STATE == State.DIAS_STATE_SENSOR_ONLY || DIAS_STATE == State.DIAS_STATE_STOPPED){
-	    			gController.setpCBolus(0.0);
-	    		}
+	    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. "+"IOB's states updated. "
+	    				+ "basalBolus: " + basalBolus + ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
 	    		
-	    		// ************************************************************************************************************ //
-	        	// ************************************************************************************************************ //
-		*/
-    
+	    		//	
+	    		
+			}
+			
+			else{
+				
+				// Debug
+	    		
+	    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. IOB's states updated. basalBolus: " + basalBolus
+	    				+ ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
+	    		
+	    		//
+	    		
+			}
+    		
+    	}
+    	
+    	iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+    	iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+    	
+    	// Debug
+    	
+		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Final IOB: " + iobEst + ". IOB basal: " + iobBasal);
+		
+		//
+		
+		// ************************************************************************************************************ //
+    	// ************************************************************************************************************ //
+		
+		// Guardo los estados del IOB si estoy en Pump o Closed Loop Mode
+    		    			    		
+		if(DIAS_STATE != State.DIAS_STATE_SENSOR_ONLY && DIAS_STATE != State.DIAS_STATE_STOPPED)
+		{
+    		
+    	// TODO_APS: insercion de tablas
+		//	ContentValues statesTableIOB1 = new ContentValues();
+    	//	TableShortCut scTableIOB1     = new TableShortCut(); 
+    	//	double[][] iobStates1         = gController.getSafe().getIob().getX().getData();
+    		
+    	//	statesTableIOB1 = scTableIOB1.insertValue(statesTableIOB1, iobStates1[0][0], iobStates1[1][0], iobStates1[2][0], iobEst, 
+    	//			iobBasal, 0.0, 0.0, 0.0, 0.0, 
+    	//			0.0, 0.0, 0.0, 0.0);
+    		
+		//	getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB1);
+			
+			// Debug
+        	
+    		log.debug("ARG /////// DIAS_STATE_CL&OP. IOB states saved!");
+    		
+    		//
+			
+		}
+		
+		if(DIAS_STATE == State.DIAS_STATE_SENSOR_ONLY || DIAS_STATE == State.DIAS_STATE_STOPPED){
+			gController.setpCBolus(0.0);
+		}
+		
+		// ************************************************************************************************************ //
+    	// ************************************************************************************************************ //
     }
 
 	public void ejecutarCada5Min(GController g) {
