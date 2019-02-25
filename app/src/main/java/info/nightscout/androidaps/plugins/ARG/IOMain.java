@@ -160,6 +160,7 @@ public class IOMain{
     // Variables de control en rutinas
     long lastTimeCGM_get = 0;
 
+    long lastEjectuarCada5Min_tick = 0;
 
     IOMain(){
     	log.debug("[ARGPLUGIN] IOMain instanciada.");
@@ -279,6 +280,12 @@ public class IOMain{
 
     }
 
+    private void emitToastMsg(String msg){
+
+		log.debug("[ARGPLUGIN:IOMAIN] ### Toast.makeText ### " + msg);
+
+    }
+
     private void rutina_1_capturar_bolos_asincronicos(){
     	// ************************************************************************************************************ //
 		// ************************************************************************************************************ //
@@ -287,6 +294,8 @@ public class IOMain{
 		
 		// *********************************************************************************************************** /// 
 		
+		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 1 : Capturar Bolos Asincronicos ###");
+
 		delTotal     = 0.0;   // Variable para capturar cada uno de los posibles bolos asincrónicos
 		statusIns    = 0;     // Variable que permite detectar si el bolo es el anunciado en la inicialización o fue dado con el DiAs 
 		type         = 0;     // Variable equivalente a statusIns
@@ -306,6 +315,8 @@ public class IOMain{
 		List<ARGTable> aTime = INSULIN_URI_query_deliv_time((currentTime-299) * 1000L);
 
 		if (aTime.size() > 0) {// if (aTime != null) {
+			log.debug("[ARGPLUGIN:IOMAIN]     -> : aTime.size() > 0");
+		
     		for (ARGTable item : aTime) { //while(aTime.moveToNext()){
     			
     			//lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
@@ -332,7 +343,7 @@ public class IOMain{
 				
     				// Debug
     				
-    				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
+    				log.debug("[ARGPLUGIN:IOMAIN]     -> : Captura de bolos asincrónicos. Last insulin deliv time null! --> Ins deliv time = 0");
     				
     				//
     				
@@ -353,7 +364,7 @@ public class IOMain{
 	        	
 		 			// Debug
 			        	
-		        	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
+		        	log.debug("[ARGPLUGIN:IOMAIN]     -> : Captura de bolos asincrónicos. lastTime: " + lastTime + ". delTotal: " + delTotal + ". statusIns: " + statusIns + ". type: " + type);
 		        	
 		        	// 
 	        	}
@@ -361,292 +372,179 @@ public class IOMain{
     		}
     		
 		}else{
-			
-    
-    		// Debug
-    		
-				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. No asynchronous insulin boluses were detected! --> Ins deliv time = 0");
-			//
-    		
+			log.debug("[ARGPLUGIN:IOMAIN]     -> : aTime.size() == 0");
     	}
 		
-		//aTime.close();
-			
-			// Debug
-		
-		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura de bolos asincrónicos. extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);
-		
-		//
+		log.debug("[ARGPLUGIN:IOMAIN]     -> extraBolus: " + extraBolus + ". iobInitBolus: " + iobInitBolus);
+
     }
 
     private void rutina_2_correccion_iob_bolos_sincronicos_no_infundidos(){
 		// *********************************************************************************************************** /// 
 		// ************************************************************************************************************ //
-
 		// Rutina corrección IOB por bolos sincrónicos no infundidos
+		// *********************************************************************************************************** /// 
+		// ************************************************************************************************************ //
 		
-		// Debug
-		
-		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-				+ "Inicio");
-		
-		//
-		
-		// Puntero al último bolo de insulina sincrónico
-		
-		// Cursor sBTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
-		//         "req_time>? AND type=?" , new String[]{Long.toString(currentTime-305),"1"}, null);
+		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 : Correcion IOB - Bolos Sincronicos No Infundidos ###");
 
+		// Puntero al último bolo de insulina sincrónico
 		sBTime = INSULIN_URI_query_reqtime_and_type((currentTime-305) * 1000L, 1);
 
 
-		if (sBTime.size() > 0) { //(sBTime != null) {
-			//if (sBTime.moveToLast()){
-				
-				// Capturo el estado
-				
-				//statusIns = sBTime.getInt(sBTime.getColumnIndex("status"));
-				statusIns = sBTime.get(0).getInt("status");
+		if (sBTime.size() > 0) {
+			// Capturo el estado
+			
+			//statusIns = sBTime.getInt(sBTime.getColumnIndex("status"));
+			statusIns = sBTime.get(0).getInt("status");
 
-				// Debug
-	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-	    				+ "statusIns: "+statusIns);
-	    		
-	    		//
-	    		
-				// Chequeo si no se infundió
-				if(statusIns!=2){
-					
-					// Puntero a la tabla de IOB
-					// Cursor cIob = getContentResolver().query(Biometrics.USER_TABLE_1_URI, null, null, null, null);
-					cIob = MainApp.getDbHelper()
-								.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
+			log.debug("[ARGPLUGIN:IOMAIN] 	  -> : sBTime.size() > 0 - statusIns:" + statusIns);
+    		
+			// Chequeo si no se infundió
+			if(statusIns!=2){
+				// Puntero a la tabla de IOB
+				cIob = MainApp.getDbHelper()
+							.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
 
-					if (cIob.size() > 0){ //(cIob != null) {
-		        		
-						// Voy a la última fila
-		        		//if (cIob.moveToLast()) {
-				        	
-		        			// Capturo los elementos de la última fila
-				        	//long iobLastTime = cIob.getLong(cIob.getColumnIndex("time"));
-				        	//double iobState1 = cIob.getDouble(cIob.getColumnIndex("d0"));
-				        	//double iobState2 = cIob.getDouble(cIob.getColumnIndex("d1"));
-				        	//double iobState3 = cIob.getDouble(cIob.getColumnIndex("d2"));
-				        	//double iobEst    = cIob.getDouble(cIob.getColumnIndex("d3"));
-				        	//double iobBasal  = cIob.getDouble(cIob.getColumnIndex("d4"));
+				if (cIob.size() > 0){ //(cIob != null) {
 
-				        	iobLastTime = cIob.get(0).getLong("time");
-				        	iobState1 = cIob.get(0).getDouble("d0");
-				        	iobState2 = cIob.get(0).getDouble("d1");
-				        	iobState3 = cIob.get(0).getDouble("d2");
-				        	iobEst    = cIob.get(0).getDouble("d3");
-				        	iobBasal  = cIob.get(0).getDouble("d4");
-				        	
-				        	// Debug
-				    		
-				    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-				    				+ "Estados últimos. iobLastTime: "+iobLastTime+
-				    				". iobState1: "+iobState1+". iobState2: "+iobState2+
-				    				". iobState3: "+iobState3+". iobBasal: "+iobBasal+
-				    				"iobEst: "+iobEst);
-				    		
-				    		//
-				    		
-				        	// Voy a la anteúltima fila
-		        			if (cIob.size() > 1){ // (cIob.moveToPrevious()){
-		        				
-		        				// Capturo los elementos de la penúltima fila
-					        	//iobState1   = cIob.getDouble(cIob.getColumnIndex("d0"));
-					        	//iobState2   = cIob.getDouble(cIob.getColumnIndex("d1"));
-					        	//iobState3   = cIob.getDouble(cIob.getColumnIndex("d2"));
-					        	//iobBasal    = cIob.getDouble(cIob.getColumnIndex("d4"));
-					        	
-					        	iobState1 = cIob.get(1).getDouble("d0");
-					        	iobState2 = cIob.get(1).getDouble("d1");
-					        	iobState3 = cIob.get(1).getDouble("d2");
-					        	iobBasal  = cIob.get(1).getDouble("d4");
-					        	
-					        	// Debug
-					    		
-					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-					    				+ "Estados penúltimos. iobLastTime: "+iobLastTime+
-					    				". iobState1: "+iobState1+". iobState2: "+iobState2+
-					    				". iobState3: "+iobState3+". iobBasal: "+iobBasal);
-	    			    		
-					    		//
-					    		
-					        	// Seteo como estado inicial el anterior al último que fue incorrectamente
-					        	// actualizado
-					        	
-					        	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
-				    			Matrix iobState  = new Matrix(xTemp);
-	    			    		gController.getSafe().getIob().setX(iobState);
-	    			    		
-	    			    		// Actualizo el IOB considerando que no se infundió nada
-	    			    		
-	    			    		double[][] uTemp = {{0.0}};
-				    			Matrix u = new Matrix(uTemp);
-				    			
-	    			    		for(int jj = 0; jj < (currentTime-iobLastTime)/60.0/gController.getSafe().getTs(); ++jj){ 
-	    			    			
-	    			    			gController.getSafe().getIob().stateUpdate(u);
-				    			
-	    			    		}
-	    			    		
-	    			    		// Recalculo el iobEst
-	    			    		iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-	    			    		
+		        	iobLastTime = cIob.get(0).getLong("time");
+		        	iobState1 = cIob.get(0).getDouble("d0");
+		        	iobState2 = cIob.get(0).getDouble("d1");
+		        	iobState3 = cIob.get(0).getDouble("d2");
+		        	iobEst    = cIob.get(0).getDouble("d3");
+		        	iobBasal  = cIob.get(0).getDouble("d4");
+		       		
 
-		        				// TODO_APS: ver insercion 
-		        				
-	    			    		// Guardo los estados de IOB corregidos
-	    			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
-	    			    		
-	    			    		JSONObject statesTableIOB = new JSONObject();
-	    			    		try{
-									statesTableIOB.put("l0", 0);
-									statesTableIOB.put("l1", 0);	
-									statesTableIOB.put("d0", iobStates[0][0]);
-									statesTableIOB.put("d1", iobStates[1][0]);
-									statesTableIOB.put("d2", iobStates[2][0]);
-									statesTableIOB.put("d3", iobEst);
-									statesTableIOB.put("d4", iobBasal);	
-									statesTableIOB.put("d5", 0.0);
-									statesTableIOB.put("d6", 0.0);
-									statesTableIOB.put("d7", 0.0);
-									statesTableIOB.put("d8", 0.0);	
-									statesTableIOB.put("d9", 0.0);
-									statesTableIOB.put("d10", 0.0);
-									statesTableIOB.put("d11", 0.0);
-									statesTableIOB.put("d12", 0.0);
-									statesTableIOB.put("d13", 0.0);
-									statesTableIOB.put("d14", 0.0);
-									statesTableIOB.put("d15", 0.0);
-									statesTableIOB.put("send_attempts_server", 1);	
-									statesTableIOB.put("received_server", true);
-	    			    		
-	    			    			statesTableIOB.put("time", iobLastTime);
-								}catch(JSONException e){
-
-								}
-
-								this.inserNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
-
-	    						// Debug
-					    		
-					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-					    				+ "Estados corregidos. iobLastTime: "+iobLastTime+
-					    				". iobState1: "+iobStates[0][0]+". iobState2: "+iobStates[1][0]+
-					    				". iobState3: "+iobStates[2][0]+". iobBasal: "+iobBasal+
-					    				"iobEst: "+iobEst);
-	    			    		
-					    		//
-					    		
-		        			}else{
-			        			
-		        				// Si no hay anteúltima fila (muy poco probable), significa que los estados
-		        				// antepenúltimos eran 0. Por lo tanto, grabo 0.
-
-		        				// TODO_APS: ver insercion 
-
-		        				JSONObject statesTableIOB = new JSONObject();
-	    			    		try{
-									statesTableIOB.put("l0", 0);
-									statesTableIOB.put("l1", 0);	
-									statesTableIOB.put("d0", 0);
-									statesTableIOB.put("d1", 0);
-									statesTableIOB.put("d2", 0);
-									statesTableIOB.put("d3", 0);
-									statesTableIOB.put("d4", iobBasal);	
-									statesTableIOB.put("d5", 0.0);
-									statesTableIOB.put("d6", 0.0);
-									statesTableIOB.put("d7", 0.0);
-									statesTableIOB.put("d8", 0.0);	
-									statesTableIOB.put("d9", 0.0);
-									statesTableIOB.put("d10", 0.0);
-									statesTableIOB.put("d11", 0.0);
-									statesTableIOB.put("d12", 0.0);
-									statesTableIOB.put("d13", 0.0);
-									statesTableIOB.put("d14", 0.0);
-									statesTableIOB.put("d15", 0.0);
-									statesTableIOB.put("send_attempts_server", 1);	
-									statesTableIOB.put("received_server", true);
-	    			    		
-	    			    			statesTableIOB.put("time", iobLastTime);
-								}catch(JSONException e){
-
-								}
-
-								this.inserNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
-
-	    						// Debug
-					    		
-					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-					    				+ "No había estados penúltimos --> IOB = 0");
-	    			    		
-					    		//
-					    		
-		        			}
-		        		
-		        		// TODO_APS: Este if ya no tiene sentido	
-		        		//}
-		        		
-					}
-					
-				}else{
-					
-					// Debug
+					log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 0 - " 
+							+ "Estados últimos. iobLastTime: "+iobLastTime+
+		    				". iobState1: "+iobState1+". iobState2: "+iobState2+
+		    				". iobState3: "+iobState3+". iobBasal: "+iobBasal+
+		    				"iobEst: "+iobEst);
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-		    				+ "El bolo se infundió correctamente");
-		    		
-		    		//
-					
+		        	// Voy a la anteúltima fila
+        			if (cIob.size() > 1){ // (cIob.moveToPrevious()){
+			        	iobState1 = cIob.get(1).getDouble("d0");
+			        	iobState2 = cIob.get(1).getDouble("d1");
+			        	iobState3 = cIob.get(1).getDouble("d2");
+			        	iobBasal  = cIob.get(1).getDouble("d4");
+			        	
+						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 1 - " 
+							+ "Estados penúltimos. iobLastTime: "+iobLastTime+
+		    				". iobState1: "+iobState1+". iobState2: "+iobState2+
+		    				". iobState3: "+iobState3+". iobBasal: "+iobBasal+
+		    				"iobEst: "+iobEst);
+
+			        	// Seteo como estado inicial el anterior al último que fue incorrectamente
+			        	// actualizado
+			        	
+			        	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
+		    			Matrix iobState  = new Matrix(xTemp);
+			    		gController.getSafe().getIob().setX(iobState);
+			    		
+			    		// Actualizo el IOB considerando que no se infundió nada
+			    		
+			    		double[][] uTemp = {{0.0}};
+		    			Matrix u = new Matrix(uTemp);
+		    			
+			    		for(int jj = 0; jj < (currentTime-iobLastTime)/60.0/gController.getSafe().getTs(); ++jj){ 
+			    			
+			    			gController.getSafe().getIob().stateUpdate(u);
+		    			
+			    		}
+			    		
+			    		// Recalculo el iobEst
+			    		iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+			    		
+
+			    		// Guardo los estados de IOB corregidos
+			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
+			    		
+			    		JSONObject statesTableIOB = new JSONObject();
+			    		try{
+							statesTableIOB.put("l0", 0);
+							statesTableIOB.put("l1", 0);	
+							statesTableIOB.put("d0", iobStates[0][0]);
+							statesTableIOB.put("d1", iobStates[1][0]);
+							statesTableIOB.put("d2", iobStates[2][0]);
+							statesTableIOB.put("d3", iobEst);
+							statesTableIOB.put("d4", iobBasal);	
+							statesTableIOB.put("d5", 0.0);
+							statesTableIOB.put("d6", 0.0);
+							statesTableIOB.put("d7", 0.0);
+							statesTableIOB.put("d8", 0.0);	
+							statesTableIOB.put("d9", 0.0);
+							statesTableIOB.put("d10", 0.0);
+							statesTableIOB.put("d11", 0.0);
+							statesTableIOB.put("d12", 0.0);
+							statesTableIOB.put("d13", 0.0);
+							statesTableIOB.put("d14", 0.0);
+							statesTableIOB.put("d15", 0.0);
+							statesTableIOB.put("send_attempts_server", 1);	
+							statesTableIOB.put("received_server", true);
+			    		
+			    			statesTableIOB.put("time", iobLastTime);
+						}catch(JSONException e){
+
+						}
+
+						this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+
+						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : " 
+							+ "Estados corregidos. iobLastTime: "+iobLastTime+
+			    				". iobState1: "+iobStates[0][0]+". iobState2: "+iobStates[1][0]+
+			    				". iobState3: "+iobStates[2][0]+". iobBasal: "+iobBasal+
+			    				"iobEst: "+iobEst);	
+        			}else{
+        				JSONObject statesTableIOB = new JSONObject();
+			    		try{
+							statesTableIOB.put("l0", 0);
+							statesTableIOB.put("l1", 0);	
+							statesTableIOB.put("d0", 0);
+							statesTableIOB.put("d1", 0);
+							statesTableIOB.put("d2", 0);
+							statesTableIOB.put("d3", 0);
+							statesTableIOB.put("d4", iobBasal);	
+							statesTableIOB.put("d5", 0.0);
+							statesTableIOB.put("d6", 0.0);
+							statesTableIOB.put("d7", 0.0);
+							statesTableIOB.put("d8", 0.0);	
+							statesTableIOB.put("d9", 0.0);
+							statesTableIOB.put("d10", 0.0);
+							statesTableIOB.put("d11", 0.0);
+							statesTableIOB.put("d12", 0.0);
+							statesTableIOB.put("d13", 0.0);
+							statesTableIOB.put("d14", 0.0);
+							statesTableIOB.put("d15", 0.0);
+							statesTableIOB.put("send_attempts_server", 1);	
+							statesTableIOB.put("received_server", true);
+			    		
+			    			statesTableIOB.put("time", iobLastTime);
+						}catch(JSONException e){
+
+						}
+
+						this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+
+						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : No había estados penúltimos --> IOB = 0");	
+        			}
 				}
-				
-			//}
-			
-			// TODO_APS: Este else tampoco tiene sentido, 
-			//else{
-				
-				// Debug
-	    		
-	    	//	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-	    	//			+ "sBTime.moveToLast() = false");
-	    		
-	    		//
-				
-			//}
-		
+			}else{
+				log.debug("[ARGPLUGIN:IOMAIN] 	  -> : El bolo se infundió correctamente");
+			}
 		}else{
-			
-			// Debug
-			
-			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Corrección IOB. "
-					+ "sBTime = null");
-			
-			//
-			
+			log.debug("[ARGPLUGIN:IOMAIN] 	  -> : sBTime.size() == 0 ");
 		}
-		
-		// sBTime.close();
     }
 
     private void rutina_3_captura_estados_modelo_iob(){
     	// ************************************************************************************************************ //
 		// ************************************************************************************************************ //
-
     	// Rutina captura de estados del modelo de IOB
-		
 		// ************************************************************************************************************ //
 		
-		// Debug
-		
-		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob Initialization");
-		
-		//
-		
+		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 3 : Captura Estado - Modelo IOB ###");
+
     	iobLastTime = 0;
     	iobState1   = 0.0;
     	iobState2   = 0.0;
@@ -654,8 +552,6 @@ public class IOMain{
     	
     	// Puntero a la tabla de IOB
     	
-		// Cursor cIob = getContentResolver().query(Biometrics.USER_TABLE_1_URI, null, null, null, null);
-
 		List<ARGTable> cIob = MainApp.getDbHelper()
 					.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
 
@@ -669,75 +565,39 @@ public class IOMain{
 		// que existe
 		
     	if (cIob.size() > 0) {// (cIob != null) {
-    		
-    		//if (cIob.moveToLast()) {
-    			
-    			//iobLastTime = cIob.getLong(cIob.getColumnIndex("time"));
-	        	//iobState1   = cIob.getDouble(cIob.getColumnIndex("d0"));
-	        	//iobState2   = cIob.getDouble(cIob.getColumnIndex("d1"));
-	        	//iobState3   = cIob.getDouble(cIob.getColumnIndex("d2"));
+			log.debug("[ARGPLUGIN:IOMAIN]     -> : cIob.size() > 0");
+		
+			iobLastTime = cIob.get(0).getLong("time");
+        	iobState1   = cIob.get(0).getDouble("d0");
+        	iobState2   = cIob.get(0).getDouble("d1");
+        	iobState3   = cIob.get(0).getDouble("d2");
 
-    			iobLastTime = cIob.get(0).getLong("time");
-	        	iobState1   = cIob.get(0).getDouble("d0");
-	        	iobState2   = cIob.get(0).getDouble("d1");
-	        	iobState3   = cIob.get(0).getDouble("d2");
-
-    			if(Objects.equals(iobLastTime, null)){
-    				
-    				iobLastTime = 0;
-    				iobState1   = 0.0;
-    				iobState2   = 0.0;
-    				iobState3   = 0.0;
-    				
-    				// Debug
-		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob last time null! --> Iob = 0");
-		    		
-		    		//
-		    		
-    			}
-    			
-    		//}
-    		
-    		//else{
+			if(Objects.equals(iobLastTime, null)){
+				iobLastTime = 0;
+				iobState1   = 0.0;
+				iobState2   = 0.0;
+				iobState3   = 0.0;
 				
-				// Debug
-	    		
-	    	//	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Iob table empty! --> Iob = 0");
-	    		
-	    		//	
-	    		
-    		//}
-    		
+				log.debug("[ARGPLUGIN:IOMAIN]     -> : Captura estados IOB. Iob last time null! --> Iob = 0");  		
+			}
     	}else{	
-    		
-    		// Debug
-    		
-    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Error loading iob table! --> Iob = 0");
-    		
-    		//
-    		
-    		//Toast.makeText(IOMain.this, "Error loading iob table!" , Toast.LENGTH_SHORT).show();
-    	
+			log.debug("[ARGPLUGIN:IOMAIN]     -> : Captura estados IOB. Error loading iob table! --> Iob = 0");
+    		emitToastMsg("Error loading iob table!");
     	} 
-    	//cIob.close();
-    	
-    	// Debug
-    	
-    	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Captura estados IOB. Estados capturados --> iobState1: " + iobState1 + ". iobState2: " + iobState2 + ". iobState3: " + iobState3);
-    	
-    	//
-    	
-    	//double[][] xTemp = {{0.0},{0.0},{0.0}};
-    	
+
+    	log.debug("[ARGPLUGIN:IOMAIN]     -> : Captura estados IOB. Estados capturados --> iobState1: "
+    		 + iobState1 + ". iobState2: " + iobState2 + ". iobState3: " + iobState3);
+
     	// Seteo los estados del IOB capturados
     	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
 		Matrix iobState  = new Matrix(xTemp);
-		gController.getSafe().getIob().setX(iobState);
 
+		gController.getSafe().getIob().setX(iobState);
     }
 
     private void rutina_4_inicializacion_iob(){
+		
+		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 4 : Inicialización del IOB ###");
 
 		// TODO_APS: obtener valores del perfil de basal, chequear
 		// me robo del codigo(DiAS) que está en internet la clase TVector
@@ -780,7 +640,7 @@ public class IOMain{
 			
 			// Debug
 			
-			log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Now [sec]: "+timeNowSecs+". UTC_offset_secs: "+UTC_offset_secs+ ". IOB time [min]: " + timeIobSecs/60 + ". Now [min]: " + timeNowSecs/60 + ". timeDiff [sec]: "+timeDiff);
+			log.debug("[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. Now [sec]: "+timeNowSecs+". UTC_offset_secs: "+UTC_offset_secs+ ". IOB time [min]: " + timeIobSecs/60 + ". Now [min]: " + timeNowSecs/60 + ". timeDiff [sec]: "+timeDiff);
 			
 			//
 			
@@ -826,13 +686,13 @@ public class IOMain{
 		
 			if(timeDiff>14405){ // I added 5 s to take into account minimum differences in time synchronization
 				
-				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405");
+				log.debug( "[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime>14405");
 				
 				// Si la hora actual es mayor que las 04 h, entonces busco los índices 4 hs hacia atrás
 				
 				if(timeNowSecs/60>=240){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. IF");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime>14405. IF");
 					
 					indices1 = subjectBasal.find(">", timeNowSecs/60-240, "<=", timeNowSecs/60);
 					t0 = timeNowSecs/60-240;
@@ -845,7 +705,7 @@ public class IOMain{
 				
 				else{
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime>14405. ELSE");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime>14405. ELSE");
 					
 					indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);
 					indices2 = subjectBasal.find(">", 1440+timeNowSecs/60-240, "<=", 1440); 
@@ -857,7 +717,7 @@ public class IOMain{
 				
 				if(timeDiff>2*14400+5){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. timeDiff>2*14400+5. IF");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. timeDiff>2*14400+5. IF");
 					
 					double[][] xTemp1 = {{0.0},{0.0},{0.0}};
 	    			iobState = new Matrix(xTemp1);
@@ -871,7 +731,7 @@ public class IOMain{
 				
 				else{
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. timeDiff<2*14400+5. IF");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. timeDiff<2*14400+5. IF");
 					
 					double[][] uTemp = {{0.0}};
 	    			Matrix u = new Matrix(uTemp);
@@ -890,7 +750,7 @@ public class IOMain{
 			
 			else{
 				
-				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405");
+				log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime<=14405");
 				
 				t0 = timeIobSecs/60; // El tiempo inicial es el de la última actualización
 				
@@ -899,11 +759,11 @@ public class IOMain{
 				
 				if(timeNowSecs/60>=240 || timeIobSecs/60<timeNowSecs/60){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime<=14405. IF");
 					
 					indices1 = subjectBasal.find(">", timeIobSecs/60, "<=", timeNowSecs/60);
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. IF" + "indices1 null?: " + (indices1 == null));
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime<=14405. IF" + "indices1 null?: " + (indices1 == null));
 					
 				}
 				
@@ -912,7 +772,7 @@ public class IOMain{
 				
 				else{
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. currentTime-iobLastTime<=14405. ELSE");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. currentTime-iobLastTime<=14405. ELSE");
 					
 					indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);
 					indices2 = subjectBasal.find(">", timeIobSecs/60, "<=", 1440);
@@ -926,13 +786,13 @@ public class IOMain{
 			// Si indices1 da null
 			if(indices1 == null){
 				
-				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null");
+				log.debug("[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. indices1 null");
 				
 				// Si además indices2 da null, entonces voy a buscar quedarme con el último índice hasta el tiempo actual
 				
 				if(indices2 == null){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2 null");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. indices1 null & indices2 null");
 					
 					// Para quedarme con el último índice hasta el tiempo actual, primero capturo todos los posibles índices anteriores
 					
@@ -975,7 +835,7 @@ public class IOMain{
 					
 					if(indices2.size()==0){
 						
-						log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2.size 0");
+						log.debug( "[ARGPLUGIN:IOMAIN]     -> : . Inicialización IOB. indices1 null & indices2.size 0");
 						
 						// Aplico el mismo procedimiento que cuando indices2 era null
 						
@@ -1003,7 +863,7 @@ public class IOMain{
 					
 					else{
 						
-						log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1 null & indices2 something");
+						log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. indices1 null & indices2 something");
 						
 						indices = indices2;
 						
@@ -1017,11 +877,11 @@ public class IOMain{
 			
 			else if (indices1.size() == 0) {
 				
-				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0");
+				log.debug("[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. indices1.size 0");
 				
 				if(indices2 == null){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 null");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. indices1.size 0 & indices2 null");
 					
 					indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 					
@@ -1047,7 +907,7 @@ public class IOMain{
 					
 					if(indices2.size()==0){
 						
-						log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size & indices2.size 0");
+						log.debug("[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. indices1.size & indices2.size 0");
 						
 						indices1 = subjectBasal.find(">", -1, "<=", timeNowSecs/60);		// Find the list of indices <= time in minutes since today at 00:00
 						
@@ -1071,7 +931,7 @@ public class IOMain{
 					
 					else{
 						
-						log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size 0 & indices2 something");
+						log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. indices1.size 0 & indices2 something");
 						
 						indices = indices2;
 						
@@ -1085,13 +945,13 @@ public class IOMain{
 			
 			else{
 				
-				log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0");
+				log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. indices1.size != 0");
 				
 				// Si indices2 es null, defino indices como indices1
 				
 				if(indices2 == null){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2 null");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. indices1.size != 0 & indices2 null");
 					
 					indices = indices1;
 					
@@ -1101,7 +961,7 @@ public class IOMain{
 				
 				else if(indices2.size() == 0){
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2.size 0");
+					log.debug( "[ARGPLUGIN:IOMAIN]     -> : Inicialización IOB. indices1.size != 0 & indices2.size 0");
 					
 					indices = indices1;
 					
@@ -1112,7 +972,7 @@ public class IOMain{
 				
 				else{
 					
-					log.debug( "ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. indices1.size != 0 & indices2 something");
+					log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. indices1.size != 0 & indices2 something");
 					
 					indices.addAll(indices2);
 					indices.addAll(indices1);
@@ -1165,7 +1025,7 @@ public class IOMain{
 			
 			// Debug
 			
-			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[0]: " + iobInput.get(0).value() + ". indices.get(0): " + indices.get(0));
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. iobInput[0]: " + iobInput.get(0).value() + ". indices.get(0): " + indices.get(0));
 			
 			//
 			
@@ -1175,7 +1035,7 @@ public class IOMain{
 			{
 				Integer obj = it.next();
 				
-				log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Indices element: " + obj.intValue());
+				log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB. Indices element: " + obj.intValue());
 				
 				if(ii!=0){
 					
@@ -1206,7 +1066,7 @@ public class IOMain{
 				
 			}
 			
-			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. ii: " + ii);
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB. ii: " + ii);
 			
 			// Aplico el posible corrimiento de 1440 min al tiempo final
 			
@@ -1220,7 +1080,7 @@ public class IOMain{
 			iobInput.add(ii, new Pair());
 			iobInput.get(ii).put(timef, value); // El último elemento es el tiempo final y el valor de infusión basal del último índice (se mantiene ya que no había otro cambio)
 			
-			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput[end].value: " + iobInput.get(ii).value() + ". iobInput[end].time: " + iobInput.get(ii).time());	    			    			
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB. iobInput[end].value: " + iobInput.get(ii).value() + ". iobInput[end].time: " + iobInput.get(ii).time());	    			    			
 			
 			double uDouble = 0.0;
 			int kk = 0;
@@ -1231,7 +1091,7 @@ public class IOMain{
 				
 				totalBasal += (iobInput.get(pp).value()/60.0)*(iobInput.get(pp+1).time()-iobInput.get(pp).time()); // U/min x min
 				
-				log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. iobInput.get(pp).value(): " + iobInput.get(pp).value()+ ". iobInput.get(pp).value()/60.0: " + iobInput.get(pp).value()/60.0 + ". time1: " + iobInput.get(pp+1).time() + ". time2: " + iobInput.get(pp).time() + ". totalBasalSum: " + (iobInput.get(pp).value()/60.0)*(iobInput.get(pp+1).time()-iobInput.get(pp).time()));
+				log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB. iobInput.get(pp).value(): " + iobInput.get(pp).value()+ ". iobInput.get(pp).value()/60.0: " + iobInput.get(pp).value()/60.0 + ". time1: " + iobInput.get(pp+1).time() + ". time2: " + iobInput.get(pp).time() + ". totalBasalSum: " + (iobInput.get(pp).value()/60.0)*(iobInput.get(pp+1).time()-iobInput.get(pp).time()));
 				
 			}
 			
@@ -1259,7 +1119,7 @@ public class IOMain{
 				
 			}
 			
-			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. totalBasal: " + totalBasal + ". iobInitBolus: " + iobInitBolus + ". iobInput size: " + iobInput.size() + ". timef: " + timef);
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización IOB. totalBasal: " + totalBasal + ". iobInitBolus: " + iobInitBolus + ". iobInput size: " + iobInput.size() + ". timef: " + timef);
 			
 			// ************************************************************************************************************ //
 			// Actualizo los estados con la entrada definida anteriormente
@@ -1295,36 +1155,49 @@ public class IOMain{
 				
 			}
 			// ************************************************************************************************************ //
-			
-			// Debug
-			
-			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB. Total n iterations: " + timef/gController.getSafe().getTs() + ". kk: " + kk + ". uDouble: " + uDouble);
-			
-			//
-			
-			
+
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB. Total n iterations: " + timef/gController.getSafe().getTs() + ". kk: " + kk + ". uDouble: " + uDouble);
+
 			// ************************************************************************************************************ //
 			// Guardo el IOB actualizado
-					
-			// TODO_APS: insercion de datos
 
-			//double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-			//double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+			double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+			double[][] iobStates = gController.getSafe().getIob().getX().getData();
+
+			JSONObject statesTableIOB = new JSONObject();
+    		try{
+				statesTableIOB.put("l0", 0);
+				statesTableIOB.put("l1", 0);	
+				statesTableIOB.put("d0", iobStates[0][0]);
+				statesTableIOB.put("d1", iobStates[1][0]);
+				statesTableIOB.put("d2", iobStates[2][0]);
+				statesTableIOB.put("d3", iobEst);
+				statesTableIOB.put("d4", iobBasal);	
+				statesTableIOB.put("d5", 0.0);
+				statesTableIOB.put("d6", 0.0);
+				statesTableIOB.put("d7", 0.0);
+				statesTableIOB.put("d8", 0.0);	
+				statesTableIOB.put("d9", 0.0);
+				statesTableIOB.put("d10", 0.0);
+				statesTableIOB.put("d11", 0.0);
+				statesTableIOB.put("d12", 0.0);
+				statesTableIOB.put("d13", 0.0);
+				statesTableIOB.put("d14", 0.0);
+				statesTableIOB.put("d15", 0.0);
+				statesTableIOB.put("send_attempts_server", 1);	
+				statesTableIOB.put("received_server", true);
+    		
+    			statesTableIOB.put("time", iobLastTime);
+			}catch(JSONException e){
+
+			}
+
+			this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
 			
-			//ContentValues statesTableIOB = new ContentValues();
-			//TableShortCut scTableIOB = new TableShortCut(); 
-			//double[][] iobStates = gController.getSafe().getIob().getX().getData();
-			//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
-			//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
-			//		0.0, 0.0, 0.0, 0.0);
-			//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
-			
-			// Debug
-		// TODO_APS: revisar este debug	
-		//	log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
-			
-			//
-			
+		
 			// ************************************************************************************************************ //
 			
 		}
@@ -1333,7 +1206,7 @@ public class IOMain{
 		
 		else{
 			
-			log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de inicialización). IobState1: " + iobState1 + ". IobState2: " + iobState2 + ". IobState3: " + iobState3);
+			log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB (Bolo de inicialización). IobState1: " + iobState1 + ". IobState2: " + iobState2 + ". IobState3: " + iobState3);
 			
 		}
     }
@@ -1345,7 +1218,9 @@ public class IOMain{
 		// Rutina para actualizar el vector de muestras del CGM
 		
 		// ************************************************************************************************************ //
-		
+				
+		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 5 : Actualizacion del vector de muestra del CGM ###");
+
 		// El flag basalCase se utiliza para a través de su activación indicar la falta de información para computar
 		// la acción de control, y por ende, el paso a la infusión a lazo abierto si el sistema está en Closed-Loop Mode
 		
@@ -1379,139 +1254,121 @@ public class IOMain{
     							// cada 5 min, la diferencia será de 5 min
     		
         	if (cCGM.size() > 0) {
-        //		if (cCGM.moveToLast()) {
-
-        			
-        			yCGM        = cCGM.get(0).getDouble("cgm");
-        			timeCGM     = cCGM.get(0).getLong("time");
-        			cgmF        = yCGM;
-    				state       = cCGM.get(0).getInt("state");
-    				
-    				if(Objects.equals(timeCGM, null)){
-    				
-    					// Debug
-			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. timeCGM = null"
-			    				+ "--> diffCGMTime = currentTime");
-			    		
-			    		//
-			    		
-    					diffCGMTime = currentTime;
-    					
-    				}
-    				
-    				else{
-    					
-    					diffCGMTime = currentTime - timeCGM;
-    					
-    				}
-    				
-    				// Imprimo en pantalla errores del sensor
-    				// 1: data error
-    				// 10: sensor failed
-    				
-    				if(state==1 || state ==10){
-    					
-    					// Debug
-			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Error. " + 
-			    		"diffCGMTime: "+diffCGMTime+". state:" +state);
-			    		
-			    		//
-			    		
-    					//Toast.makeText(IOMain.this, "Data error or sensor failed. Check CGM sensor!" , Toast.LENGTH_SHORT).show();
-    					
-    					cgmOK = false;
-    					
-    				}
-    				
-    				// Si el estado del CGM es 5: warmup, entonces el sensor estará durante 2 hs
-    				// en el proceso de warm-up y enviará 0s. En ese caso, no se procede con la
-    				// actualización del vector de CGM
-    				
-    				if(state==5){
-    					
-    					// Debug
-			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Warm-up period. " + "diffCGMTime: "+diffCGMTime+". state:" +state);
-			    		
-			    		//
-			    		
-    					cgmOK = false;
-    					
-    				}
-    				
-    				else{
-    				
-        				// Si la diferencia entre el tiempo actual y el último de la tabla de CGM es mayor
-        				// o igual a offsetR,
-        				// entonces detecto pérdida de conexión.
-        				
-        				// La máxima diferencia tolerable es de 300 s. Si el sincronismo es perfecto, es decir
-        				// cada iteración diffCGMTime = 0, entonces una pérdida de sincronismo es de 301 s. 
-        				// Si contemplo tiempo mayores puedo perder la detección de la pérdida de sincronismo
-        				// en esos casos.
-        				
-        				if(diffCGMTime > offsetR){
-        					
-        					// Acá no seteo el flag cgmOK a false, porque en el caso en que exista una desconexión, el controlador
-        					// puede seguir funcionando a través de estimaciones salvo que la diferencia temporal sea mayor o igual a 20 min
-        					
-        					// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM connection failed. " +
-    			    		"diffCGMTime: "+diffCGMTime);
-    			    		
-    			    		//
-    			    		
-    			    		// Las estimaciones no pueden seguir si la diferencia temporal es mayor o igual a 20 min. 
-    			    		// El DiAs pasará a Stop Mode
-    			    		// y el vector de CGM no se actualizará hasta que no se reestablezca la conexión
-    			    		
-    			    		if(diffCGMTime > 1200){ // 1200 seg define el mínimo. Es decir, si están perfectamente sincronizados
-    			    			// DiAs con CGM en 20 min de desconexión será 1200. Si están desfazados será mayor.
-    			    			
-    			    			cgmOK = false;
-    			    			
-    			    		}
-    			    		
-        				}
-        				
-        				else{
-        					
-        					// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM connection stablished. " +
-    			    		"diffCGMTime: "+diffCGMTime);
-    			    		
-    			    		//
-    			    		
-        				}
-
-	        		}
-    //    		}
-        		
-        		//else{
-        			
-        		//	cgmOK = false;
-        			
-        		//	// Debug
-        			
-		    	//	log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM table empty!");
+    			
+    			yCGM        = cCGM.get(0).getDouble("cgm");
+    			timeCGM     = cCGM.get(0).getLong("time");
+    			cgmF        = yCGM;
+				state       = cCGM.get(0).getInt("state");
+				
+				if(Objects.equals(timeCGM, null)){
+				
+					// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :   Actualización vector CGM. timeCGM = null"
+		    				+ "--> diffCGMTime = currentTime");
 		    		
 		    		//
 		    		
-        		//}
-        		
-        	}
-        	
-        	else{
+					diffCGMTime = currentTime;
+					
+				}
+				
+				else{
+					
+					diffCGMTime = currentTime - timeCGM;
+					
+				}
+				
+				// Imprimo en pantalla errores del sensor
+				// 1: data error
+				// 10: sensor failed
+				
+				if(state==1 || state ==10){
+					
+					// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Error. " + 
+		    		"diffCGMTime: "+diffCGMTime+". state:" +state);
+		    		
+		    		//
+		    		
+					//Toast.makeText(IOMain.this, "Data error or sensor failed. Check CGM sensor!" , Toast.LENGTH_SHORT).show();
+					
+					cgmOK = false;
+					
+				}
+				
+				// Si el estado del CGM es 5: warmup, entonces el sensor estará durante 2 hs
+				// en el proceso de warm-up y enviará 0s. En ese caso, no se procede con la
+				// actualización del vector de CGM
+				
+				if(state==5){
+					
+					// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Warm-up period. " + "diffCGMTime: "+diffCGMTime+". state:" +state);
+		    		
+		    		//
+		    		
+					cgmOK = false;
+					
+				}
+				
+				else{
+				
+    				// Si la diferencia entre el tiempo actual y el último de la tabla de CGM es mayor
+    				// o igual a offsetR,
+    				// entonces detecto pérdida de conexión.
+    				
+    				// La máxima diferencia tolerable es de 300 s. Si el sincronismo es perfecto, es decir
+    				// cada iteración diffCGMTime = 0, entonces una pérdida de sincronismo es de 301 s. 
+    				// Si contemplo tiempo mayores puedo perder la detección de la pérdida de sincronismo
+    				// en esos casos.
+    				
+    				if(diffCGMTime > offsetR){
+    					
+    					// Acá no seteo el flag cgmOK a false, porque en el caso en que exista una desconexión, el controlador
+    					// puede seguir funcionando a través de estimaciones salvo que la diferencia temporal sea mayor o igual a 20 min
+    					
+    					// Debug
+			    		
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. CGM connection failed. " +
+			    		"diffCGMTime: "+diffCGMTime);
+			    		
+			    		//
+			    		
+			    		// Las estimaciones no pueden seguir si la diferencia temporal es mayor o igual a 20 min. 
+			    		// El DiAs pasará a Stop Mode
+			    		// y el vector de CGM no se actualizará hasta que no se reestablezca la conexión
+			    		
+			    		if(diffCGMTime > 1200){ // 1200 seg define el mínimo. Es decir, si están perfectamente sincronizados
+			    			// DiAs con CGM en 20 min de desconexión será 1200. Si están desfazados será mayor.
+			    			
+			    			cgmOK = false;
+			    			
+			    		}
+			    		
+    				}
+    				
+    				else{
+    					
+    					// Debug
+			    		
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. CGM connection stablished. " +
+			    		"diffCGMTime: "+diffCGMTime);
+			    		
+			    		//
+			    		
+    				}
+
+        		}
+        	} else{
 	    		
         		cgmOK = false;
         		
         		// Debug
         		
-	    		log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Error loading CGM table!");
+	    		log.error("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Error loading CGM table!");
 	    		
 	    		//
 	    		
@@ -1567,7 +1424,7 @@ public class IOMain{
 	        			
 		        		// Debug
 		        		
-		        		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. diffCGMVTime: "+diffCGMVTime+
+		        		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. diffCGMVTime: "+diffCGMVTime+
 		        				". CGM Vector: " +" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + 
 		        				". [3]: " + cgmVector[3][0] + ". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0]);
 			    		
@@ -1598,7 +1455,7 @@ public class IOMain{
         						
         						// Debug
         						
-        						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+        						log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. "
         								+ "No corresponde, muestra ya considerada");
         						
         						//
@@ -1618,7 +1475,7 @@ public class IOMain{
         						
         						// Debug
 	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.a");
+	    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 2.a");
 	    			    		
 	    			    		//
         						
@@ -1675,7 +1532,7 @@ public class IOMain{
         												        						
         						// Debug
 	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.b1");
+	    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 2.b1");
 	    			    		
 	    			    		//
         						
@@ -1690,7 +1547,7 @@ public class IOMain{
         						
         						// Case 2)b2) = Case 1)a)
         						
-        						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+        						log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. "
 		        						+ "Case 2.b2. ARRANCO.");
 		        				
 		        				// Reviso si existen registros previos del CGM 30 min atrás
@@ -1782,12 +1639,12 @@ public class IOMain{
 							    			
 						    			}
 						    			
-						    			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.b2."
+						    			log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Case 2.b2."
 						    					+ ". cgm: "+cgmAux1);
 						    			
 						    		}
 						    		
-						    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Prueba. "+
+						    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Prueba. "+
 	    			        				". CGM Vector: " +" [0]: " + cgmVectorAux[0][0] + ". [1]: " + cgmVectorAux[1][0] + ". [2]: " + 
 						    				cgmVectorAux[2][0] + ". [3]: " + cgmVectorAux[3][0] + ". [4]: " + cgmVectorAux[4][0] +
 						    				". [5]: " + cgmVectorAux[5][0]+". jj: "+jj);
@@ -1804,7 +1661,7 @@ public class IOMain{
 					        	
 		        				// Debug
 	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+	    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. "
 	    			    				+ "Case 2.b2. TERMINO.");
 	    			    		
 	    			    		//
@@ -1856,7 +1713,7 @@ public class IOMain{
     												        							
         						// Debug
 	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c1");
+	    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Case 2.c1");
 	    			    		
 	    			    		//
 	    			    		
@@ -1912,7 +1769,7 @@ public class IOMain{
 	        						
 	        						// Debug
 		    			    		
-		    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c2. "
+		    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Case 2.c2. "
 		    			    				+ "Flag2c2 activado");
 		    			    		
 		    			    		//
@@ -1922,7 +1779,7 @@ public class IOMain{
         						
         						// Debug
 	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c2");
+	    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 2.c2");
 	    			    		
 	    			    		//
 	    			    		
@@ -1943,7 +1800,7 @@ public class IOMain{
         						
         						// Debug
 	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 2.c3");
+	    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 2.c3");
 	    			    		
 	    			    		//
         						
@@ -1966,7 +1823,7 @@ public class IOMain{
 	        				
 	        				// Case 1)a)
 	        				
-    						log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+    						log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. "
 	        						+ "Case 1.a. ARRANCO.");
 	        				
 	        				// Reviso si existen registros previos del CGM 30 min atrás
@@ -2060,12 +1917,12 @@ public class IOMain{
 						    			
 					    			}
 					    			
-					    			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.a."
+					    			log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Case 1.a."
 					    					+ ". cgm: "+cgmAux1);
 					    			
 					    		}
 					    		
-					    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Prueba. "+
+					    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Prueba. "+
     			        				". CGM Vector: " +" [0]: " + cgmVectorAux[0][0] + ". [1]: " + cgmVectorAux[1][0] + ". [2]: " + 
 					    				cgmVectorAux[2][0] + ". [3]: " + cgmVectorAux[3][0] + ". [4]: " + cgmVectorAux[4][0] +
 					    				". [5]: " + cgmVectorAux[5][0]+". jj: "+jj);
@@ -2082,12 +1939,10 @@ public class IOMain{
 				        	
 	        				// Debug
     			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. "
+    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. "
     			    				+ "Case 1.a. TERMINO.");
     			    		
     			    		//
-    			    		
-    			    		//cCGMAux.close();
     			    		
 	        			}
 	        			
@@ -2102,7 +1957,7 @@ public class IOMain{
 	        				
 	        				// Debug
     			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
+    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 1.b");
     			    		
     			    		//
 	        				
@@ -2132,7 +1987,7 @@ public class IOMain{
         										        				
         				// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.a. cCGMV == null");
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 1.a. cCGMV == null");
 			    		
 			    		//
 			    		
@@ -2151,7 +2006,7 @@ public class IOMain{
         				
         				// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 1.b");
 			    		
 			    		//
         				
@@ -2172,7 +2027,7 @@ public class IOMain{
     			
     			// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Case 1.b");
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. Case 1.b");
 	    		
 	    		//
 
@@ -2199,28 +2054,47 @@ public class IOMain{
     			
     			// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. Save CGM Vector");
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Save CGM Vector");
 	    		
-	    		//
-	    		// TODO_APS: insercion
+				double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
 
-	    		//ContentValues cgmVectorTable = new ContentValues();
-	    		//TableShortCut scTableCgm = new TableShortCut(); 
-	    		//double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
-	    		//cgmVectorTable = scTableCgm.insertValue(cgmVectorTable, cgmVector[0][0], cgmVector[1][0], cgmVector[2][0], 
-	    		//		cgmVector[3][0], cgmVector[4][0], cgmVector[5][0], 0.0, 0.0, 0.0, 
-	    		//		0.0, 0.0, 0.0, 0.0);
-	    		//cgmVectorTable.put("time", timeStampCgmV);
-	    		//cgmVectorTable.put("d15", flag2c2);
-	    		
-	    		//getContentResolver().insert(Biometrics.USER_TABLE_4_URI, cgmVectorTable);
-	    		
+	    		//
+	    		// TODO_APS: insercion, solo revisar
+
+				JSONObject cgmVectorTable = new JSONObject();
+	    		try{
+					cgmVectorTable.put("l0", 0);
+					cgmVectorTable.put("l1", 0);	
+					cgmVectorTable.put("d0", cgmVector[0][0]);
+					cgmVectorTable.put("d1", cgmVector[1][0]);
+					cgmVectorTable.put("d2", cgmVector[2][0]);
+					cgmVectorTable.put("d3", cgmVector[3][0]);
+					cgmVectorTable.put("d4", cgmVector[4][0]);	
+					cgmVectorTable.put("d5", cgmVector[5][0]);
+					cgmVectorTable.put("d6", 0.0);
+					cgmVectorTable.put("d7", 0.0);
+					cgmVectorTable.put("d8", 0.0);	
+					cgmVectorTable.put("d9", 0.0);
+					cgmVectorTable.put("d10", 0.0);
+					cgmVectorTable.put("d11", 0.0);
+					cgmVectorTable.put("d12", 0.0);
+					cgmVectorTable.put("d13", 0.0);
+					cgmVectorTable.put("d14", 0.0);
+					cgmVectorTable.put("d15", flag2c2);
+
+	    			cgmVectorTable.put("time", timeStampCgmV);
+				}catch(JSONException e){
+
+				}
+
+				this.insertNewTable("Biometrics.USER_TABLE_4_URI", cgmVectorTable);
+
 	    		// Debug
 	    	
 	    		// TODO_APS: ver este debug	
-	    	//	log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Actualización vector CGM. CGM Vector: " +
-	    	//	" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
-	    	//	". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. CGM Vector: " +
+	    		" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
+	    		". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
 	    		
 	    		//
 	    		
@@ -2238,7 +2112,7 @@ public class IOMain{
 	        			
 	        			// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización rCFBolus."
 			    				+ " lastTime: "+lastTime+". rCFBolus: "+rCFBolus);
 			    		
 			    		//
@@ -2249,7 +2123,7 @@ public class IOMain{
 	        				
 	        				// Debug
     			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización rCFBolus."
     			    				+ " lastTime null --> currentTime");
     			    		
     			    		//
@@ -2263,14 +2137,14 @@ public class IOMain{
 	        			
 	        			// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
-			    				+ " moveToLast() null --> currentTime");
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización rCFBolus."
+			    				+ " cKStates.size() == 0 --> currentTime");
 			    		
 			    		//
 	        			
 		    			// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS. Inicialización rCFBolus."
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Inicialización rCFBolus."
 			    				+ " Error loading controller's states!");
 			    		
 			    		//
@@ -2357,7 +2231,7 @@ public class IOMain{
         	
         	// Debug
     		
-    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP & !basalCase. "
+    		log.debug("[ARGPLUGIN:IOMAIN]     -> : !basalCase. "
     				+ "Detección de anuncio de comida.");
     		
     		//
@@ -2384,7 +2258,7 @@ public class IOMain{
 		        	
 		        	// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. lastTime: "+lastTime+
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  lastTime: "+lastTime+
 		    				". mealClass: "+mealClass+". forCon: "+forCon);
 		    		
 		    		//
@@ -2396,7 +2270,7 @@ public class IOMain{
         				
         				// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal time null! --> Meal time = 0");
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Meal time null! --> Meal time = 0");
 			    		
 			    		//
 			    		
@@ -2430,7 +2304,7 @@ public class IOMain{
         		
         		// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading Meal table! "
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Error loading Meal table! "
 	    				+ "--> Meal time = 0");
 	    		
 	    		//
@@ -2470,124 +2344,102 @@ public class IOMain{
 
         	int tEndAggIni = 0;
         	
-        	if (cMeal.size() > 0) // (cMeal != null) {
-        //		if (cMeal.moveToLast()) {
+        	if (cMeal.size() > 0) 
+	        	tEndAggIni = (int)cMeal.get(0).getDouble("d2");
+	        	
+	        	// Debug
+	    		
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización tEndAgg. "+
+	    		"tEndAggIni: "+tEndAggIni);
+	    		
+	    		//
+	    		
+	    		// Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
+	    		List<ARGTable> cKStates = MainApp.getDbHelper()
+							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+
+
+	    		if (cKStates.size() > 0) { // (cKStates != null) {
+		        				
+        			lastTime = cKStates.get(0).getLong("time");
         			
-		        	tEndAggIni = (int)cMeal.get(0).getDouble("d2");
-		        	
-		        	// Debug
+        			// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. "+
-		    		"tEndAggIni: "+tEndAggIni);
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización tEndAgg. "
+		    				+ "lastTime: "+lastTime);
 		    		
 		    		//
 		    		
-		    		// Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
-		    		List<ARGTable> cKStates = MainApp.getDbHelper()
-								.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
-
-
-		    		if (cKStates.size() > 0) { // (cKStates != null) {
-		        		
-		        		//if (cKStates.moveToLast()) {
-		        									        				
-		        			lastTime = cKStates.get(0).getLong("time");
-		        			
-		        			// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. "
-    			    				+ "lastTime: "+lastTime);
-    			    		
-    			    		//
-    			    		
-		        			if (Objects.equals(lastTime, null)){
-		        				
-		        				lastTime = currentTime;
-		        				
-		        				// Debug
-	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
-	    			    				+ " lastTime null --> currentTime");
-	    			    		
-	    			    		//
-		        				
-		        			}
-		        			
-		        		//}
-		        		
-		        		//else{
-		        			
-		        		//	lastTime = currentTime;
-		        			
-		        		//	// Debug
-    			    		
-    			    	//	log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
-    			    	//			+ " moveToLast() null --> currentTime");
-    			    		
-    			    	//	//
-		        			
-		        		//}
-		        		
-		        		
-		    		}
-		    		
-		    		else{
-		    			
-	        			lastTime = currentTime;
-	        			
-
-		    			// Debug
+        			if (Objects.equals(lastTime, null)){
+        				
+        				lastTime = currentTime;
+        				
+        				// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg."
-			    				+ " Error loading controller's states!");
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización tEndAgg."
+			    				+ " lastTime null --> currentTime");
 			    		
 			    		//
-			    		
-			    //		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
-		    			
-		    		}
+        				
+        			}
 
-		    		// TODO_APS: insercion, actualizacion
-	        		if(lastTime == currentTime){
-			        	
-			    		//ContentValues statesTableK = new ContentValues();
-			    		
-			    		//statesTableK.put("time", currentTime);
-			    		//statesTableK.put("creditRequest", (double)tEndAggIni);
-
-						//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-						
-	        		}
-	        		
-	        		else{
-	        			
-	        			//ContentValues statesTableK = new ContentValues();
-			    		
-	        			//statesTableK.put("creditRequest", (double)tEndAggIni);
-			    		
-						//getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-					
-	        		}
+	    		}
+	    		
+	    		else{
+	    			
+        			lastTime = currentTime;
         			
-        	//	}
+
+	    			// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización tEndAgg."
+		    				+ " Error loading controller's states!");
+		    		
+		    		//
+		    		
+		    //		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
+	    			
+	    		}
+        		if(lastTime == currentTime){
+
+					JSONObject statesTableK = new JSONObject();
+		    		try{
+		    			statesTableK.put("time", currentTime);
+						statesTableK.put("creditRequest", (double)tEndAggIni);
+					}catch(JSONException e){
+
+					}
+
+					this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
+
+
+		    		//ContentValues statesTableK = new ContentValues();
+		    		
+		    		//statesTableK.put("time", currentTime);
+		    		//statesTableK.put("creditRequest", (double)tEndAggIni);
+
+					//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+					
+        		}
         		
-        	//	else{
-    				
-    		//		// Debug
+        		else{
+
+        			// TODO_APS: actualizacion con condiciones
+        			
+        			//ContentValues statesTableK = new ContentValues();
 		    		
-		    //		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. No meal bolus detected! ");
+        			//statesTableK.put("creditRequest", (double)tEndAggIni);
 		    		
-		    //		//	
-		    		
-        	//	}
-        		
+					//getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
+				
+        		}
         	}
         	
         	else{
         		
         		// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Actualización tEndAgg. Error loading Meal table! ");
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización tEndAgg. Error loading Meal table! ");
 	    		
 	    		//
 	    		
@@ -2732,418 +2584,392 @@ public class IOMain{
 		// ************************************************************************************************************ //
 		// ************************************************************************************************************ //
 		// Rutina para cargar los estados y variables del controlador
+	
+		lastTime             = 0; // Acá voy a capturar el tiempo de la última actualización de estados del SLQG
+		long diffKStatesTime = 0; // Variable para capturar la diferencia temporal entre el tiempo actual y el último asociado
+		                          // a la actualización de estados del controlador
 		
-    		lastTime             = 0; // Acá voy a capturar el tiempo de la última actualización de estados del SLQG
-    		long diffKStatesTime = 0; // Variable para capturar la diferencia temporal entre el tiempo actual y el último asociado
-    		                          // a la actualización de estados del controlador
-    		
-    		// Puntero a la tabla del controlador
-    		
+		// Puntero a la tabla del controlador
+		
 //    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
-    		List<ARGTable> cKStates = MainApp.getDbHelper()
-								.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+		List<ARGTable> cKStates = MainApp.getDbHelper()
+							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
 
-        	if (cKStates.size() > 0) 
-        	{ //(cKStates != null) {
-        		
-        	//	if (cKStates.moveToLast()) {
-        			
-        			// rCFBolus y tEndAgg son los contadores asociados a los BACs
-    				
-    				// Si hay registros guardados los capturo, luego los actualizo al tiempo actual
-        			
-        			lastTime     = cKStates.get(0).getLong("time");
-        			int rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
-        			int tEndAgg  = (int)cKStates.get(0).getDouble("creditRequest");
-					
-        			if(Objects.equals(lastTime, null)){
-        				
-        				// Si el puntero devuelve null entonces es probable que no haya ningún registro en la tabla. Podría ocurrir que haya, pero
-        				// que se haya encendido luego de mucho tiempo, en ese caso la instancia gController tiene los valores por defecto igualmente
-        				
-        				// Debug
-			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states time null! --> x and variables = 0");
-			    		
-			    		//
-			    		
-        			}
-        			
-        			else{
-        				
-        				diffKStatesTime = currentTime - lastTime;
-        				
-        				if(Objects.equals(rCFBolus, null)){
-        					gController.setrCFBolus(0);
-        				}
-        				else{
-        					gController.setrCFBolus(rCFBolus);
-        				}
-        				
-        				if(Objects.equals(tEndAgg, null)){
-        					gController.settEndAgg(0);
-        				}
-        				else{
-        					gController.settEndAgg(tEndAgg);
-        				}
-        				
-        				// Debug
-			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Updating controller's states. diffKStatesTime: " +
-			    		diffKStatesTime+". rCFBolus: "+gController.getrCFBolus()+". tEndAgg: "+gController.gettEndAgg());
-			    		
-			    		//
-			    		
-			    		// Actualizo los contadores BACs al tiempo actual
-			    		
-			    		int nIter = (int)Math.round(diffKStatesTime/300.0);
-			    		
-			    		for(int ii = 0; ii < nIter-1; ++ii){
-			    			gController.getgControllerState().updateBolusVar(); // rCFBolus y tEndAgg
-			    		}
-			    		
-			    		// Tolero una desconexión del modo Closed-Loop de 7.5 min máx, sino las variables se reinician
-			    		
-			    		// diffKStates es 0 cuando se inicializa el vector de CGM y se define un rCFBolus inicial, sin registros
-			    		// en la tabla del controlador
-			    		
-        				if(diffKStatesTime<455 && diffKStatesTime!=0){	
-        					
-        					// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Updating controller's states. diffKStatesTime <455 s");
-    			    		
-    			    		//
-    			    		
-    			    		// Chequeo si durante la última ejecución en Closed-Loop se pulsó el botón de Reset
-    			    		
-    			    		long rTime = 0;
-    			    		int rFlag  = 0;
-    			    		lastTime   = 0;
-    			    		
-    			    	//	Cursor cReset = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
-				        	List<ARGTable> cReset = MainApp.getDbHelper()
-								.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
+    	if (cKStates.size() > 0) {
 
-				        	if (cReset.size() > 0){ //} (cReset != null) {
-				        		//if (cReset.moveToLast()) {
-				        			
-				        			rTime    = cReset.get(0).getLong("time"); // Tiempo en que se forzó el modo conservador o se anunció una comida
-				        			rFlag    = (int)cReset.get(0).getDouble("d1"); // Flag para forzar el modo conservador
-				        			lastTime = cReset.get(0).getLong("l0"); // Tiempo de la última sincronización previa al momento de actualizar la User Table 3
-				        			
-				        			if(Objects.equals(rTime, null)){
-				        				
-				        				rTime    = 0;
-				        				rFlag    = 0;
-				        				lastTime = 0;
-				        				
-				        				// Debug
-			    			    		
-			    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 time null! --> rTime = 0");
-			    			    		
-			    			    		//
-			    			    		
-				        			}
-				        		//}
-				        		
-				        		//else{
-				        			
-				        		//	// Debug
-		    			    		
-		    			    	//	log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: User table 3 table empty! --> rtime = 0");
-		    			    		
-		    			    	//	//	
-		    			    		
-				        		//}
-				        	}
-				        	
-				        	else{
-				        		
-				        		// Debug
-	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading User table 3! --> rtime = 0");
-	    			    		
-	    			    		//	
-	    			    		////
-	    			    		// Toast.makeText(IOMain.this, "Checking Force Reset: Error loading User Table 3" , Toast.LENGTH_SHORT).show();
-	    			    		
-				        	}
-				        	
-				        	//cReset.close();
-				        	
-				        	if(currentTime-rTime<305 && rFlag == 1){
-				        		
-				        		// Rutina de reseteo del controlador
-				        		
-				        		// Debug
-	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Reset command detected. Forcing conservative mode");
-	    			    		
-	    			    		//
-	    			    		
-	    			    	//	Toast.makeText(IOMain.this, "Reset command detected. Forcing conservative mode" , Toast.LENGTH_SHORT).show();
-	    			    		
-	        					gController.getSlqgController().settMeal(0);
-	        					gController.getSlqgController().setExtAgg(0);	
-	        					gController.getEstimator().setListening(0);
-	        					gController.getEstimator().setMCount(0);
-        						gController.getSlqgController().setSLQGState(gController.getSlqgController().getConservativeState());
-        						gController.getSafe().setIOBMaxCF(0.0);
-        						gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
-        						gController.setpCBolus(0.0);
-        						
-        						//ContentValues userTable = new ContentValues();
-
-        						// TODO_APS: insercion
-        						JSONObject userTable = new JSONObject();
-        						try{
-	        						userTable.put("time", rTime);
-	        						userTable.put("l0", lastTime);
-	        						userTable.put("l1", 0);	
-	        						userTable.put("d0", 1.0);
-	        						userTable.put("d1", 0.0); // Reset-flag is reseted
-	        						userTable.put("d2", 0.0);
-	        						userTable.put("d3", 0.0);
-	        						userTable.put("d4", 0.0);	
-	        						userTable.put("d5", 0.0);
-	        						userTable.put("d6", 0.0);
-	        						userTable.put("d7", 0.0);
-	        						userTable.put("d8", 0.0);	
-	        						userTable.put("d9", 0.0);
-	        						userTable.put("d10", 0.0);
-	        						userTable.put("d11", 0.0);
-	        						userTable.put("d12", 0.0);
-	        						userTable.put("d13", 0.0);
-	        						userTable.put("d14", 0.0);
-	        						userTable.put("d15", 0.0);
-	        						userTable.put("send_attempts_server", 1);	
-	        						userTable.put("received_server", true);
-        			    		}catch(JSONException e){
-
-        			    		}
-        			    		// getContentResolver().insert(Biometrics.USER_TABLE_3_URI, userTable);
-        			    		
-				        	}
-				        	
-				        	else{
-				        		
-				        		// No se pulsó el botón de reset, por ende se cargan las variables guardadas
-				        		
-	        					int tMeal          = (int)cKStates.get(0).getDouble("bolus_amount");
-	        					int extAgg         = (int)cKStates.get(0).getDouble("MealBolusA");
-	        					int slqgStateFlag  = (int)cKStates.get(0).getDouble("IOBrem");
-	        					int listening      = (int)cKStates.get(0).getDouble("hmin");
-	        					int mCount         = (int)cKStates.get(0).getDouble("Hmax");
-	        					double iobMaxCF    = cKStates.get(0).getDouble("d");
-	        					double iobMax      = cKStates.get(0).getDouble("CORRA");
-	        					double pCBolus     = cKStates.get(0).getDouble("MealBolusArem");
-					        	
-	        					gController.getSlqgController().settMeal(tMeal);
-	        					gController.getSlqgController().setExtAgg(extAgg);
-	        					gController.getEstimator().setListening(listening);
-	        					gController.getEstimator().setMCount(mCount);
-	        					gController.getSafe().setIOBMaxCF(iobMaxCF);
-        						gController.getSafe().setIobMax(iobMax);
-        						gController.setpCBolus(pCBolus);
-        						
-	        					if(slqgStateFlag==1){
-	        						
-	        						gController.getSlqgController().setSLQGState(gController.getSlqgController().getAggressiveState());
-	        						
-	        					}
-	        					
-	        					// Debug
-	    			    		
-	    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's variables loaded --- tMeal: " + tMeal
-	    			    				+ ". extAgg: "+extAgg +". slqgStateFlag: "+slqgStateFlag+ ". mCount: "+mCount + ". listening: "+listening+". IOBMaxCF: "+iobMaxCF
-	    			    				+ ". IobMax: "+iobMax + ". pCBolus: "+pCBolus);
-	    			    		
-	    			    		//
-	    			    		
-				        	}
-			        					
-			        	}
-        				
-        				else{
-        					
-        					// Si pasan más de 7.5 min en otro modo diferente a Closed-Loop, se ejecuta la rutina de reseteo de las variables
-			        		
-			        		// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: More than 7.5 min from last CL update. Reinitilizating the controller variables");
-    			    		
-    			    		//
-    			    		
-    			    		// Toast.makeText(IOMain.this, "More than 7.5 min from last CL update. Reinitilizating the controller variables" , Toast.LENGTH_SHORT).show();
-    			    		
-        					gController.getSlqgController().settMeal(0);
-        					gController.getSlqgController().setExtAgg(0);	
-        					gController.getEstimator().setListening(0);
-        					gController.getEstimator().setMCount(0);
-    						gController.getSlqgController().setSLQGState(gController.getSlqgController().getConservativeState());
-    						gController.getSafe().setIOBMaxCF(0.0);
-    						gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
-    						gController.setpCBolus(0.0);
-		        			
-        				}
-        				
-        				Matrix kStates = new Matrix(13,1);
-        				
-        				// Los estados no se reinician cuando se pulsa Reset
-        				// Mantengo los estados por 12.5 min
-        				
-        				if(diffKStatesTime<755){
-				        	
-        					double[][] kStatesAux = new double[13][1];
-		        			
-		        			kStatesAux[0][0]  = cKStates.get(0).getDouble("IOB");
-		        			kStatesAux[1][0]  = cKStates.get(0).getDouble("GPred");
-		        			kStatesAux[2][0]  = cKStates.get(0).getDouble("GPred_correction");
-		        			kStatesAux[3][0]  = cKStates.get(0).getDouble("Gpred_bolus");
-		        			kStatesAux[4][0]  = cKStates.get(0).getDouble("Xi00");
-		        			kStatesAux[5][0]  = cKStates.get(0).getDouble("Xi01");
-		        			kStatesAux[6][0]  = cKStates.get(0).getDouble("Xi02");
-		        			kStatesAux[7][0]  = cKStates.get(0).getDouble("Xi03");
-		        			kStatesAux[8][0]  = cKStates.get(0).getDouble("Xi04");
-		        			kStatesAux[9][0]  = cKStates.get(0).getDouble("Xi05");
-		        			kStatesAux[10][0] = cKStates.get(0).getDouble("Xi06");
-		        			kStatesAux[11][0] = cKStates.get(0).getDouble("Xi07");
-		        			kStatesAux[12][0] = cKStates.get(0).getDouble("brakes_coeff");
-		        			
-		        			kStates = new Matrix(kStatesAux);
-		        			
-        				}
-        				
-        				else{
-        					
-        					// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: More than 12.5 min from last CL update. Reinitilizating the controller states");
-    			    		
-    			    		//
-    			    		
-    			    		//Toast.makeText(IOMain.this, "More than 12.5 min from last CL update. Reinitilizating the controller states" , Toast.LENGTH_SHORT).show();
-        					
-        				}
-        				
-        				gController.getSlqgController().getLqg().setX(kStates);
-			        				
-			        }
-
-        		//}
-        		
-        	//	else{
-    				
-    		//		// Debug
-		    		
-		    //		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Controller's states table empty! --> x and variables = 0");
-		    		
-		    //		//	
-		    		
-        	//	}
-        		
-        	}
-        	
-        	else{
-        		
-        		// Debug
+			// rCFBolus y tEndAgg son los contadores asociados a los BACs
+			
+			// Si hay registros guardados los capturo, luego los actualizo al tiempo actual
+			
+			lastTime     = cKStates.get(0).getLong("time");
+			int rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
+			int tEndAgg  = (int)cKStates.get(0).getDouble("creditRequest");
+			
+			if(Objects.equals(lastTime, null)){
+				
+				// Si el puntero devuelve null entonces es probable que no haya ningún registro en la tabla. Podría ocurrir que haya, pero
+				// que se haya encendido luego de mucho tiempo, en ese caso la instancia gController tiene los valores por defecto igualmente
+				
+				// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Error loading controller's states! --> x and variables = 0");
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Controller's states time null! --> x and variables = 0");
 	    		
 	    		//
 	    		
-//	    		Toast.makeText(IOMain.this, "Error loading HMS STATE ESTIMATE Table" , Toast.LENGTH_SHORT).show();
-	    	
-        	}
+			}
+			
+			else{
+				
+				diffKStatesTime = currentTime - lastTime;
+				
+				if(Objects.equals(rCFBolus, null)){
+					gController.setrCFBolus(0);
+				}
+				else{
+					gController.setrCFBolus(rCFBolus);
+				}
+				
+				if(Objects.equals(tEndAgg, null)){
+					gController.settEndAgg(0);
+				}
+				else{
+					gController.settEndAgg(tEndAgg);
+				}
+				
+				// Debug
+	    		
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Updating controller's states. diffKStatesTime: " +
+	    		diffKStatesTime+". rCFBolus: "+gController.getrCFBolus()+". tEndAgg: "+gController.gettEndAgg());
+	    		
+	    		//
+	    		
+	    		// Actualizo los contadores BACs al tiempo actual
+	    		
+	    		int nIter = (int)Math.round(diffKStatesTime/300.0);
+	    		
+	    		for(int ii = 0; ii < nIter-1; ++ii){
+	    			gController.getgControllerState().updateBolusVar(); // rCFBolus y tEndAgg
+	    		}
+	    		
+	    		// Tolero una desconexión del modo Closed-Loop de 7.5 min máx, sino las variables se reinician
+	    		
+	    		// diffKStates es 0 cuando se inicializa el vector de CGM y se define un rCFBolus inicial, sin registros
+	    		// en la tabla del controlador
+	    		
+				if(diffKStatesTime<455 && diffKStatesTime!=0){	
+					
+					// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Updating controller's states. diffKStatesTime <455 s");
+		    		
+		    		//
+		    		
+		    		// Chequeo si durante la última ejecución en Closed-Loop se pulsó el botón de Reset
+		    		
+		    		long rTime = 0;
+		    		int rFlag  = 0;
+		    		lastTime   = 0;
+		    		
+		    	//	Cursor cReset = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
+		        	List<ARGTable> cReset = MainApp.getDbHelper()
+						.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
+
+		        	if (cReset.size() > 0){ //} (cReset != null) {
+	        			rTime    = cReset.get(0).getLong("time"); // Tiempo en que se forzó el modo conservador o se anunció una comida
+	        			rFlag    = (int)cReset.get(0).getDouble("d1"); // Flag para forzar el modo conservador
+	        			lastTime = cReset.get(0).getLong("l0"); // Tiempo de la última sincronización previa al momento de actualizar la User Table 3
+	        			
+	        			if(Objects.equals(rTime, null)){
+	        				
+	        				rTime    = 0;
+	        				rFlag    = 0;
+	        				lastTime = 0;
+	        				
+	        				// Debug
+    			    		
+    			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  User table 3 time null! --> rTime = 0");
+    			    		
+    			    		//
+    			    		
+	        			}
+		        	}
+		        	
+		        	else{
+		        		
+		        		// Debug
+			    		
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Error loading User table 3! --> rtime = 0");
+			    		
+			    		//	
+			    		////
+			    		// Toast.makeText(IOMain.this, "Checking Force Reset: Error loading User Table 3" , Toast.LENGTH_SHORT).show();
+			    		
+		        	}
+		        	
+		        	//cReset.close();
+		        	
+		        	if(currentTime-rTime<305 && rFlag == 1){
+		        		
+		        		// Rutina de reseteo del controlador
+		        		
+		        		// Debug
+			    		
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Reset command detected. Forcing conservative mode");
+			    		
+			    		//
+			    		
+			    		emitToastMsg( "Reset command detected. Forcing conservative mode");
+			    		
+    					gController.getSlqgController().settMeal(0);
+    					gController.getSlqgController().setExtAgg(0);	
+    					gController.getEstimator().setListening(0);
+    					gController.getEstimator().setMCount(0);
+						gController.getSlqgController().setSLQGState(gController.getSlqgController().getConservativeState());
+						gController.getSafe().setIOBMaxCF(0.0);
+						gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
+						gController.setpCBolus(0.0);
+						
+						//ContentValues userTable = new ContentValues();
+
+						// TODO_APS: insercion , solo revisar
+						JSONObject userTable = new JSONObject();
+						try{
+    						userTable.put("time", rTime);
+    						userTable.put("l0", lastTime);
+    						userTable.put("l1", 0);	
+    						userTable.put("d0", 1.0);
+    						userTable.put("d1", 0.0); // Reset-flag is reseted
+    						userTable.put("d2", 0.0);
+    						userTable.put("d3", 0.0);
+    						userTable.put("d4", 0.0);	
+    						userTable.put("d5", 0.0);
+    						userTable.put("d6", 0.0);
+    						userTable.put("d7", 0.0);
+    						userTable.put("d8", 0.0);	
+    						userTable.put("d9", 0.0);
+    						userTable.put("d10", 0.0);
+    						userTable.put("d11", 0.0);
+    						userTable.put("d12", 0.0);
+    						userTable.put("d13", 0.0);
+    						userTable.put("d14", 0.0);
+    						userTable.put("d15", 0.0);
+    						userTable.put("send_attempts_server", 1);	
+    						userTable.put("received_server", true);
+			    		}catch(JSONException e){
+
+			    		}
+
+			    		this.insertNewTable("Biometrics.USER_TABLE_3_URI", userTable);
+			    		// getContentResolver().insert(Biometrics.USER_TABLE_3_URI, userTable);
+			    		
+		        	}
+		        	
+		        	else{
+		        		
+		        		// No se pulsó el botón de reset, por ende se cargan las variables guardadas
+		        		
+    					int tMeal          = (int)cKStates.get(0).getDouble("bolus_amount");
+    					int extAgg         = (int)cKStates.get(0).getDouble("MealBolusA");
+    					int slqgStateFlag  = (int)cKStates.get(0).getDouble("IOBrem");
+    					int listening      = (int)cKStates.get(0).getDouble("hmin");
+    					int mCount         = (int)cKStates.get(0).getDouble("Hmax");
+    					double iobMaxCF    = cKStates.get(0).getDouble("d");
+    					double iobMax      = cKStates.get(0).getDouble("CORRA");
+    					double pCBolus     = cKStates.get(0).getDouble("MealBolusArem");
+			        	
+    					gController.getSlqgController().settMeal(tMeal);
+    					gController.getSlqgController().setExtAgg(extAgg);
+    					gController.getEstimator().setListening(listening);
+    					gController.getEstimator().setMCount(mCount);
+    					gController.getSafe().setIOBMaxCF(iobMaxCF);
+						gController.getSafe().setIobMax(iobMax);
+						gController.setpCBolus(pCBolus);
+						
+    					if(slqgStateFlag==1){
+    						
+    						gController.getSlqgController().setSLQGState(gController.getSlqgController().getAggressiveState());
+    						
+    					}
+    					
+    					// Debug
+			    		
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Controller's variables loaded --- tMeal: " + tMeal
+			    				+ ". extAgg: "+extAgg +". slqgStateFlag: "+slqgStateFlag+ ". mCount: "+mCount + ". listening: "+listening+". IOBMaxCF: "+iobMaxCF
+			    				+ ". IobMax: "+iobMax + ". pCBolus: "+pCBolus);
+			    		
+			    		//
+			    		
+		        	}
+	        					
+	        	}
+				
+				else{
+					
+					// Si pasan más de 7.5 min en otro modo diferente a Closed-Loop, se ejecuta la rutina de reseteo de las variables
+	        		
+	        		// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  More than 7.5 min from last CL update. Reinitilizating the controller variables");
+		    		
+		    		//
+		    		
+		    		// Toast.makeText(IOMain.this, "More than 7.5 min from last CL update. Reinitilizating the controller variables" , Toast.LENGTH_SHORT).show();
+		    		
+					gController.getSlqgController().settMeal(0);
+					gController.getSlqgController().setExtAgg(0);	
+					gController.getEstimator().setListening(0);
+					gController.getEstimator().setMCount(0);
+					gController.getSlqgController().setSLQGState(gController.getSlqgController().getConservativeState());
+					gController.getSafe().setIOBMaxCF(0.0);
+					gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
+					gController.setpCBolus(0.0);
+        			
+				}
+				
+				Matrix kStates = new Matrix(13,1);
+				
+				// Los estados no se reinician cuando se pulsa Reset
+				// Mantengo los estados por 12.5 min
+				
+				if(diffKStatesTime<755){
+		        	
+					double[][] kStatesAux = new double[13][1];
+        			
+        			kStatesAux[0][0]  = cKStates.get(0).getDouble("IOB");
+        			kStatesAux[1][0]  = cKStates.get(0).getDouble("GPred");
+        			kStatesAux[2][0]  = cKStates.get(0).getDouble("GPred_correction");
+        			kStatesAux[3][0]  = cKStates.get(0).getDouble("Gpred_bolus");
+        			kStatesAux[4][0]  = cKStates.get(0).getDouble("Xi00");
+        			kStatesAux[5][0]  = cKStates.get(0).getDouble("Xi01");
+        			kStatesAux[6][0]  = cKStates.get(0).getDouble("Xi02");
+        			kStatesAux[7][0]  = cKStates.get(0).getDouble("Xi03");
+        			kStatesAux[8][0]  = cKStates.get(0).getDouble("Xi04");
+        			kStatesAux[9][0]  = cKStates.get(0).getDouble("Xi05");
+        			kStatesAux[10][0] = cKStates.get(0).getDouble("Xi06");
+        			kStatesAux[11][0] = cKStates.get(0).getDouble("Xi07");
+        			kStatesAux[12][0] = cKStates.get(0).getDouble("brakes_coeff");
+        			
+        			kStates = new Matrix(kStatesAux);
+        			
+				}
+				
+				else{
+					
+					// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> : More than 12.5 min from last CL update. Reinitilizating the controller states");
+		    		
+		    		//
+		    		
+		    		//Toast.makeText(IOMain.this, "More than 12.5 min from last CL update. Reinitilizating the controller states" , Toast.LENGTH_SHORT).show();
+					
+				}
+				
+				gController.getSlqgController().getLqg().setX(kStates);
+	        				
+	        }
+    	}
+    	
+    	else{
     		
-        	//cKStates.close();
-        	
-        	// ************************************************************************************************************ //
-        	// ************************************************************************************************************ //
-        	
-        	// Acá se informa el bolo calculado
-        	
-    		// For corrections use the "correction" value (in Units)
-			// For rate changes set "new_rate" to true and use "diff_rate" for the value (+/- subject's basal)
+    		// Debug
     		
-        	// En esta aplicación diff_rate es el bolo completo, es decir que considera la basal del paciente. Para eso se modificó
-        	// el SSMservice en la forma correspondiente
-        	
-        	double uControl = 0.0;   	
-        	double[][] cgmV = gController.getEstimator().getCgmVector().getData();
-        	
-        	// Debug
-    		
-    		log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP. Controller State: " + gController.getgControllerState().toString()+ 
-    				". MealFlag: "+mealFlag +". MealClass: " + mealClass+". yCGM: " +cgmV[gController.getEstimator().getCgmVector().getM()-1][0]+". iobFactor: "+parameterIOBFactorF);
+    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Error loading controller's states! --> x and variables = 0");
     		
     		//
-    		
-    		// TODO_APS: ver argumentos de la funcion run		    			    		
-    		//uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0],parameterIOBFactorF); 
-    								        	
-    		// Insulin signal is divided into basal and correction channels
-    		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints
-    		// El máximo bolo de corrección es de 6 U
-    		// La máxima acción de control es por lo tanto de 6.5 U
-    		
-        	if(uControl>0.5){
-        		diff_rate  = 0.5;
-        		correction = uControl-diff_rate;
-        	}
-        	else{
-        		diff_rate  = uControl;
-        		correction = 0.0;
-        	}
-        	
-        	new_rate = true;
-        	
-        	// ************************************************************************************************************ //
-        	// ************************************************************************************************************ //
-        	
-    		// Guardo los estados y variables actualizadas del controlador
-        	
-    		//ContentValues statesTableK = new ContentValues();
-    		JSONObject statesTableK = new JSONObject();
-    		double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
+    		emitToastMsg("Error loading HMS STATE ESTIMATE Table");
+    	
+    	}
+		
+    	//cKStates.close();
+    	
+    	// ************************************************************************************************************ //
+    	// ************************************************************************************************************ //
+    	
+    	// Acá se informa el bolo calculado
+    	
+		// For corrections use the "correction" value (in Units)
+		// For rate changes set "new_rate" to true and use "diff_rate" for the value (+/- subject's basal)
+		
+    	// En esta aplicación diff_rate es el bolo completo, es decir que considera la basal del paciente. Para eso se modificó
+    	// el SSMservice en la forma correspondiente
+    	
+    	double uControl = 0.0;   	
+    	double[][] cgmV = gController.getEstimator().getCgmVector().getData();
+    	
+    	// Debug
+		
+		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Controller State: " + gController.getgControllerState().toString()+ 
+				". MealFlag: "+mealFlag +". MealClass: " + mealClass+". yCGM: " +cgmV[gController.getEstimator().getCgmVector().getM()-1][0]+". iobFactor: "+parameterIOBFactorF);
+		
+		//
+		
+		// TODO_APS: ver argumentos de la funcion run		    			    		
+		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0]); // ,parameterIOBFactorF); 
+								        	
+		// Insulin signal is divided into basal and correction channels
+		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints
+		// El máximo bolo de corrección es de 6 U
+		// La máxima acción de control es por lo tanto de 6.5 U
+		
+    	if(uControl>0.5){
+    		diff_rate  = 0.5;
+    		correction = uControl-diff_rate;
+    	}
+    	else{
+    		diff_rate  = uControl;
+    		correction = 0.0;
+    	}
+    	
+    	new_rate = true;
+    	
+    	// ************************************************************************************************************ //
+    	// ************************************************************************************************************ //
+    	
+		// Guardo los estados y variables actualizadas del controlador
+    	
+		//ContentValues statesTableK = new ContentValues();
+		JSONObject statesTableK = new JSONObject();
+		double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
 
-    		try{
-		    		statesTableK.put("IOB", xstates[0][0]);
-		    		statesTableK.put("Gpred", xstates[1][0]);
-		    		statesTableK.put("Gpred_correction", xstates[2][0]);
-		    		statesTableK.put("Gpred_bolus", xstates[3][0]);
-		    		statesTableK.put("Xi00", xstates[4][0]);
-		    		statesTableK.put("Xi01", xstates[5][0]);
-		    		statesTableK.put("Xi02", xstates[6][0]);
-		    		statesTableK.put("Xi03", xstates[7][0]);
-		    		statesTableK.put("Xi04", xstates[8][0]);
-		    		statesTableK.put("Xi05", xstates[9][0]);
-		    		statesTableK.put("Xi06", xstates[10][0]);
-		    		statesTableK.put("Xi07", xstates[11][0]);
-		    		statesTableK.put("brakes_coeff", xstates[12][0]);
-		    		statesTableK.put("time", currentTime);
-		    		statesTableK.put("bolus_amount", (double)gController.getSlqgController().gettMeal());
-		    		statesTableK.put("MealBolusA", (double)gController.getSlqgController().getExtAgg());
-		    		statesTableK.put("MealBolusArem", gController.getpCBolus());
-		    		statesTableK.put("CORRA", gController.getSafe().getIobMax());
-		    		int slqgStateFlag = 0;
-		    		if(Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive")){
-		    			slqgStateFlag = 1;
-		    		}
-		    		statesTableK.put("IOBrem", (double)slqgStateFlag);
-		    		statesTableK.put("d", gController.getSafe().getIOBMaxCF());
-		    		statesTableK.put("hmin", (double)gController.getEstimator().getListening());
-		    		statesTableK.put("Hmax", (double)gController.getEstimator().getMCount());
-		    		statesTableK.put("correction_in_units", (double)gController.getrCFBolus());
-		    		statesTableK.put("creditRequest", (double)gController.gettEndAgg());
-    		}catch(JSONException e){
+		try{
+	    		statesTableK.put("IOB", xstates[0][0]);
+	    		statesTableK.put("Gpred", xstates[1][0]);
+	    		statesTableK.put("Gpred_correction", xstates[2][0]);
+	    		statesTableK.put("Gpred_bolus", xstates[3][0]);
+	    		statesTableK.put("Xi00", xstates[4][0]);
+	    		statesTableK.put("Xi01", xstates[5][0]);
+	    		statesTableK.put("Xi02", xstates[6][0]);
+	    		statesTableK.put("Xi03", xstates[7][0]);
+	    		statesTableK.put("Xi04", xstates[8][0]);
+	    		statesTableK.put("Xi05", xstates[9][0]);
+	    		statesTableK.put("Xi06", xstates[10][0]);
+	    		statesTableK.put("Xi07", xstates[11][0]);
+	    		statesTableK.put("brakes_coeff", xstates[12][0]);
+	    		statesTableK.put("time", currentTime);
+	    		statesTableK.put("bolus_amount", (double)gController.getSlqgController().gettMeal());
+	    		statesTableK.put("MealBolusA", (double)gController.getSlqgController().getExtAgg());
+	    		statesTableK.put("MealBolusArem", gController.getpCBolus());
+	    		statesTableK.put("CORRA", gController.getSafe().getIobMax());
+	    		int slqgStateFlag = 0;
+	    		if(Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive")){
+	    			slqgStateFlag = 1;
+	    		}
+	    		statesTableK.put("IOBrem", (double)slqgStateFlag);
+	    		statesTableK.put("d", gController.getSafe().getIOBMaxCF());
+	    		statesTableK.put("hmin", (double)gController.getEstimator().getListening());
+	    		statesTableK.put("Hmax", (double)gController.getEstimator().getMCount());
+	    		statesTableK.put("correction_in_units", (double)gController.getrCFBolus());
+	    		statesTableK.put("creditRequest", (double)gController.gettEndAgg());
+		}catch(JSONException e){
 
-    		}
-    		
-    		// TODO_APS: insercion
-			//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-	
+		}
+		
+		// TODO_APS: insercion
+		this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
+
+		//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+
     }
 
     private void rutina_8(){
@@ -3170,7 +2996,7 @@ public class IOMain{
     			
     			// Debug
 	    		
-	    		log.debug("ARG /////// "+"Transición de Closed-Loop a Pump Mode --> pCBolus = 0");
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Transición de Closed-Loop a Pump Mode --> pCBolus = 0");
 	    		
 	    		//
     			
@@ -3194,54 +3020,39 @@ public class IOMain{
 	    		List<ARGTable> bTime = MainApp.getDbHelper().getLastsARGTable("Biometrics.TEMP_BASAL_URI", 1);
 
 	        	if (bTime.size() > 0){ //(bTime != null) {
-	        		//if (bTime.moveToLast()) {
-	        			
-	        			endTime       = bTime.get(0).getLong("scheduled_end_time");
-	        			startTime     = bTime.get(0).getLong("start_time");
-	        			actualEndTime = bTime.get(0).getLong("actual_end_time");
-	        			perTBR        = bTime.get(0).getInt("percent_of_profile_basal_rate");
-	        			
-	        			// Debug
+        			endTime       = bTime.get(0).getLong("scheduled_end_time");
+        			startTime     = bTime.get(0).getLong("start_time");
+        			actualEndTime = bTime.get(0).getLong("actual_end_time");
+        			perTBR        = bTime.get(0).getInt("percent_of_profile_basal_rate");
+        			
+        			// Debug
+		    		
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  endTime: "+endTime+". StartTime: "+startTime+
+		    				". actualEndTime: "+actualEndTime+". PerTBR: "+perTBR);
+		    		
+		    		//
+		    		
+        			if(Objects.equals(startTime, null)){
+        				
+        				perTBR        = 100;
+        				actualEndTime = 0;
+        				startTime     = 0;
+        				endTime       = 0;
+        				
+        				// Debug
 			    		
-			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. endTime: "+endTime+". StartTime: "+startTime+
-			    				". actualEndTime: "+actualEndTime+". PerTBR: "+perTBR);
+			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : TBR start time null! --> Per = 100%");
 			    		
 			    		//
 			    		
-	        			if(Objects.equals(startTime, null)){
-	        				
-	        				perTBR        = 100;
-	        				actualEndTime = 0;
-	        				startTime     = 0;
-	        				endTime       = 0;
-	        				
-	        				// Debug
-    			    		
-    			    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR start time null! --> Per = 100%");
-    			    		
-    			    		//
-    			    		
-	        			}
-	        			
-	        		//}
-	        		
-	        		//else{
-        				
-	        		//	// Debug
-			    		
-			    	//	log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. TBR table empty! --> Per = 100%");
-			    		
-			    	//	//
-			    		
-	        		//}
-	        		
+        			}	
 	        	}
 	        	
 	        	else{
     				
 	        		// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. Error loading TBR table! --> Per = 100%");
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Error loading TBR table! --> Per = 100%");
 		    		
 		    		//
 		    		
@@ -3249,8 +3060,7 @@ public class IOMain{
 		    		
 	        	}
 	        	
-	        //	bTime.close();
-	        	
+
 	        	// ************************************************************************************************************ //
 	        	
 	        	// Si se forzó el fin del TBR antes de tiempo
@@ -3259,7 +3069,7 @@ public class IOMain{
 	        		
 	        		// Debug
 		    		
-		    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. actualEndTime!=0");
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> : actualEndTime!=0");
 		    		
 		    		//
 		    		
@@ -3294,7 +3104,7 @@ public class IOMain{
 	        	
 	        	// Debug
 	    		
-	    		log.debug("ARG /////// DIAS_STATE_OPEN_LOOP. mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
 	    		perTBR + ". currentTime: " + currentTime + ". startTime: "+ startTime + ". endTime: "+endTime + ". actualEndTime: "+actualEndTime);
 	    		
 	    		//
@@ -3310,7 +3120,7 @@ public class IOMain{
     			
     			// Debug
 	    		
-	    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. mBasal: "+ mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : P basalCase. mBasal: "+ mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
 	    		
 	    		//
 	    		
@@ -3320,7 +3130,7 @@ public class IOMain{
     		
     		// Debug
     		
-    		log.debug("ARG /////// mBasalF: "+ mBasalF + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
+    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  mBasalF: "+ mBasalF + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12);
     		
     		//
     		
@@ -3367,7 +3177,7 @@ public class IOMain{
 				
 				// Debug
 	    		
-	    		log.debug("ARG /////// DIAS_STATE_CLOSED_LOOP basalCase. "+"IOB's states updated. "
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  basalCase. "+"IOB's states updated. "
 	    				+ "basalBolus: " + basalBolus + ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
 	    		
 	    		//	
@@ -3378,7 +3188,7 @@ public class IOMain{
 				
 				// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_OPEN_LOOP. IOB's states updated. basalBolus: " + basalBolus
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : IOB's states updated. basalBolus: " + basalBolus
 	    				+ ". pcb: " + gController.getpCBolus() + ". uTemp: " + uTemp[0][0]);
 	    		
 	    		//
@@ -3392,7 +3202,7 @@ public class IOMain{
     	
     	// Debug
     	
-		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Final IOB: " + iobEst + ". IOB basal: " + iobBasal);
+		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Final IOB: " + iobEst + ". IOB basal: " + iobBasal);
 		
 		//
 		
@@ -3403,7 +3213,37 @@ public class IOMain{
     		    			    		
 		if(DIAS_STATE != State.DIAS_STATE_SENSOR_ONLY && DIAS_STATE != State.DIAS_STATE_STOPPED)
 		{
+
+			double[][] iobStates1         = gController.getSafe().getIob().getX().getData();
+
+    		JSONObject statesTableIOB = new JSONObject();
+    		try{
+				statesTableIOB.put("l0", 0);
+				statesTableIOB.put("l1", 0);	
+				statesTableIOB.put("d0", iobStates1[0][0]);
+				statesTableIOB.put("d1", iobStates1[1][0]);
+				statesTableIOB.put("d2", iobStates1[2][0]);
+				statesTableIOB.put("d3", iobEst);
+				statesTableIOB.put("d4", iobBasal);	
+				statesTableIOB.put("d5", 0.0);
+				statesTableIOB.put("d6", 0.0);
+				statesTableIOB.put("d7", 0.0);
+				statesTableIOB.put("d8", 0.0);	
+				statesTableIOB.put("d9", 0.0);
+				statesTableIOB.put("d10", 0.0);
+				statesTableIOB.put("d11", 0.0);
+				statesTableIOB.put("d12", 0.0);
+				statesTableIOB.put("d13", 0.0);
+				statesTableIOB.put("d14", 0.0);
+				statesTableIOB.put("d15", 0.0);
+				statesTableIOB.put("send_attempts_server", 1);	
+				statesTableIOB.put("received_server", true);
     		
+    			statesTableIOB.put("time", iobLastTime);
+			}catch(JSONException e){
+
+			}
+
     	// TODO_APS: insercion de tablas
 		//	ContentValues statesTableIOB1 = new ContentValues();
     	//	TableShortCut scTableIOB1     = new TableShortCut(); 
@@ -3412,12 +3252,15 @@ public class IOMain{
     	//	statesTableIOB1 = scTableIOB1.insertValue(statesTableIOB1, iobStates1[0][0], iobStates1[1][0], iobStates1[2][0], iobEst, 
     	//			iobBasal, 0.0, 0.0, 0.0, 0.0, 
     	//			0.0, 0.0, 0.0, 0.0);
-    		
+    					// Debug
+        	
+
+			this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
 		//	getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB1);
 			
-			// Debug
-        	
-    		log.debug("ARG /////// DIAS_STATE_CL&OP. IOB states saved!");
+
+	
+    		log.debug("[ARGPLUGIN:IOMAIN]     -> : IOB states saved!");
     		
     		//
 			
@@ -3436,7 +3279,7 @@ public class IOMain{
         gController = g;
 
 		// Debug
-		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE start");
+		log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min()");
 
 		this.pruebaARGTable();
 		
@@ -3445,7 +3288,7 @@ public class IOMain{
 
 		// TODO_AAPS: como determinar esto?
 		asynchronous = false; 
-		DIAS_STATE = State.DIAS_STATE_UNKWOWN;
+		DIAS_STATE = State.DIAS_STATE_CLOSED_LOOP;
 
 		// Log the parameters for IO testing
 //		if (Params.getBoolean(getContentResolver(), "enableIO", false)) {
@@ -3467,6 +3310,14 @@ public class IOMain{
 		new_rate = false;
 		nowMS = System.currentTimeMillis();
 		
+
+		if (nowMS - lastEjectuarCada5Min_tick < 5 * 60 * 1000L){
+			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() < 5 min, exit");
+			return;
+		}
+
+		lastEjectuarCada5Min_tick = nowMS;
+
 		// ************************************************************************************************************ //
 		
 		// Esto se ejecuta con el DiAs en cualquier modo
@@ -3477,7 +3328,7 @@ public class IOMain{
 			
 			// Debug
 			
-			log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: New iteration");
+			log.debug("[ARGPLUGIN:IOMAIN]  New iteration");
 			
 			//
 			
@@ -3486,7 +3337,7 @@ public class IOMain{
 
 				// Debug
 	    		
-	    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Synchronous call");
+	    		log.debug("[ARGPLUGIN:IOMAIN]: Synchronous call");
 	    		
 	    		//
 		
@@ -3506,13 +3357,13 @@ public class IOMain{
 				// gController.getPatient().setBasalU(subject.basal);
 	    			
 	    		// TODO_AAPS: Variable configurable desde Interfaz
-				parameterIOBFactor = 1.6; // subject.height;
+				parameterIOBFactor = 1; // subject.height;
 				
 				// Debug
 	    		
 				parameterIOBFactorF = new BigDecimal(Double.toString(0.015957446808511*parameterIOBFactor-1.776595744680853)).setScale(2, RoundingMode.HALF_DOWN).doubleValue();
 				
-	    		log.debug("ARG /////// "+"IOB Factor: "+parameterIOBFactorF);
+	    		log.debug("[ARGPLUGIN:IOMAIN] IOB Factor: "+parameterIOBFactorF);
 	    		
 	    		rutina_1_capturar_bolos_asincronicos();
 
@@ -3538,15 +3389,47 @@ public class IOMain{
 		    		// Guardo el IOB actualizado
 		        	
 		        	// TODO_APS: inserción!
-	    			//double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-	    			//double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
+	    			double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+	    			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 	    			
+					double[][] iobStates = gController.getSafe().getIob().getX().getData();
+
+					JSONObject statesTableIOB = new JSONObject();
+					try{
+						statesTableIOB.put("l0", 0);
+						statesTableIOB.put("l1", 0);	
+						statesTableIOB.put("d0", iobStates[0][0]);
+						statesTableIOB.put("d1", iobStates[1][0]);
+						statesTableIOB.put("d2", iobStates[2][0]);
+						statesTableIOB.put("d3", iobEst);
+						statesTableIOB.put("d4", iobBasal);	
+						statesTableIOB.put("d5", 0.0);
+						statesTableIOB.put("d6", 0.0);
+						statesTableIOB.put("d7", 0.0);
+						statesTableIOB.put("d8", 0.0);	
+						statesTableIOB.put("d9", 0.0);
+						statesTableIOB.put("d10", 0.0);
+						statesTableIOB.put("d11", 0.0);
+						statesTableIOB.put("d12", 0.0);
+						statesTableIOB.put("d13", 0.0);
+						statesTableIOB.put("d14", 0.0);
+						statesTableIOB.put("d15", 0.0);
+						statesTableIOB.put("send_attempts_server", 1);	
+						statesTableIOB.put("received_server", true);
+					
+						statesTableIOB.put("time", iobLastTime);
+					}catch(JSONException e){
+
+					}
+
 		    		//ContentValues statesTableIOB = new ContentValues();
 		    		//TableShortCut scTableIOB     = new TableShortCut(); 
 		    		//double[][] iobStates = gController.getSafe().getIob().getX().getData();
 		    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
 		    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
 		    		//		0.0, 0.0, 0.0, 0.0);
+
+					this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
 					//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
 					
 					// Debug
@@ -3563,7 +3446,7 @@ public class IOMain{
 	    		
 	    		// Debug
 	    		
-	    		log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Final). IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
+	    		log.debug("[ARGPLUGIN:IOMAIN]  Inicialización IOB (Final). IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
 				
 	    		//
 	    		
@@ -3581,7 +3464,7 @@ public class IOMain{
 				
 				// Debug
 				
-				log.debug("ARG /////// Asynchronous call!");
+				log.debug("[ARGPLUGIN:IOMAIN]  Asynchronous call!");
 	    		
 	    		//
 				
@@ -3598,7 +3481,7 @@ public class IOMain{
 			
 			// Debug
 			
-			log.debug("ARG /////// "+"DIAS_STATE_UNKWOWN");
+			log.debug("[ARGPLUGIN:IOMAIN] DIAS_STATE_UNKWOWN");
 			
 			//
 			
@@ -3702,10 +3585,10 @@ public class IOMain{
 		return ret;
 	}
 
-	private void inserNewTable(String table, JSONObject argTableJSON){
+	private void insertNewTable(String table, JSONObject argTableJSON){
 		ARGTable argTable = new ARGTable(System.currentTimeMillis(), table, argTableJSON);
 
-		MainApp.getDbHelper().createARGTableIfNotExists(argTable, "inserNewTable()");
+		MainApp.getDbHelper().createARGTableIfNotExists(argTable, "insertNewTable()");
 		NSUpload.uploadARGTable(argTable);
 	}
 
