@@ -403,17 +403,16 @@ public class IOMain{
 			// Chequeo si no se infundió
 			if(statusIns!=2){
 				// Puntero a la tabla de IOB
-				cIob = MainApp.getDbHelper()
-							.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
+				cIob = MainApp.getDbHelper().getLastsARGTable("ARG_IOB_STATES", 2);
 
 				if (cIob.size() > 0){ //(cIob != null) {
 
-		        	iobLastTime = cIob.get(0).getLong("time");
-		        	iobState1 = cIob.get(0).getDouble("d0");
-		        	iobState2 = cIob.get(0).getDouble("d1");
-		        	iobState3 = cIob.get(0).getDouble("d2");
-		        	iobEst    = cIob.get(0).getDouble("d3");
-		        	iobBasal  = cIob.get(0).getDouble("d4");
+		        	iobLastTime = cIob.get(0).getLong("iobLastTime");
+		        	iobState1 = cIob.get(0).getDouble("iobStates0");
+		        	iobState2 = cIob.get(0).getDouble("iobStates1");
+		        	iobState3 = cIob.get(0).getDouble("iobStates2");
+		        	iobEst    = cIob.get(0).getDouble("iobEst");
+		        	iobBasal  = cIob.get(0).getDouble("iobBasal");
 		       		
 
 					log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 0 - " 
@@ -460,35 +459,20 @@ public class IOMain{
 			    		// Guardo los estados de IOB corregidos
 			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
 			    		
-			    		JSONObject statesTableIOB = new JSONObject();
-			    		try{
-							statesTableIOB.put("l0", 0);
-							statesTableIOB.put("l1", 0);	
-							statesTableIOB.put("d0", iobStates[0][0]);
-							statesTableIOB.put("d1", iobStates[1][0]);
-							statesTableIOB.put("d2", iobStates[2][0]);
-							statesTableIOB.put("d3", iobEst);
-							statesTableIOB.put("d4", iobBasal);	
-							statesTableIOB.put("d5", 0.0);
-							statesTableIOB.put("d6", 0.0);
-							statesTableIOB.put("d7", 0.0);
-							statesTableIOB.put("d8", 0.0);	
-							statesTableIOB.put("d9", 0.0);
-							statesTableIOB.put("d10", 0.0);
-							statesTableIOB.put("d11", 0.0);
-							statesTableIOB.put("d12", 0.0);
-							statesTableIOB.put("d13", 0.0);
-							statesTableIOB.put("d14", 0.0);
-							statesTableIOB.put("d15", 0.0);
-							statesTableIOB.put("send_attempts_server", 1);	
-							statesTableIOB.put("received_server", true);
-			    		
-			    			statesTableIOB.put("time", iobLastTime);
+
+						JSONObject statesTableIOB = new JSONObject();
+						try{
+							statesTableIOB.put("iobStates0", iobStates[0][0]);
+							statesTableIOB.put("iobStates1", iobStates[1][0]);
+							statesTableIOB.put("iobStates2", iobStates[2][0]);
+							statesTableIOB.put("iobEst", iobEst);
+							statesTableIOB.put("iobBasal", iobBasal);	
+							statesTableIOB.put("iobLastTime", iobLastTime);
 						}catch(JSONException e){
 
 						}
 
-						this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+						this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
 
 						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : " 
 							+ "Estados corregidos. iobLastTime: "+iobLastTime+
@@ -496,35 +480,20 @@ public class IOMain{
 			    				". iobState3: "+iobStates[2][0]+". iobBasal: "+iobBasal+
 			    				"iobEst: "+iobEst);	
         			}else{
-        				JSONObject statesTableIOB = new JSONObject();
-			    		try{
-							statesTableIOB.put("l0", 0);
-							statesTableIOB.put("l1", 0);	
-							statesTableIOB.put("d0", 0);
-							statesTableIOB.put("d1", 0);
-							statesTableIOB.put("d2", 0);
-							statesTableIOB.put("d3", 0);
-							statesTableIOB.put("d4", iobBasal);	
-							statesTableIOB.put("d5", 0.0);
-							statesTableIOB.put("d6", 0.0);
-							statesTableIOB.put("d7", 0.0);
-							statesTableIOB.put("d8", 0.0);	
-							statesTableIOB.put("d9", 0.0);
-							statesTableIOB.put("d10", 0.0);
-							statesTableIOB.put("d11", 0.0);
-							statesTableIOB.put("d12", 0.0);
-							statesTableIOB.put("d13", 0.0);
-							statesTableIOB.put("d14", 0.0);
-							statesTableIOB.put("d15", 0.0);
-							statesTableIOB.put("send_attempts_server", 1);	
-							statesTableIOB.put("received_server", true);
-			    		
-			    			statesTableIOB.put("time", iobLastTime);
+
+						JSONObject statesTableIOB = new JSONObject();
+						try{
+							statesTableIOB.put("iobStates0", 0);
+							statesTableIOB.put("iobStates1", 0);
+							statesTableIOB.put("iobStates2", 0);
+							statesTableIOB.put("iobEst", 0);
+							statesTableIOB.put("iobBasal", iobBasal);	
+							statesTableIOB.put("iobLastTime", iobLastTime);
 						}catch(JSONException e){
 
 						}
 
-						this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+						this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
 
 						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : No había estados penúltimos --> IOB = 0");	
         			}
@@ -553,7 +522,7 @@ public class IOMain{
     	// Puntero a la tabla de IOB
     	
 		List<ARGTable> cIob = MainApp.getDbHelper()
-					.getLastsARGTable("Biometrics.USER_TABLE_1_URI", 2);
+					.getLastsARGTable("ARG_IOB_STATES", 2);
 
 		
 		// TODO_APS: revisar esta logica ya que nuestra base de datos siempre va a devolver los datos
@@ -567,10 +536,10 @@ public class IOMain{
     	if (cIob.size() > 0) {// (cIob != null) {
 			log.debug("[ARGPLUGIN:IOMAIN]     -> : cIob.size() > 0");
 		
-			iobLastTime = cIob.get(0).getLong("time");
-        	iobState1   = cIob.get(0).getDouble("d0");
-        	iobState2   = cIob.get(0).getDouble("d1");
-        	iobState3   = cIob.get(0).getDouble("d2");
+			iobLastTime = cIob.get(0).getLong("iobLastTime");
+        	iobState1   = cIob.get(0).getDouble("iobStates0");
+        	iobState2   = cIob.get(0).getDouble("iobStates1");
+        	iobState3   = cIob.get(0).getDouble("iobStates2");
 
 			if(Objects.equals(iobLastTime, null)){
 				iobLastTime = 0;
@@ -1168,35 +1137,20 @@ public class IOMain{
 			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 			double[][] iobStates = gController.getSafe().getIob().getX().getData();
 
+
 			JSONObject statesTableIOB = new JSONObject();
-    		try{
-				statesTableIOB.put("l0", 0);
-				statesTableIOB.put("l1", 0);	
-				statesTableIOB.put("d0", iobStates[0][0]);
-				statesTableIOB.put("d1", iobStates[1][0]);
-				statesTableIOB.put("d2", iobStates[2][0]);
-				statesTableIOB.put("d3", iobEst);
-				statesTableIOB.put("d4", iobBasal);	
-				statesTableIOB.put("d5", 0.0);
-				statesTableIOB.put("d6", 0.0);
-				statesTableIOB.put("d7", 0.0);
-				statesTableIOB.put("d8", 0.0);	
-				statesTableIOB.put("d9", 0.0);
-				statesTableIOB.put("d10", 0.0);
-				statesTableIOB.put("d11", 0.0);
-				statesTableIOB.put("d12", 0.0);
-				statesTableIOB.put("d13", 0.0);
-				statesTableIOB.put("d14", 0.0);
-				statesTableIOB.put("d15", 0.0);
-				statesTableIOB.put("send_attempts_server", 1);	
-				statesTableIOB.put("received_server", true);
-    		
-    			statesTableIOB.put("time", iobLastTime);
+			try{
+				statesTableIOB.put("iobStates0", iobStates[0][0]);
+				statesTableIOB.put("iobStates1", iobStates[1][0]);
+				statesTableIOB.put("iobStates2", iobStates[2][0]);
+				statesTableIOB.put("iobEst", iobEst);
+				statesTableIOB.put("iobBasal", iobBasal);	
+				statesTableIOB.put("iobLastTime", iobLastTime);
 			}catch(JSONException e){
 
 			}
 
-			this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
+			this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
 
 			log.debug("[ARGPLUGIN:IOMAIN]     -> :   Inicialización IOB (Bolo de inicialización). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal+ ". indicesAux Size: " + indicesAux.size() + ". indices Size: " + indices.size());
 			
@@ -1398,7 +1352,7 @@ public class IOMain{
     		
     		// Puntero a la tabla del vector de CGM (tabla de usuario 4)
     		//Cursor cCGMV = getContentResolver().query(Biometrics.USER_TABLE_4_URI, null, null, null, null);
-    		List<ARGTable> cCGMV = MainApp.getDbHelper().getLastsARGTable("Biometrics.USER_TABLE_4_URI", 1);
+    		List<ARGTable> cCGMV = MainApp.getDbHelper().getLastsARGTable("ARG_CGM_VECTOR", 1);
 
     		boolean hayResultadosEnDB = (cCGMV.size() > 0);
     		boolean ultimoResultado = true;
@@ -1409,7 +1363,7 @@ public class IOMain{
 	        		if (ultimoResultado){ // (cCGMV.moveToLast()) {
 	        			
 	        			timeCGMV = cCGMV.get(0).getLong("time");
-	        			flag2c2  = cCGMV.get(0).getDouble("d15");
+	        			flag2c2  = cCGMV.get(0).getDouble("flag2c2");
 	        			
 	        			// Cargo todos las mediciones almacenadas en la tabla
 	        			// Desde "d0": muestra más antigua, hasta "d5": muestra más reciente
@@ -1417,7 +1371,7 @@ public class IOMain{
 	        			double cgmAux = 0.0;
 	        			
 	        			for(int ii = 0; ii < gController.getEstimator().getCgmVector().getM(); ++ii){
-	        				cgmAux = cCGMV.get(0).getDouble("d"+ii);
+	        				cgmAux = cCGMV.get(0).getDouble("cgm"+ii);
 	        				gController.getEstimator().insert(cgmAux);
 	        			}
 	        			
@@ -2065,32 +2019,20 @@ public class IOMain{
 	    		// TODO_APS: insercion, solo revisar
 
 				JSONObject cgmVectorTable = new JSONObject();
-	    		try{
-					cgmVectorTable.put("l0", 0);
-					cgmVectorTable.put("l1", 0);	
-					cgmVectorTable.put("d0", cgmVector[0][0]);
-					cgmVectorTable.put("d1", cgmVector[1][0]);
-					cgmVectorTable.put("d2", cgmVector[2][0]);
-					cgmVectorTable.put("d3", cgmVector[3][0]);
-					cgmVectorTable.put("d4", cgmVector[4][0]);	
-					cgmVectorTable.put("d5", cgmVector[5][0]);
-					cgmVectorTable.put("d6", 0.0);
-					cgmVectorTable.put("d7", 0.0);
-					cgmVectorTable.put("d8", 0.0);	
-					cgmVectorTable.put("d9", 0.0);
-					cgmVectorTable.put("d10", 0.0);
-					cgmVectorTable.put("d11", 0.0);
-					cgmVectorTable.put("d12", 0.0);
-					cgmVectorTable.put("d13", 0.0);
-					cgmVectorTable.put("d14", 0.0);
-					cgmVectorTable.put("d15", flag2c2);
-
-	    			cgmVectorTable.put("time", timeStampCgmV);
+	    		try{	
+					cgmVectorTable.put("cgm0", cgmVector[0][0]);
+					cgmVectorTable.put("cgm1", cgmVector[1][0]);
+					cgmVectorTable.put("cgm2", cgmVector[2][0]);
+					cgmVectorTable.put("cgm3", cgmVector[3][0]);
+					cgmVectorTable.put("cgm4", cgmVector[4][0]);	
+					cgmVectorTable.put("cgm5", cgmVector[5][0]);
+					cgmVectorTable.put("flag2c2", flag2c2);
+	    			cgmVectorTable.put("lastUpdated", timeStampCgmV);
 				}catch(JSONException e){
 
 				}
 
-				this.insertNewTable("Biometrics.USER_TABLE_4_URI", cgmVectorTable);
+				this.insertNewTable("ARG_CGM_VECTOR", cgmVectorTable);
 
 	    		// Debug
 	    	
@@ -2252,72 +2194,49 @@ public class IOMain{
         	List<ARGTable> cMeal = MainApp.getDbHelper()
 								.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
 
-        	if (cMeal.size() > 0) { //(cMeal != null) {
-      //  		if (cMeal.moveToLast()) {
-        			
-        			lastTime  = cMeal.get(0).getLong("time");
-		        	mealClass = (int)cMeal.get(0).getDouble("d0");
-		        	forCon    = (int)cMeal.get(0).getDouble("d1");
-		        	
-		        	// Debug
+        	if (cMeal.size() > 0) { 
+    			lastTime  = cMeal.get(0).getLong("time");
+	        	mealClass = (int)cMeal.get(0).getDouble("mealClass");
+	        	forCon    = (int)cMeal.get(0).getDouble("forCon");
+	        	
+	        	// Debug
+	    		
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  lastTime: "+lastTime+
+	    				". mealClass: "+mealClass+". forCon: "+forCon);
+	    		
+	    		//
+
+    			if(Objects.equals(lastTime, null)){
+    				
+    				lastTime  = 0;
+    				mealClass = 1;
+    				
+    				// Debug
 		    		
-		    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  lastTime: "+lastTime+
-		    				". mealClass: "+mealClass+". forCon: "+forCon);
+		    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Meal time null! --> Meal time = 0");
 		    		
 		    		//
-
-        			if(Objects.equals(lastTime, null)){
-        				
-        				lastTime  = 0;
-        				mealClass = 1;
-        				
-        				// Debug
-			    		
-			    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Meal time null! --> Meal time = 0");
-			    		
-			    		//
-			    		
-        			}
-        			
-        			else{
-        				
-        				if(mealClass==0){
-        					
-			        		mealClass = 1;
-			        		
-			        	}
-        				
-        			}
-        	//	}
-        		
-        		//else{
-    				
-    			//	// Debug
 		    		
-		    	//	log.debug("ARG /////// "+"DIAS_STATE_CLOSED_LOOP: Meal table empty! "
-		    	//			+ "--> Meal time = 0");
-		    		
-		    	//	//	
-		    		
-        		//}
-        		
+    			}else{
+    				if(mealClass==0)
+		        		mealClass = 1
+		        }
         	}
         	
         	else{
         		
         		// Debug
 	    		
-	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Error loading Meal table! "
-	    				+ "--> Meal time = 0");
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  No hay datos en la tabla de comida! ");
 	    		
 	    		//
 	    	
         	} 
 
-        	//cMeal.close();
-        	
         	timeDiff = currentTime - lastTime; // Diferencia temporal entre el tiempo actual y el último
         									   // registro de la tabla de anuncio
+
+        	// LEA: Si lastTime = 0, es decir no hay tablas, entonces no hay anuncio de comida
         	
         	// Si se anunció una comida en la iteración anterior (máxima diferencia temporal de 300 s)
         	// y no se forzó el reseteo del controlador activo el flag, sino no.
@@ -2348,7 +2267,8 @@ public class IOMain{
         	int tEndAggIni = 0;
         	
         	if (cMeal.size() > 0) 
-	        	tEndAggIni = (int)cMeal.get(0).getDouble("d2");
+        		// TODO_APS: hay que ver cuando lo inserta
+	        	tEndAggIni = (int)cMeal.get(0).getDouble("endAggIni");
 	        	
 	        	// Debug
 	    		
@@ -3219,50 +3139,20 @@ public class IOMain{
 
 			double[][] iobStates1         = gController.getSafe().getIob().getX().getData();
 
-    		JSONObject statesTableIOB = new JSONObject();
-    		try{
-				statesTableIOB.put("l0", 0);
-				statesTableIOB.put("l1", 0);	
-				statesTableIOB.put("d0", iobStates1[0][0]);
-				statesTableIOB.put("d1", iobStates1[1][0]);
-				statesTableIOB.put("d2", iobStates1[2][0]);
-				statesTableIOB.put("d3", iobEst);
-				statesTableIOB.put("d4", iobBasal);	
-				statesTableIOB.put("d5", 0.0);
-				statesTableIOB.put("d6", 0.0);
-				statesTableIOB.put("d7", 0.0);
-				statesTableIOB.put("d8", 0.0);	
-				statesTableIOB.put("d9", 0.0);
-				statesTableIOB.put("d10", 0.0);
-				statesTableIOB.put("d11", 0.0);
-				statesTableIOB.put("d12", 0.0);
-				statesTableIOB.put("d13", 0.0);
-				statesTableIOB.put("d14", 0.0);
-				statesTableIOB.put("d15", 0.0);
-				statesTableIOB.put("send_attempts_server", 1);	
-				statesTableIOB.put("received_server", true);
-    		
-    			statesTableIOB.put("time", iobLastTime);
+			JSONObject statesTableIOB = new JSONObject();
+			try{
+				statesTableIOB.put("iobStates0", iobStates[0][0]);
+				statesTableIOB.put("iobStates1", iobStates[1][0]);
+				statesTableIOB.put("iobStates2", iobStates[2][0]);
+				statesTableIOB.put("iobEst", iobEst);
+				statesTableIOB.put("iobBasal", iobBasal);	
+				statesTableIOB.put("iobLastTime", iobLastTime);
 			}catch(JSONException e){
 
 			}
 
-    	// TODO_APS: insercion de tablas
-		//	ContentValues statesTableIOB1 = new ContentValues();
-    	//	TableShortCut scTableIOB1     = new TableShortCut(); 
-    	//	double[][] iobStates1         = gController.getSafe().getIob().getX().getData();
-    		
-    	//	statesTableIOB1 = scTableIOB1.insertValue(statesTableIOB1, iobStates1[0][0], iobStates1[1][0], iobStates1[2][0], iobEst, 
-    	//			iobBasal, 0.0, 0.0, 0.0, 0.0, 
-    	//			0.0, 0.0, 0.0, 0.0);
-    					// Debug
-        	
+			this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
 
-			this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
-		//	getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB1);
-			
-
-	
     		log.debug("[ARGPLUGIN:IOMAIN]     -> : IOB states saved!");
     		
     		//
@@ -3391,53 +3281,21 @@ public class IOMain{
 		        	// TODO_APS: inserción!
 	    			double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
 	    			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
-	    			
 					double[][] iobStates = gController.getSafe().getIob().getX().getData();
 
 					JSONObject statesTableIOB = new JSONObject();
 					try{
-						statesTableIOB.put("l0", 0);
-						statesTableIOB.put("l1", 0);	
-						statesTableIOB.put("d0", iobStates[0][0]);
-						statesTableIOB.put("d1", iobStates[1][0]);
-						statesTableIOB.put("d2", iobStates[2][0]);
-						statesTableIOB.put("d3", iobEst);
-						statesTableIOB.put("d4", iobBasal);	
-						statesTableIOB.put("d5", 0.0);
-						statesTableIOB.put("d6", 0.0);
-						statesTableIOB.put("d7", 0.0);
-						statesTableIOB.put("d8", 0.0);	
-						statesTableIOB.put("d9", 0.0);
-						statesTableIOB.put("d10", 0.0);
-						statesTableIOB.put("d11", 0.0);
-						statesTableIOB.put("d12", 0.0);
-						statesTableIOB.put("d13", 0.0);
-						statesTableIOB.put("d14", 0.0);
-						statesTableIOB.put("d15", 0.0);
-						statesTableIOB.put("send_attempts_server", 1);	
-						statesTableIOB.put("received_server", true);
-					
-						statesTableIOB.put("time", iobLastTime);
+						statesTableIOB.put("iobStates0", iobStates[0][0]);
+						statesTableIOB.put("iobStates1", iobStates[1][0]);
+						statesTableIOB.put("iobStates2", iobStates[2][0]);
+						statesTableIOB.put("iobEst", iobEst);
+						statesTableIOB.put("iobBasal", iobBasal);	
+						statesTableIOB.put("iobLastTime", iobLastTime);
 					}catch(JSONException e){
 
 					}
 
-		    		//ContentValues statesTableIOB = new ContentValues();
-		    		//TableShortCut scTableIOB     = new TableShortCut(); 
-		    		//double[][] iobStates = gController.getSafe().getIob().getX().getData();
-		    		//statesTableIOB = scTableIOB.insertValue(statesTableIOB, iobStates[0][0], iobStates[1][0], iobStates[2][0], iobEst, 
-		    		//		iobBasal, 0.0, 0.0, 0.0, 0.0, 
-		    		//		0.0, 0.0, 0.0, 0.0);
-
-					this.insertNewTable("Biometrics.USER_TABLE_1_URI", statesTableIOB);
-					//getContentResolver().insert(Biometrics.USER_TABLE_1_URI, statesTableIOB);
-					
-					// Debug
-		    		
-		    		//log.debug("ARG /////// DIAS_STATE_CL&OP&ST&SS. Inicialización IOB (Bolo de corrección). timeDiff: " + timeDiff + ". IobState1: " + iobStates[0][0] + ". IobState2: " + iobStates[1][0] + ". IobState3: " + iobStates[2][0] +". Final IOB: " + iobEst + ". Basal IOB: "+iobBasal);
-		    		
-		    		//
-		    		
+					this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
 	        	}
 	        	
 	    		double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
