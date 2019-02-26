@@ -607,7 +607,10 @@ public class IOMain{
 		subjectBasal = new Tvector();
         for (int i = 0; i < 24; i++) {
         	// obtengo basal de la hora i
-            double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
+        	// TODO_APS: chrashea aca, profile no es null, pero se ve que la implementacion
+        	// de la interfaz no está
+
+            double rate = 1.0; // profile.getBasalTimeFromMidnight(i * 60 * 60);
 
 			subjectBasal.put_with_replace(i*60, rate);
         }
@@ -3281,6 +3284,15 @@ public class IOMain{
 		// Debug
 		log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min()");
 
+        if (gController == null){
+			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY CONTROLADOR ACTIVO");
+			return;
+        }else if (profile == null){
+			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY PERFIL ACTIVO");
+			return;
+        }
+
+
 		this.pruebaARGTable();
 		
 		// Clonacion de tablas de AAPS a como las adquiere DiAS
@@ -3288,21 +3300,9 @@ public class IOMain{
 
 		// TODO_AAPS: como determinar esto?
 		asynchronous = false; 
-		DIAS_STATE = State.DIAS_STATE_CLOSED_LOOP;
 
-		// Log the parameters for IO testing
-//		if (Params.getBoolean(getContentResolver(), "enableIO", false)) {
-//			Bundle b = new Bundle();
-//			b.putString(	"description", 
-//							" SRC: DIAS_SERVICE"+
-//							" DEST: APC"+
-//							" -"+FUNC_TAG+"-"+
-//							" APC_SERVICE_CMD_CALCULATE_STATE"+
-//							" Async: "+asynchronous+
-//							" DIAS_STATE: "+DIAS_STATE
-//						);
-//			Event.addEvent(getApplicationContext(), Event.EVENT_SYSTEM_IO_TEST, Event.makeJsonString(b), Event.SET_LOG);
-//		}
+		// TODO_APS: leer estado si está en lazo abierto o cerrado
+		DIAS_STATE = State.DIAS_STATE_CLOSED_LOOP;
 		
 		// Iniciar variables
 		correction = 0.0;
@@ -3311,8 +3311,8 @@ public class IOMain{
 		nowMS = System.currentTimeMillis();
 		
 
-		if (nowMS - lastEjectuarCada5Min_tick < 5 * 60 * 1000L){
-			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() < 5 min, exit");
+		if (nowMS - lastEjectuarCada5Min_tick < ( ( (5 * 60) - 10)  * 1000L ) ){
+			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() < 5 min(-10segs), exit");
 			return;
 		}
 
@@ -3328,7 +3328,7 @@ public class IOMain{
 			
 			// Debug
 			
-			log.debug("[ARGPLUGIN:IOMAIN]  New iteration");
+			log.debug("[ARGPLUGIN:IOMAIN]  Nueva iteracion");
 			
 			//
 			
@@ -3337,7 +3337,7 @@ public class IOMain{
 
 				// Debug
 	    		
-	    		log.debug("[ARGPLUGIN:IOMAIN]: Synchronous call");
+	    		log.debug("[ARGPLUGIN:IOMAIN] Llamado sincronico");
 	    		
 	    		//
 		
