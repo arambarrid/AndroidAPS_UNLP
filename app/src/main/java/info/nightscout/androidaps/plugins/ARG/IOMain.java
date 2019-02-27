@@ -2219,7 +2219,7 @@ public class IOMain{
 		    		
     			}else{
     				if(mealClass==0)
-		        		mealClass = 1
+		        		mealClass = 1;
 		        }
         	}
         	
@@ -3141,9 +3141,9 @@ public class IOMain{
 
 			JSONObject statesTableIOB = new JSONObject();
 			try{
-				statesTableIOB.put("iobStates0", iobStates[0][0]);
-				statesTableIOB.put("iobStates1", iobStates[1][0]);
-				statesTableIOB.put("iobStates2", iobStates[2][0]);
+				statesTableIOB.put("iobStates0", iobStates1[0][0]);
+				statesTableIOB.put("iobStates1", iobStates1[1][0]);
+				statesTableIOB.put("iobStates2", iobStates1[2][0]);
 				statesTableIOB.put("iobEst", iobEst);
 				statesTableIOB.put("iobBasal", iobBasal);	
 				statesTableIOB.put("iobLastTime", iobLastTime);
