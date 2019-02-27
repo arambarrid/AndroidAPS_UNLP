@@ -2507,7 +2507,7 @@ public class IOMain{
 		
 		// Puntero a la tabla del controlador
 		
-//    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
+		//    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
 		List<ARGTable> cKStates = MainApp.getDbHelper()
 							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
 
@@ -3143,7 +3143,7 @@ public class IOMain{
     	// ************************************************************************************************************ //
     }
 
-	public void ejecutarCada5Min(GController g) {
+	public double ejecutarCada5Min(GController g) {
         Profile profile = ProfileFunctions.getInstance().getProfile();
         gController = g;
 
@@ -3152,10 +3152,10 @@ public class IOMain{
 
         if (gController == null){
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY CONTROLADOR ACTIVO");
-			return;
+			return 0;
         }else if (profile == null){
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY PERFIL ACTIVO");
-			return;
+			return 0;
         }
 
 		// Clonacion de tablas de AAPS a como las adquiere DiAS
@@ -3176,7 +3176,7 @@ public class IOMain{
 
 		if (nowMS - lastEjectuarCada5Min_tick < ( ( (5 * 60) - 10)  * 1000L ) ){
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() < 5 min(-10segs), exit");
-			return;
+			return 0;
 		}
 
 		lastEjectuarCada5Min_tick = nowMS;
@@ -3212,21 +3212,32 @@ public class IOMain{
 				
 				// TODO_AAPS: subject es como la variable de la app del DiAS global que almacenaba informacion
 				// creo que aca no vamos a llamar a estas rutinas 
-				// gController.getPatient().setCf(subject.CF);
-				// gController.getPatient().setCr(subject.CR);
-				// gController.getPatient().setTdi(subject.TDI);
-				// gController.getPatient().setWeight(subject.weight);
-				// gController.setSetpoint(subject.age); // age = setpoint
-				// gController.getPatient().setBasalU(subject.basal);
-	    			
-	    		// TODO_AAPS: Variable configurable desde Interfaz
-				parameterIOBFactor = 1; // subject.height;
-				
+
+	    		double parameterCF = profile.getIsf();
+	    		double parameterCR = profile.getIc();
+	    		double parameterBasal = profile.getBasal();
+	    		double parameterTDI = SP.getDouble(R.string.key_apsarg_tdi, 4d);
+	    		double parameterWeight = SP.getDouble(R.string.key_apsarg_weight, 4d);
+	    		double parameterSetpoint = SP.getDouble(R.string.key_apsarg_setpoint, 4d);
+
+				gController.getPatient().setTdi(parameterTDI); 
+				gController.getPatient().setWeight(parameterWeight); 
+				gController.setSetpoint(parameterSetpoint);
+				gController.getPatient().setCf(parameterCF);
+				gController.getPatient().setCr(parameterCR);
+				gController.getPatient().setBasalU(parameterBasal);
+
+				parameterIOBFactor = SP.getDouble(R.string.key_apsarg_iobfactor, 4d);
+
 				// Debug
 	    		
 				parameterIOBFactorF = new BigDecimal(Double.toString(0.015957446808511*parameterIOBFactor-1.776595744680853)).setScale(2, RoundingMode.HALF_DOWN).doubleValue();
 				
-	    		log.debug("[ARGPLUGIN:IOMAIN] IOB Factor: "+parameterIOBFactorF);
+	    		log.debug("[ARGPLUGIN:IOMAIN] CR: " + parameterCR + " - CF: " + parameterCF +
+	    			" - basalU: " + parameterBasal + " - TDI: " + parameterTDI + " - Weight: " + parameterWeight + 
+	    			" - setPoint: " + parameterSetpoint " - IOB_factor: " + parameterIOBFactor);
+
+	    		log.debug("[ARGPLUGIN:IOMAIN] IOB FactorF : "+ parameterIOBFactorF);
 	    		
 	    		rutina_1_capturar_bolos_asincronicos();
 
@@ -3317,50 +3328,9 @@ public class IOMain{
 			//
 			
 		}
-		/*
-		// Build the message to respond to DIAS_SERVICE
-		Message response = Message.obtain(null, Controllers.APC_PROCESSING_STATE_NORMAL, 0, 0);
-		Bundle responseBundle = new Bundle();
-		responseBundle.putBoolean("doesBolus", true);
-		//responseBundle.putBoolean("doesRate", false);   /// *************************************** DEMIAN
-	    responseBundle.putBoolean("doesRate", true);
-		responseBundle.putDouble("recommended_bolus", correction);
-		responseBundle.putBoolean("new_differential_rate", new_rate);
-		responseBundle.putDouble("differential_basal_rate", diff_rate);
-		responseBundle.putDouble("IOB", 0.0);
-		responseBundle.putBoolean("asynchronous", asynchronous);
-		responseBundle.putInt("stoplight",hypoLight);
-		responseBundle.putInt("stoplight2",hyperLight);
-		
-		// Debug
-		
-		log.debug("ARG /////// "+"APC_SERVICE_CMD_CALCULATE_STATE: Respond to DiAs Service. Asynchronous: "+asynchronous+". Recommended_bolus: "+correction+ ". Diff rate: " + diff_rate);
-		
-		//
-		    
-		// Log the parameters for IO testing
-		if (Params.getBoolean(getContentResolver(), "enableIO", false)) {
-			Bundle b = new Bundle();
-			b.putString(	"description", 
-							" SRC:  APC"+
-							" DEST: DIAS_SERVICE"+
-							" -"+FUNC_TAG+"-"+
-							" APC_PROCESSING_STATE_NORMAL"+
-							" doesBolus="+responseBundle.getBoolean("doesBolus")+
-							" doesRate="+responseBundle.getBoolean("doesRate")+
-							" recommended_bolus="+responseBundle.getDouble("recommended_bolus")+
-							" new_differential_rate="+responseBundle.getBoolean("new_differential_rate")+
-							" differential_basal_rate="+responseBundle.getDouble("differential_basal_rate")+
-							" IOB="+responseBundle.getDouble("IOB")
-						);
-			Event.addEvent(getApplicationContext(), Event.EVENT_SYSTEM_IO_TEST, Event.makeJsonString(b), Event.SET_LOG);
-		}        			
-		
-		// Send response to DiAsService
-		response.setData(responseBundle);
-		sendResponse(response);
-		break;
-		*/
+
+		// Devuelvo el bolo en total
+		return correction + diff_rate;
 	}
 
 	private List<ARGTable> INSULIN_URI_query_deliv_time(long greaterTime){

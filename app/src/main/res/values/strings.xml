@@ -1227,4 +1227,9 @@
         <item quantity="one">%1$d minute</item>
         <item quantity="other">%1$d minutes</item>
     </plurals>
+
+    <string name="key_apsarg_tdi" translatable="false">key_apsarg_tdi</string>
+    <string name="key_apsarg_setpoint" translatable="false">key_apsarg_setpoint</string>
+    <string name="key_apsarg_iobfactor" translatable="false">key_apsarg_iobfactor</string>
+    <string name="key_apsarg_weight" translatable="false">key_apsarg_weight</string>
 </resources>

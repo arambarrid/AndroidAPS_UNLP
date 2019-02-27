@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:validate="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="apsarg"
+        android:title="Controlador ARG">
+
+        <EditTextPreference
+            android:defaultValue="60"
+            android:dialogMessage="Peso del paciente"
+            android:key="@string/key_apsarg_weight"
+            android:numeric="decimal"
+            android:title="Peso del paciente" />
+
+        <EditTextPreference
+            android:defaultValue="50"
+            android:dialogMessage="TDI"
+            android:key="@string/key_apsarg_tdi"
+            android:numeric="decimal"
+            android:title="TDI" />
+
+        <EditTextPreference
+            android:defaultValue="120"
+            android:dialogMessage="Setpoint"
+            android:key="@string/key_apsarg_setpoint"
+            android:numeric="decimal"
+            android:title="Setpoint" />
+
+        <EditTextPreference
+            android:defaultValue="1"
+            android:dialogMessage="IOB Factor"
+            android:key="@string/key_apsarg_iobfactor"
+            android:numeric="decimal"
+            android:title="IOB Factor" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

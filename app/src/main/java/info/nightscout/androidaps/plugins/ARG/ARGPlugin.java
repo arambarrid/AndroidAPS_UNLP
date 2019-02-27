@@ -83,7 +83,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                 .fragmentClass(ARGFragment.class.getName())
                 .pluginName(R.string.openapsarg)
                 .shortName(R.string.arg_shortname)
-                .preferencesId(R.xml.pref_openapssmb)
+                .preferencesId(R.xml.pref_apsarg)
                 .description(R.string.description_arg)
         );
     }
@@ -162,7 +162,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             ioMain = new IOMain();
         }
 
-        ioMain.ejecutarCada5Min(gController);
+        double bolusResult = ioMain.ejecutarCada5Min(gController);
 
         // Caso ideal Si pasan 5 minutos y se ejecuta con una nueva muestra
         // Caso probable Se ejecute mas seguido
@@ -175,8 +175,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             jsonResult.put("duration", 30);
             
             // Asegurarse de dar el bolo
-
-            //jsonResult.put("bolus", 0.1);
+            jsonResult.put("bolus", bolusResult);
         } catch(JSONException e){
 
         }
