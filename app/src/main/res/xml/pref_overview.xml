@@ -23,6 +23,11 @@
                 android:title="@string/overview_calculator_label" />
 
             <SwitchPreference
+                android:defaultValue="false"
+                android:key="@string/key_show_argfood_button"
+                android:title="Anuncio comida ARG" />
+
+            <SwitchPreference
                 android:defaultValue="true"
                 android:key="@string/key_show_insulin_button"
                 android:title="@string/configbuilder_insulin" />

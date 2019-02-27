@@ -54,18 +54,11 @@ import info.nightscout.utils.ToastUtils;
 
 
 public class ARGPlugin extends PluginBase implements APSInterface {
-    //prueba
-    double resultado;
-    GController gController;
-    IOMain ioMain;
+    // Clases de control
+    public GController gController;
+    public IOMain ioMain;
 
-    private static final String STRING_ARRAY_SAMPLE = "./string-array-sample.csv";
-    private static CSVReader reader=null;
-    private static boolean firstExecution=true;
     private static Context miContexto;
-    private static boolean comida=false;
-    private static int cantComidas=0;
-    private static int tamanio;
     //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
@@ -81,10 +74,8 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
     // last values
 
-    DetermineBasalAdapterARG lastDetermineBasalAdapterARG = null;
     long lastAPSRun = 0;
-    DetermineBasalResultARG lastAPSResult = null;
-    AutosensResult lastAutosensResult = null;
+    ARGResult lastAPSResult = null;
 
     private ARGPlugin() {
         super(new PluginDescription()
@@ -121,11 +112,11 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
     @Override
     public void invoke(String initiator, boolean tempBasalFallback) throws IOException {
+
         if (L.isEnabled(L.APS))
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
+
         lastAPSResult = null;
-        DetermineBasalAdapterARG determineBasalAdapterARG;
-        determineBasalAdapterARG = new DetermineBasalAdapterARG(new ScriptReader(MainApp.instance().getBaseContext()));
 
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
         Profile profile = ProfileFunctions.getInstance().getProfile();
@@ -152,275 +143,20 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             return;
         }
 
-        String units = profile.getUnits();
-
-        Constraint<Double> inputConstraints = new Constraint<>(0d); // fake. only for collecting all results
-
-        Constraint<Double> maxBasalConstraint = MainApp.getConstraintChecker().getMaxBasalAllowed(profile);
-        inputConstraints.copyReasons(maxBasalConstraint);
-        double maxBasal = maxBasalConstraint.value();
-        double minBg = Profile.toMgdl(profile.getTargetLow(), units);
-        double maxBg = Profile.toMgdl(profile.getTargetHigh(), units);
-        double targetBg = Profile.toMgdl(profile.getTarget(), units);
-
-        minBg = Round.roundTo(minBg, 0.1d);
-        maxBg = Round.roundTo(maxBg, 0.1d);
-
-        long start = System.currentTimeMillis();
-        long startPart = System.currentTimeMillis();
-        IobTotal[] iobArray = IobCobCalculatorPlugin.getPlugin().calculateIobArrayForSMB(profile);
-        if (L.isEnabled(L.APS))
-            Profiler.log(log, "calculateIobArrayInDia()", startPart);
-
-        startPart = System.currentTimeMillis();
-        MealData mealData = TreatmentsPlugin.getPlugin().getMealData();
-        if (L.isEnabled(L.APS))
-            Profiler.log(log, "getMealData()", startPart);
-
-        double maxIob = MainApp.getConstraintChecker().getMaxIOBAllowed().value();
-
-        minBg = verifyHardLimits(minBg, "minBg", HardLimits.VERY_HARD_LIMIT_MIN_BG[0], HardLimits.VERY_HARD_LIMIT_MIN_BG[1]);
-        maxBg = verifyHardLimits(maxBg, "maxBg", HardLimits.VERY_HARD_LIMIT_MAX_BG[0], HardLimits.VERY_HARD_LIMIT_MAX_BG[1]);
-        targetBg = verifyHardLimits(targetBg, "targetBg", HardLimits.VERY_HARD_LIMIT_TARGET_BG[0], HardLimits.VERY_HARD_LIMIT_TARGET_BG[1]);
-
-        boolean isTempTarget = false;
-        TempTarget tempTarget = TreatmentsPlugin.getPlugin().getTempTargetFromHistory(System.currentTimeMillis());
-        if (tempTarget != null) {
-            isTempTarget = true;
-            minBg = verifyHardLimits(tempTarget.low, "minBg", HardLimits.VERY_HARD_LIMIT_TEMP_MIN_BG[0], HardLimits.VERY_HARD_LIMIT_TEMP_MIN_BG[1]);
-            maxBg = verifyHardLimits(tempTarget.high, "maxBg", HardLimits.VERY_HARD_LIMIT_TEMP_MAX_BG[0], HardLimits.VERY_HARD_LIMIT_TEMP_MAX_BG[1]);
-            targetBg = verifyHardLimits(tempTarget.target(), "targetBg", HardLimits.VERY_HARD_LIMIT_TEMP_TARGET_BG[0], HardLimits.VERY_HARD_LIMIT_TEMP_TARGET_BG[1]);
-        }
-
-
-        if (!checkOnlyHardLimits(profile.getDia(), "dia", HardLimits.MINDIA, HardLimits.MAXDIA))
-            return;
-        if (!checkOnlyHardLimits(profile.getIcTimeFromMidnight(Profile.secondsFromMidnight()), "carbratio", HardLimits.MINIC, HardLimits.MAXIC))
-            return;
-        if (!checkOnlyHardLimits(Profile.toMgdl(profile.getIsf(), units), "sens", HardLimits.MINISF, HardLimits.MAXISF))
-            return;
-        if (!checkOnlyHardLimits(profile.getMaxDailyBasal(), "max_daily_basal", 0.05, HardLimits.maxBasal()))
-            return;
-        if (!checkOnlyHardLimits(pump.getBaseBasalRate(), "current_basal", 0.01, HardLimits.maxBasal()))
-            return;
-
-        startPart = System.currentTimeMillis();
-        if (MainApp.getConstraintChecker().isAutosensModeEnabled().value()) {
-            AutosensData autosensData = IobCobCalculatorPlugin.getPlugin().getLastAutosensDataSynchronized("OpenAPSPlugin");
-            if (autosensData == null) {
-                MainApp.bus().post(new EventOpenAPSUpdateResultGui(MainApp.gs(R.string.openaps_noasdata)));
-                return;
-            }
-            lastAutosensResult = autosensData.autosensResult;
-        } else {
-            lastAutosensResult = new AutosensResult();
-            lastAutosensResult.sensResult = "autosens disabled";
-        }
-
-        Constraint<Boolean> smbAllowed = new Constraint<>(!tempBasalFallback);
-        MainApp.getConstraintChecker().isSMBModeEnabled(smbAllowed);
-        inputConstraints.copyReasons(smbAllowed);
-
-        Constraint<Boolean> advancedFiltering = new Constraint<>(!tempBasalFallback);
-        MainApp.getConstraintChecker().isAdvancedFilteringEnabled(advancedFiltering);
-        inputConstraints.copyReasons(advancedFiltering);
-
-        Constraint<Boolean> uam = new Constraint<>(true);
-        MainApp.getConstraintChecker().isUAMEnabled(uam);
-        inputConstraints.copyReasons(uam);
-
-        if (L.isEnabled(L.APS))
-            Profiler.log(log, "detectSensitivityandCarbAbsorption()", startPart);
-        if (L.isEnabled(L.APS))
-            Profiler.log(log, "SMB data gathering", start);
-
-        start = System.currentTimeMillis();
-
-        try {
-
-            determineBasalAdapterARG.setData(profile, maxIob, maxBasal, minBg, maxBg, targetBg, ConfigBuilderPlugin.getPlugin().getActivePump().getBaseBasalRate(), iobArray, glucoseStatus, mealData,
-                    lastAutosensResult.ratio, //autosensDataRatio
-                    isTempTarget,
-                    smbAllowed.value(),
-                    uam.value(),
-                    advancedFiltering.value()
-            );
-
-        } catch (JSONException e) {
-            log.error(e.getMessage());
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        long fromtime = DateUtil.now() - 1000L * 23; //ultimos 12 seg
-        List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
+        if (gController == null) {
         
-        if (data.size() > 0){
+            // La forma en que aca se instancia el gController debe leer
+            // desde interfaz todos los parametros.
 
-
-            //-------------prueba------------
-            String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-            String anuncioFileName = "anuncioDeComidas.csv";
-            String anuncioFilePath = baseDir + File.separator + anuncioFileName;
-            String[] nextRecord;
-            if(reader==null) {
-                try {
-                    reader = new CSVReader(new FileReader(anuncioFilePath));
-                    nextRecord = reader.readNext(); //leo la primera linea porque sino no estan sincronizados cgm con anuncio
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            else {
-                if ((nextRecord = reader.readNext()) != null) {
-                    if (gController == null) {
-                        gController = new GController(120.0, 72, 8.995080905333818, 25.889600543516560, 73.007221559706540, 1.902187239282904, miContexto);
-
-                        double[][] xTemp = {{159.8611008725862},{159.8611008725862},{0}};
-                        Matrix iobState  = new Matrix(xTemp);
-                        gController.getSafe().getIob().setX(iobState);
-
-                    }
-                   
-                    if(Integer.valueOf(nextRecord[0])==1) {
-                        comida = true;
-                    }
-                    else
-                        comida=false;
-
-                    //Hago esto como prueba para asegurarme que es entero. ----A CORREGIR----
-                    switch (Integer.valueOf(nextRecord[1])){
-                        case 1:
-                            tamanio=1;
-                            break;
-                        case 2:
-                            tamanio=2;
-                            break;
-                        case 3:
-                            tamanio=3;
-                            break;
-                        case 0:
-                            break;
-                    }
-                    resultado = gController.run(comida, tamanio, data.get(0).raw);
-                    double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
-                    double [][] iobStates = gController.getSafe().getIob().getX().getData();
-                    String fileName = "TablaDeDatos.csv";
-                    String filePath = baseDir + File.separator + fileName;
-                    CSVWriter writer = null;
-                    // File exist
-                    try {
-                        FileWriter mFileWriter = new FileWriter(filePath, true);
-                        writer = new CSVWriter(mFileWriter);
-                        if(firstExecution) {
-                            String[] headerRecord = {"time", "CGM", "xstates[0][0]", "xstates[1][0]", "xstates[2][0]", "xstates[3][0]", "xstates[4][0]", "xstates[5][0]", "xstates[6][0]", "xstates[7][0]", "xstates[8][0]", "xstates[9][0]", "xstates[10][0]", "xstates[11][0]", "xstates[12][0]",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Tamaño", "Resultado"};
-                            writer.writeNext(headerRecord);
-                            firstExecution=false;
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    int slqgStateFlag = 0;
-                    if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
-                        slqgStateFlag = 1;
-                    String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(comida),String.valueOf(tamanio),  String.valueOf(resultado)};
-
-                    writer.writeNext(dataToCSV);
-                    try {
-                        writer.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    JSONObject argTableJSON = new JSONObject();
-                    try{
-                        argTableJSON.put("time",String.valueOf(DateUtil.now()));
-                        argTableJSON.put("CGM",String.valueOf(data.get(0).raw));
-                        argTableJSON.put("xstates[0][0]", String.valueOf(xstates[0][0]));
-                        argTableJSON.put("xstates[1][0]", String.valueOf(xstates[1][0]));
-                        argTableJSON.put("xstates[2][0]", String.valueOf(xstates[2][0]));
-                        argTableJSON.put("xstates[3][0]", String.valueOf(xstates[3][0]));
-                        argTableJSON.put("xstates[4][0]", String.valueOf(xstates[4][0]));
-                        argTableJSON.put("xstates[5][0]", String.valueOf(xstates[5][0]));
-                        argTableJSON.put("xstates[6][0]", String.valueOf(xstates[6][0]));
-                        argTableJSON.put("xstates[7][0]", String.valueOf(xstates[7][0]));
-                        argTableJSON.put("xstates[8][0]", String.valueOf(xstates[8][0]));
-                        argTableJSON.put("xstates[9][0]", String.valueOf(xstates[9][0]));
-                        argTableJSON.put("xstates[10][0]", String.valueOf(xstates[10][0]));
-                        argTableJSON.put("xstates[11][0]", String.valueOf(xstates[11][0]));
-                        argTableJSON.put("xstates[12][0]", String.valueOf(xstates[12][0]));
-                        argTableJSON.put("tMeal",String.valueOf((double) gController.getSlqgController().gettMeal()));
-                        argTableJSON.put("ExtAgg",String.valueOf((double) gController.getSlqgController().getExtAgg()));
-                        argTableJSON.put("pCBolus" ,String.valueOf(gController.getpCBolus()));
-                        argTableJSON.put("IobMax",String.valueOf(gController.getSafe().getIobMax()));
-                        argTableJSON.put("slqgState",String.valueOf(slqgStateFlag));
-                        argTableJSON.put("IOBMaxCF",String.valueOf(gController.getSafe().getIOBMaxCF()));
-                        argTableJSON.put("Listening",String.valueOf((double) gController.getEstimator().getListening()));
-                        argTableJSON.put("MCount", String.valueOf((double) gController.getEstimator().getMCount()));
-                        argTableJSON.put("rCFBolus", String.valueOf((double) gController.getrCFBolus()));
-                        argTableJSON.put("tEndAgg", String.valueOf((double) gController.gettEndAgg()));
-                        argTableJSON.put("iobStates[0][0]", String.valueOf(iobStates[0][0]));
-                        argTableJSON.put("iobStates[1][0]",String.valueOf(iobStates[1][0]));
-                        argTableJSON.put("derivadaIOB", String.valueOf(iobStates[2][0]));
-                        argTableJSON.put("iobEst", String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())));
-                        argTableJSON.put("Gamma", String.valueOf(gController.getSafe().getGamma()));
-                        argTableJSON.put("Anuncio", String.valueOf(nextRecord[0]));
-                        argTableJSON.put("Tamanio", String.valueOf(nextRecord[1]));
-                        argTableJSON.put("Resultado", String.valueOf(resultado));
-                    }catch(JSONException e){
-
-                    }
-                    ARGTable argTable = new ARGTable(DateUtil.now(), "ARG History", argTableJSON);
-                    MainApp.getDbHelper().createARGTableIfNotExists(argTable, "ARGPlugin.invoke()");
-                    // Este objeto sería la futura nueva fila
-                    //ARGTable historialDeVariables = new ARGTable();
-
-                    // Se asigna el json como data y el tiempo de generacion
-                    //historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
-
-                    // Subo a Nightscoute
-                    NSUpload.uploadARGTable(argTable);
-
-                    // Actualizo la db local
-                    //MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
-
-                }
-            }
+            gController = new GController(
+                    120.0, 
+                    72, 
+                    8.995080905333818, 
+                    25.889600543516560, 
+                    73.007221559706540, 
+                    1.902187239282904, 
+                    miContexto);
         }
-
-        // En esta sección del codigo podría llamarse a guardar todos los datos que tenga que guardar
-        // de todas formas, el JSONObject DATA podría ser global a la clase y actualizarse y guardar
-        // o bien podría ser local en este procedimiento y actualizarse donde tenga que actualizarse
-        // con la informacion que haga falta, pero importante NO PISAR las keys
-
-        // Este objeto sería la futura nueva fila
-        // ARGTable historialDeVariables = new ARGTable();
-
-        // Es como un diccionario
-        // JSONObject argTableJSON = new JSONObject();
-
-        // para agregar un campo a la table
-        // argTableJSON.put("campo", valor);
-
-        // Se asigna el json como data y el tiempo de generacion
-        // historialDeVariables = historialDeVariables.data(argTableJSON).date(now);
-
-        // Subo a Nightscoute
-        // NSUpload.uploadARGTable(historialDeVariables);
-
-        // Actualizo la db local
-        // MainApp.getDbHelper().createARGTableIfNotExists(historialDeVariables, "ARGPlugin.invoke()");
-
-
-        // Para consultar ARGTables viejas desde la DB local (esta es la primera que guarda),
-        // por lo que si el celular se apaga y no alcanzo a subir a internet, de todas formas,
-        // los datos van a estar aca
-        // List<ARGTable> argTableList =
-        //        MainApp.getDbHelper().getAllARGTableFromTime(DateUtil.now() - 2 * 1000L, false);
-
-        // log.debug("[ARGPLUGIN] Consultando ARGTableList hace dos minutos " + String.valueOf(argTableList.size()));
-
-
 
         if (ioMain == null){
             ioMain = new IOMain();
@@ -428,68 +164,38 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
         ioMain.ejecutarCada5Min(gController);
 
-        //prueba
-        DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
-       
-       if (L.isEnabled(L.APS))
-            Profiler.log(log, "SMB calculation", start);
-        // TODO still needed with oref1?
-        // Fix bug determine basal
+        // Caso ideal Si pasan 5 minutos y se ejecuta con una nueva muestra
+        // Caso probable Se ejecute mas seguido
+        JSONObject jsonResult = new JSONObject();
+        try{
+            jsonResult.put("reason", "Caso de prueba");
 
-        if (determineBasalResultARG.rate == 0d && determineBasalResultARG.duration == 0 && !TreatmentsPlugin.getPlugin().isTempBasalInProgress())
-            determineBasalResultARG.tempBasalRequested = false;
+            // Siempre basal a 0%
+            jsonResult.put("rate", 0);
+            jsonResult.put("duration", 30);
+            
+            // Asegurarse de dar el bolo
 
-        determineBasalResultARG.iob = iobArray[0];
+            //jsonResult.put("bolus", 0.1);
+        } catch(JSONException e){
 
-        try {
-            determineBasalResultARG.json.put("timestamp", DateUtil.toISOString(now));
-        } catch (JSONException e) {
-            log.error("Unhandled exception", e);
         }
 
-        determineBasalResultARG.inputConstraints = inputConstraints;
+        ARGResult argResult = new ARGResult(jsonResult);
 
-        // ###################### HARD CODE RESULTADO ######################
+        // Estimación de IOB? 
+        // argResult.iob = iobArray[0];
+        argResult.iob = new IobTotal(0);
 
-        determineBasalResultARG.hasPredictions = false;
+        // Es necesario determinar esto ? 
+        // determineBasalResultARG.inputConstraints = inputConstraints;
 
-        determineBasalResultARG.tempBasalRequested = true;
-        determineBasalResultARG.rate = 1.6;
-        determineBasalResultARG.duration = 10;
+        lastAPSResult = argResult;
 
-        determineBasalResultARG.bolusRequested = true;
-        determineBasalResultARG.smb = 0.7;
+        // TODO_APS: no se usa igual
+        // lastAPSRun = now;   
 
-        determineBasalResultARG.reason = "no reason.....";
-        // ###################### HARD CODE RESULTADO ######################
-
-
-        lastDetermineBasalAdapterARG = determineBasalAdapterARG;
-        lastAPSResult = determineBasalResultARG;
-        lastAPSRun = now;
         MainApp.bus().post(new EventOpenAPSUpdateGui());
-
-        //deviceStatus.suggested = determineBasalResultAMA.json;
-    }
-
-    // safety checks
-    private static boolean checkOnlyHardLimits(Double value, String valueName, double lowLimit, double highLimit) {
-        return value.equals(verifyHardLimits(value, valueName, lowLimit, highLimit));
-    }
-
-    private static Double verifyHardLimits(Double value, String valueName, double lowLimit, double highLimit) {
-        Double newvalue = value;
-        if (newvalue < lowLimit || newvalue > highLimit) {
-            newvalue = Math.max(newvalue, lowLimit);
-            newvalue = Math.min(newvalue, highLimit);
-            String msg = String.format(MainApp.gs(R.string.valueoutofrange), valueName);
-            msg += ".\n";
-            msg += String.format(MainApp.gs(R.string.valuelimitedto), value, newvalue);
-            log.error(msg);
-            NSUpload.uploadError(msg);
-            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), msg, R.raw.error);
-        }
-        return newvalue;
     }
 
 }

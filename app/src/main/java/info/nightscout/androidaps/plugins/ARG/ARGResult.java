@@ -9,13 +9,10 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.Loop.APSResult;
 import info.nightscout.utils.DateUtil;
 
-public class DetermineBasalResultSMB extends APSResult {
+public class ARGResult extends APSResult {
     private static final Logger log = LoggerFactory.getLogger(L.APS);
 
-    private double eventualBG;
-    private double snoozeBG;
-
-    DetermineBasalResultSMB(JSONObject result) {
+    ARGResult(JSONObject result) {
         this();
         date = DateUtil.now();
         json = result;
@@ -26,10 +23,6 @@ public class DetermineBasalResultSMB extends APSResult {
             }
 
             reason = result.getString("reason");
-            if (result.has("eventualBG")) eventualBG = result.getDouble("eventualBG");
-            if (result.has("snoozeBG")) snoozeBG = result.getDouble("snoozeBG");
-            //if (result.has("insulinReq")) insulinReq = result.getDouble("insulinReq");
-            //if (result.has("carbsReq")) carbsReq = result.getDouble("carbsReq");
 
             if (result.has("rate") && result.has("duration")) {
                 tempBasalRequested = true;
@@ -41,9 +34,9 @@ public class DetermineBasalResultSMB extends APSResult {
                 duration = -1;
             }
 
-            if (result.has("units")) {
+            if (result.has("bolus")) {
                 bolusRequested = true;
-                smb = result.getDouble("units");
+                smb = result.getDouble("bolus");
             } else {
                 smb = 0d;
             }
@@ -61,18 +54,8 @@ public class DetermineBasalResultSMB extends APSResult {
         }
     }
 
-    private DetermineBasalResultSMB() {
+    private ARGResult() {
         hasPredictions = true;
-    }
-
-    @Override
-    public DetermineBasalResultSMB clone() {
-        DetermineBasalResultSMB newResult = new DetermineBasalResultSMB();
-        doClone(newResult);
-
-        newResult.eventualBG = eventualBG;
-        newResult.snoozeBG = snoozeBG;
-        return newResult;
     }
 
     @Override

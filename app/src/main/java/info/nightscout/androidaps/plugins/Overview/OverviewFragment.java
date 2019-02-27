@@ -100,6 +100,7 @@ import info.nightscout.androidaps.plugins.NSClientInternal.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.CalibrationDialog;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.ErrorHelperActivity;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.NewCarbsDialog;
+import info.nightscout.androidaps.plugins.Overview.Dialogs.NewARGFoodDialog;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.NewInsulinDialog;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.NewTreatmentDialog;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.WizardDialog;
@@ -173,6 +174,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     SingleClickButton calibrationButton;
     SingleClickButton insulinButton;
     SingleClickButton carbsButton;
+    SingleClickButton argFoodButton;
     SingleClickButton cgmButton;
     SingleClickButton quickWizardButton;
 
@@ -271,6 +273,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         carbsButton = (SingleClickButton) view.findViewById(R.id.overview_carbsbutton);
         if (carbsButton != null)
             carbsButton.setOnClickListener(this);
+        
+        argFoodButton = (SingleClickButton) view.findViewById(R.id.overview_argfoodbutton);
+        if (argFoodButton != null)
+            argFoodButton.setOnClickListener(this);
+
         acceptTempButton = (SingleClickButton) view.findViewById(R.id.overview_accepttempbutton);
         if (acceptTempButton != null)
             acceptTempButton.setOnClickListener(this);
@@ -679,6 +686,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 break;
             case R.id.overview_carbsbutton:
                 new NewCarbsDialog().show(manager, "CarbsDialog");
+                break;
+            case R.id.overview_argfoodbutton:
+                new NewARGFoodDialog().show(manager, "ARGFoodDialog");
                 break;
             case R.id.overview_pumpstatus:
                 if (ConfigBuilderPlugin.getPlugin().getActivePump().isSuspended() || !ConfigBuilderPlugin.getPlugin().getActivePump().isInitialized())
@@ -1255,6 +1265,16 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 carbsButton.setVisibility(View.GONE);
             }
         }
+
+        // **** Various treatment buttons ****
+        if (argFoodButton != null) {
+            if (SP.getBoolean(R.string.key_show_argfood_button, true)) {
+                argFoodButton.setVisibility(View.VISIBLE);
+            } else {
+                argFoodButton.setVisibility(View.GONE);
+            }
+        }
+
 
         if (pump.isInitialized() && !pump.isSuspended()) {
             if (treatmentButton != null) {

@@ -2189,10 +2189,7 @@ public class IOMain{
         							  // 0: No se forzó, 1: Se forzó el reseteo
         	
         	// Puntero a la tabla de anuncio de comida
-        	
-        	//Cursor cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
-        	List<ARGTable> cMeal = MainApp.getDbHelper()
-								.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
+        	List<ARGTable> cMeal = MainApp.getDbHelper().getLastsARGTable("ARG_MEAL", 1);
 
         	if (cMeal.size() > 0) { 
     			lastTime  = cMeal.get(0).getLong("time");
@@ -2201,8 +2198,7 @@ public class IOMain{
 	        	
 	        	// Debug
 	    		
-	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  lastTime: "+lastTime+
-	    				". mealClass: "+mealClass+". forCon: "+forCon);
+	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  lastTime: "+lastTime+". mealClass: "+mealClass+". forCon: "+forCon);
 	    		
 	    		//
 
@@ -2257,11 +2253,8 @@ public class IOMain{
         		
         	}
         	
-        	// Puntero a la tabla de anuncio de comida
-        	// cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, 
-        	//		"l1>? AND d2!=?" , new String[]{Long.toString(currentTime-305),"0"}, null);
-        	
-        	cMeal = USER_TABLE_3_query_l1_and_d2(currentTime - 305, 0);
+
+        	cMeal = USER_TABLE_3_query_lastTime_and_endAggIni(currentTime - 305, 0);
         	
 
         	int tEndAggIni = 0;
@@ -2593,14 +2586,13 @@ public class IOMain{
 		    		int rFlag  = 0;
 		    		lastTime   = 0;
 		    		
-		    	//	Cursor cReset = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
 		        	List<ARGTable> cReset = MainApp.getDbHelper()
-						.getLastsARGTable("Biometrics.USER_TABLE_3_URI", 1);
+						.getLastsARGTable("ARG_MEAL", 1);
 
 		        	if (cReset.size() > 0){ //} (cReset != null) {
 	        			rTime    = cReset.get(0).getLong("time"); // Tiempo en que se forzó el modo conservador o se anunció una comida
-	        			rFlag    = (int)cReset.get(0).getDouble("d1"); // Flag para forzar el modo conservador
-	        			lastTime = cReset.get(0).getLong("l0"); // Tiempo de la última sincronización previa al momento de actualizar la User Table 3
+	        			rFlag    = (int)cReset.get(0).getDouble("forCon"); // Flag para forzar el modo conservador
+	        			lastTime = cReset.get(0).getLong("lastTime"); // Tiempo de la última sincronización previa al momento de actualizar la User Table 3
 	        			
 	        			if(Objects.equals(rTime, null)){
 	        				
@@ -2655,36 +2647,20 @@ public class IOMain{
 						//ContentValues userTable = new ContentValues();
 
 						// TODO_APS: insercion , solo revisar
+						// TODO_APS: Esta insercion está bien, lo que resetea es
+						// la tabla que contiene la acción de resetear el modo conservador
 						JSONObject userTable = new JSONObject();
 						try{
     						userTable.put("time", rTime);
-    						userTable.put("l0", lastTime);
-    						userTable.put("l1", 0);	
-    						userTable.put("d0", 1.0);
-    						userTable.put("d1", 0.0); // Reset-flag is reseted
-    						userTable.put("d2", 0.0);
-    						userTable.put("d3", 0.0);
-    						userTable.put("d4", 0.0);	
-    						userTable.put("d5", 0.0);
-    						userTable.put("d6", 0.0);
-    						userTable.put("d7", 0.0);
-    						userTable.put("d8", 0.0);	
-    						userTable.put("d9", 0.0);
-    						userTable.put("d10", 0.0);
-    						userTable.put("d11", 0.0);
-    						userTable.put("d12", 0.0);
-    						userTable.put("d13", 0.0);
-    						userTable.put("d14", 0.0);
-    						userTable.put("d15", 0.0);
-    						userTable.put("send_attempts_server", 1);	
-    						userTable.put("received_server", true);
+    						userTable.put("lastTime", lastTime);
+    						userTable.put("mealClass", 1.0);
+    						userTable.put("forCon", 0);
+    						userTable.put("endAggIni", 0);
 			    		}catch(JSONException e){
 
 			    		}
 
-			    		this.insertNewTable("Biometrics.USER_TABLE_3_URI", userTable);
-			    		// getContentResolver().insert(Biometrics.USER_TABLE_3_URI, userTable);
-			    		
+			    		this.insertNewTable("ARG_MEAL", userTable);
 		        	}
 		        	
 		        	else{
@@ -3182,9 +3158,6 @@ public class IOMain{
 			return;
         }
 
-
-		this.pruebaARGTable();
-		
 		// Clonacion de tablas de AAPS a como las adquiere DiAS
 		this.AAPStoDiAS();
 
@@ -3430,14 +3403,14 @@ public class IOMain{
 	}
 
 	
-	private List<ARGTable> USER_TABLE_3_query_l1_and_d2(long greaterTime, int d2){
+	private List<ARGTable> USER_TABLE_3_query_lastTime_and_endAggIni(long greaterLastTime, int endAggIni){
 		List<ARGTable> ret = MainApp.getDbHelper()
-			.getAllARGTableFromTimeByDiASType("Biometrics.USER_TABLE_3_URI", 
-					greaterTime - (10*60*1000L), false);
+			.getAllARGTableFromTimeByDiASType("ARG_MEAL", 
+					greaterLastTime - (10*60*1000L), false);
 
 		ret.removeIf(item -> (
-			(item.getLong("l1") < greaterTime) && 
-			(item.getInt("d2") == d2)
+			(item.getLong("lastTime") <= greaterLastTime) && 
+			(item.getInt("endAggIni") == endAggIni)
 		));
 
 		return ret;
@@ -3449,55 +3422,5 @@ public class IOMain{
 		MainApp.getDbHelper().createARGTableIfNotExists(argTable, "insertNewTable()");
 		NSUpload.uploadARGTable(argTable);
 	}
-
-    public void pruebaARGTable(){
-
-    	return;
-/*
-    	// Agregar un vlaor
-		double  delTotal     = 0.0;   // Variable para capturar cada uno de los posibles bolos asincrónicos
-		int     statusIns    = 0;     // Variable que permite detectar si el bolo es el anunciado en la inicialización o fue dado con el DiAs 
-		int     type         = 0;     // Variable equivalente a statusIns
-		long    lastTime     = 0;     // Tiempo de la infusión del bolo
-
-
-	    JSONObject argTableJSON = new JSONObject();
-	    try{
-	        argTableJSON.put("deliv_time", String.valueOf(lastTime));
-	        argTableJSON.put("deliv_total", String.valueOf(delTotal));
-	        argTableJSON.put("status", String.valueOf(statusIns));
-	        argTableJSON.put("type", String.valueOf(type));
-	   	}catch(JSONException e){
-                    
-		}
-
-		ARGTable argTable = new ARGTable(System.currentTimeMillis(), "Biometrics.INSULIN_URI", argTableJSON);
-
-        MainApp.getDbHelper().createARGTableIfNotExists(argTable, "pruebaARGTable()");
-		NSUpload.uploadARGTable(argTable);
-
-
-		// Por ejemplo par hacer query
-			// Cursor cMeal = getContentResolver().query(Biometrics.USER_TABLE_3_URI, null, null, null, null);
-		
-		long fromTime = DateUtil.now() - (2 * 60 * 1000L);
-        List<ARGTable> cMailList = 
-                MainApp.getDbHelper().getAllARGTableFromTimeByDiASType("Biometrics.USER_TABLE_3_URI",
-                		0, false);
-
-        log.debug("[ARGPLUGIN] Consulta por USER_TABLE_3_URI " 
-        	+ String.valueOf(cMailList.size()) + " resultados.");
-
-
-        List<ARGTable> insulin_URI = 
-                MainApp.getDbHelper().getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI",
-                		0, false);
-
-        log.debug("[ARGPLUGIN] Consulta por INSULIN_URI " 
-        	+ String.valueOf(insulin_URI.size()) + " resultados.");
-
-        	*/
-
-    }
 
 }

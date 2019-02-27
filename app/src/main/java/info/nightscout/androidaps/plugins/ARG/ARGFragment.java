@@ -31,43 +31,29 @@ import info.nightscout.utils.JSONFormatter;
 public class ARGFragment extends SubscriberFragment {
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
-    @BindView(R.id.openapsma_run)
+    @BindView(R.id.arg_run)
     Button run;
-    @BindView(R.id.openapsma_lastrun)
+    @BindView(R.id.arg_config)
+    Button config;
+    @BindView(R.id.arg_lastrun)
     TextView lastRunView;
-    @BindView(R.id.openapsma_constraints)
-    TextView constraintsView;
-    @BindView(R.id.openapsma_glucosestatus)
-    TextView glucoseStatusView;
-    @BindView(R.id.openapsma_currenttemp)
-    TextView currentTempView;
-    @BindView(R.id.openapsma_iobdata)
-    TextView iobDataView;
-    @BindView(R.id.openapsma_profile)
-    TextView profileView;
-    @BindView(R.id.openapsma_mealdata)
-    TextView mealDataView;
-    @BindView(R.id.openapsma_autosensdata)
-    TextView autosensDataView;
-    @BindView(R.id.openapsma_result)
+    @BindView(R.id.arg_result)
     TextView resultView;
-    @BindView(R.id.openapsma_scriptdebugdata)
-    TextView scriptdebugView;
-    @BindView(R.id.openapsma_request)
+    @BindView(R.id.arg_request)
     TextView requestView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.openapsama_fragment, container, false);
+        View view = inflater.inflate(R.layout.arg_fragment, container, false);
 
         unbinder = ButterKnife.bind(this, view);
         return view;
     }
 
-    @OnClick(R.id.openapsma_run)
+    @OnClick(R.id.arg_run)
     public void onRunClick() {
-        OpenAPSSMBPlugin.getPlugin().invoke("ARG button", false);
+     //   ARGPlugin.getPlugin().invoke("ARG button", false);
         FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Run"));
     }
 
@@ -89,35 +75,14 @@ public class ARGFragment extends SubscriberFragment {
                 synchronized (ARGFragment.this) {
                     if (!isBound()) return;
                     ARGPlugin plugin = ARGPlugin.getPlugin(this.getContext());
-                    DetermineBasalResultARG lastAPSResult = plugin.lastAPSResult;
+                    ARGResult lastAPSResult = plugin.lastAPSResult;
                     if (lastAPSResult != null) {
                         resultView.setText(JSONFormatter.format(lastAPSResult.json));
                         requestView.setText(lastAPSResult.toSpanned());
                     }
-                    DetermineBasalAdapterARG determineBasalAdapterARG = plugin.lastDetermineBasalAdapterARG;
-                    if (determineBasalAdapterARG != null) {
-                        /*
-                        glucoseStatusView.setText(JSONFormatter.format(determineBasalAdapterSMBJS.getGlucoseStatusParam()).toString().trim());
-                        currentTempView.setText(JSONFormatter.format(determineBasalAdapterSMBJS.getCurrentTempParam()).toString().trim());
-                        try {
-                            JSONArray iobArray = new JSONArray(determineBasalAdapterSMBJS.getIobDataParam());
-                            iobDataView.setText((String.format(MainApp.gs(R.string.array_of_elements), iobArray.length()) + "\n" + JSONFormatter.format(iobArray.getString(0))).trim());
-                        } catch (JSONException e) {
-                            log.error("Unhandled exception", e);
-                            iobDataView.setText("JSONException see log for details");
-                        }
-                        profileView.setText(JSONFormatter.format(determineBasalAdapterSMBJS.getProfileParam()).toString().trim());
-                        mealDataView.setText(JSONFormatter.format(determineBasalAdapterSMBJS.getMealDataParam()).toString().trim());
-                        scriptdebugView.setText(determineBasalAdapterSMBJS.getScriptDebug().trim());
-                        if (lastAPSResult != null && lastAPSResult.inputConstraints != null)
-                            constraintsView.setText(lastAPSResult.inputConstraints.getReasons().trim());
-                        */
-                    }
+
                     if (plugin.lastAPSRun != 0) {
                         lastRunView.setText(DateUtil.dateAndTimeFullString(plugin.lastAPSRun));
-                    }
-                    if (plugin.lastAutosensResult != null) {
-                        autosensDataView.setText(JSONFormatter.format(plugin.lastAutosensResult.json()).toString().trim());
                     }
                 }
             });
@@ -130,13 +95,6 @@ public class ARGFragment extends SubscriberFragment {
                 synchronized (ARGFragment.this) {
                     if (isBound()) {
                         resultView.setText(text);
-                        glucoseStatusView.setText("");
-                        currentTempView.setText("");
-                        iobDataView.setText("");
-                        profileView.setText("");
-                        mealDataView.setText("");
-                        autosensDataView.setText("");
-                        scriptdebugView.setText("");
                         requestView.setText("");
                         lastRunView.setText("");
                     }
@@ -147,15 +105,7 @@ public class ARGFragment extends SubscriberFragment {
     private boolean isBound() {
         return run != null
                 && lastRunView != null
-                && constraintsView != null
-                && glucoseStatusView != null
-                && currentTempView != null
-                && iobDataView != null
-                && profileView != null
-                && mealDataView != null
-                && autosensDataView != null
                 && resultView != null
-                && scriptdebugView != null
                 && requestView != null;
     }
 }
