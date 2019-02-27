@@ -43,6 +43,7 @@ import info.nightscout.androidaps.plugins.Loop.ScriptReader;
 import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
 import info.nightscout.androidaps.plugins.OpenAPSMA.events.EventOpenAPSUpdateGui;
 import info.nightscout.androidaps.plugins.OpenAPSMA.events.EventOpenAPSUpdateResultGui;
+import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.CommandResult;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DateUtil;
 import info.nightscout.utils.HardLimits;
@@ -66,6 +67,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
     private static boolean comida=false;
     private static int cantComidas=0;
     private static int tamanio;
+    private static double iobPrueba;
     //prueba
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
@@ -252,7 +254,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         }
 
         long now = System.currentTimeMillis();
-        long fromtime = DateUtil.now() - 1000L * 23; //ultimos 12 seg
+        long fromtime = DateUtil.now() - 1000L * 300; //ultimos 5 min
         List<BgReading> data = MainApp.getDbHelper().getBgreadingsDataFromTime(fromtime, false);
         
         if (data.size() > 0){
@@ -323,6 +325,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
                     int slqgStateFlag = 0;
                     if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
                         slqgStateFlag = 1;
+                    iobPrueba=gController.getSafe().getIobEst(gController.getPatient().getWeight());
                     String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(comida),String.valueOf(tamanio),  String.valueOf(resultado)};
 
                     writer.writeNext(dataToCSV);
@@ -423,10 +426,10 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
 
         if (ioMain == null){
-            ioMain = new IOMain();
+            //ioMain = new IOMain();
         }
 
-        ioMain.ejecutarCada5Min(gController);
+        //ioMain.ejecutarCada5Min(gController);
 
         //prueba
         DetermineBasalResultARG determineBasalResultARG = determineBasalAdapterARG.invoke();
@@ -439,7 +442,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         if (determineBasalResultARG.rate == 0d && determineBasalResultARG.duration == 0 && !TreatmentsPlugin.getPlugin().isTempBasalInProgress())
             determineBasalResultARG.tempBasalRequested = false;
 
-        determineBasalResultARG.iob = iobArray[0];
+        //determineBasalResultARG.iob = iobArray[0];
 
         try {
             determineBasalResultARG.json.put("timestamp", DateUtil.toISOString(now));
@@ -452,15 +455,16 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         // ###################### HARD CODE RESULTADO ######################
 
         determineBasalResultARG.hasPredictions = false;
-
+        determineBasalResultARG.iob= new IobTotal(System.currentTimeMillis());
+        determineBasalResultARG.iob.iob=iobPrueba;
         determineBasalResultARG.tempBasalRequested = true;
-        determineBasalResultARG.rate = 1.6;
-        determineBasalResultARG.duration = 10;
+        determineBasalResultARG.rate = 0;
+        determineBasalResultARG.duration = 15;
 
         determineBasalResultARG.bolusRequested = true;
-        determineBasalResultARG.smb = 0.7;
+        determineBasalResultARG.smb = (resultado/6000)*5;
 
-        determineBasalResultARG.reason = "no reason.....";
+        determineBasalResultARG.reason = "IOB: " + String.valueOf(determineBasalResultARG.iob.iob) + "Resultado: " + String.valueOf(resultado);
         // ###################### HARD CODE RESULTADO ######################
 
 
