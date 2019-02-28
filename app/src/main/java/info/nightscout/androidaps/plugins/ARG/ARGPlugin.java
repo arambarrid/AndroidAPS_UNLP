@@ -163,7 +163,8 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             ioMain = new IOMain();
         }
 
-        double bolusResult = ioMain.ejecutarCada5Min(gController);
+        // Resultado en unidades
+        double bolusResult = ioMain.ejecutarCada5Min(gController) / 1200.0;
 
         // Caso ideal Si pasan 5 minutos y se ejecuta con una nueva muestra
         // Caso probable Se ejecute mas seguido
