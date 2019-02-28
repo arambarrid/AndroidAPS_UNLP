@@ -2511,18 +2511,6 @@ public class IOMain{
 			lastTime     = cKStates.get(0).getLong("time");
 			int rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
 			int tEndAgg  = (int)cKStates.get(0).getDouble("endAggInit");
-
-
-// PRUEBAAAAAAAA
-			JSONObject pruebaJson = new JSONObject();
-			
-    		try{
-				pruebaJson.put("variable_de_prueba", (double)123456789);
-			}catch(JSONException e){
-
-			}
-			updateHMSTable(lastTime, pruebaJson);
-// PRUEBAAAAAAAA	
 			
 			if(Objects.equals(lastTime, null)){
 				

@@ -41,6 +41,9 @@ import info.nightscout.utils.DateUtil;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+import android.support.v4.app.FragmentManager;
+import info.nightscout.androidaps.plugins.ARG.Dialogs.NewInitBolusDialog;
+
 public class ARGFragment extends SubscriberFragment {
     private static Logger log = LoggerFactory.getLogger(L.APS);
 
@@ -52,6 +55,8 @@ public class ARGFragment extends SubscriberFragment {
     Button reset;
     @BindView(R.id.arg_force_controller)
     Button forceController;
+    @BindView(R.id.arg_init_bolus)
+    Button initBolus;
     @BindView(R.id.arg_lastrun)
     TextView lastRunView;
     @BindView(R.id.arg_result)
@@ -115,6 +120,14 @@ public class ARGFragment extends SubscriberFragment {
     public void onResetClick() {
 
         FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Reset"));
+    }
+
+
+    @OnClick(R.id.arg_init_bolus)
+    public void onInitBolusClick() {
+        FragmentManager manager = getFragmentManager();
+        new NewInitBolusDialog().show(manager, "InitBolusDialog");
+        FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Init_Bolus"));
     }
 
     @OnClick(R.id.arg_force_controller)
