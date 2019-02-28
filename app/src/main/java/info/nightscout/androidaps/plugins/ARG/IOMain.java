@@ -2511,6 +2511,18 @@ public class IOMain{
 			lastTime     = cKStates.get(0).getLong("time");
 			int rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
 			int tEndAgg  = (int)cKStates.get(0).getDouble("endAggInit");
+
+
+// PRUEBAAAAAAAA
+			JSONObject pruebaJson = new JSONObject();
+			
+    		try{
+				pruebaJson.put("variable_de_prueba", (double)123456789);
+			}catch(JSONException e){
+
+			}
+			updateHMSTable(lastTime, pruebaJson);
+// PRUEBAAAAAAAA	
 			
 			if(Objects.equals(lastTime, null)){
 				
@@ -3375,17 +3387,47 @@ public class IOMain{
 	}
 
 	private void updateHMSTable(long lastTime, JSONObject newTableValues){
+		List<ARGTable> ret = MainApp.getDbHelper()
+			.getAllARGTableFromTimeByDiASType("ARG_CONTROLLER_STATES", 
+					lastTime - (12*60*1000L), false);
+		
+		ret.removeIf(item -> (
+			(item.getLong("time") != lastTime)
+		));
+
+		
 		// paso 1 Obtener json viejo
 			// obtener los ultimos 10 registros
 			// ver cual tiene ese lastTime
 
-		// paso 2 reemplazar que aparezcan en newTablesValues
+		if (ret.size() > 0){
+			ARGTable obj = ret.get(0);
+			JSONObject oldData = obj.getAllData();
 
-		// paso 3 llamar a actualziar db
+			// paso 2 reemplazar que aparezcan en newTablesValues
+			for ( Iterator<String> iterator = newTableValues.keys(); iterator.hasNext(); ) {
+		        String      key     = iterator.next();
+		        JSONObject  value   = newTableValues.optJSONObject(key);
 
-		// paso 4 llamar a actualizar nightscout 
+		        try {
+		            oldData.put(key, value);
+		        } catch ( JSONException e ) {
+		        	log.debug("[ARGPLUGIN] Error al copiar clave en estados de controlador.");
+		        }
+		    }
 
+		   	obj.setData(oldData);
 
+			// paso 3 llamar a actualziar db
+		   	MainApp.getDbHelper().updateARGTable(obj);
+
+			// paso 4 llamar a actualizar nightscout 
+		   	// MMMMM
+		}else{
+			log.debug("[ARGPLUGIN] NO SE PUEDE ACTUALIZAR CONTROLLER STATE, NO EXISTE EL REGISTRO.");
+		}
+
+		log.debug("[ARGPLUGIN] Llamado a actualizar variables del controlador");
 	}
 
 	private void insertNewTable(String table, JSONObject argTableJSON){

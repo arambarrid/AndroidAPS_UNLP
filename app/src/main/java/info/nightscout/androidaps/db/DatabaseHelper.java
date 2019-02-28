@@ -1690,6 +1690,24 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     }
 
 
+    public boolean updateARGTable(ARGTable argTable) {
+        try {
+            getDaoARGTable().createOrUpdate(argTable);
+            
+            if (L.isEnabled(L.DATABASE))
+                log.debug("[ARGPLUGIN] Actualizado  a DB local: " +  argTable.toString());
+            
+            // scheduleBgChange(bgReading);
+            return true;
+        } catch (SQLException e) {
+            log.error("[ARGPLUGIN] Unhandled exception " + e.getSQLState() + " code " + e.getErrorCode() +
+                " toString " + e.toString());
+        }
+        return false;
+    }
+
+
+
     public List<ARGTable> getAllARGTableFromTime(long mills, boolean ascending) {
         try {
             Dao<ARGTable, Long> daoARGTable = getDaoARGTable();

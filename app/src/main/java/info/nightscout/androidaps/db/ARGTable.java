@@ -25,9 +25,15 @@ import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 
+import  java.util.UUID;
+
+
 @DatabaseTable(tableName = DatabaseHelper.DATABASE_ARGTABLE)
 public class ARGTable {
     private static Logger log = LoggerFactory.getLogger(L.DATABASE);
+
+    @DatabaseField(id = true)
+    public String uuid;
 
     @DatabaseField
     public long date;
@@ -49,6 +55,9 @@ public class ARGTable {
     @DatabaseField
     public String data;
 
+    @DatabaseField
+    public String _id = null; // NS _id
+
     private JSONObject jsonData;
 
     public ARGTable(){
@@ -60,6 +69,13 @@ public class ARGTable {
         this.data = data.toString();
         this.diastype = diastype;
         this.date = date;
+
+        UUID id = UUID.randomUUID();
+        uuid = id.toString();
+    }
+
+    public void setData(JSONObject data){
+        this.data = data.toString();
     }
 
     @Override
@@ -68,7 +84,9 @@ public class ARGTable {
                 "date=" + date +
                 ",diastype=" + diastype +
                 ", date=" + new Date(date).toLocaleString() +
-                ", Data=" + data +
+                ", Data=" + data + 
+                ", uuid=" + uuid + 
+                ", _id=" + _id +
                 '}';
     }
 
