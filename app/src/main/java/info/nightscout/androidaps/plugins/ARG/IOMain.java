@@ -2184,7 +2184,7 @@ public class IOMain{
         	lastTime         = 0;     // Última actualización de la tabla de anuncio
         	mealClass    = 1;     // Clase de comida
         	mealFlag = false; // Flag de anuncio
-        	int forCon       = 0;     // Flag para indicar si se forzó el reseteo
+        	forCon       = 0;     // Flag para indicar si se forzó el reseteo
         							  // No se declara boolean por cómo se termina guardando en la tabla
         							  // 0: No se forzó, 1: Se forzó el reseteo
         	
@@ -3219,6 +3219,7 @@ public class IOMain{
 	    		double parameterTDI = SP.getDouble(R.string.key_apsarg_tdi, 4d);
 	    		double parameterWeight = SP.getDouble(R.string.key_apsarg_weight, 4d);
 	    		double parameterSetpoint = SP.getDouble(R.string.key_apsarg_setpoint, 4d);
+				parameterIOBFactor = SP.getDouble(R.string.key_apsarg_iobfactor, 4d);
 
 				gController.getPatient().setTdi(parameterTDI); 
 				gController.getPatient().setWeight(parameterWeight); 
@@ -3227,7 +3228,7 @@ public class IOMain{
 				gController.getPatient().setCr(parameterCR);
 				gController.getPatient().setBasalU(parameterBasal);
 
-				parameterIOBFactor = SP.getDouble(R.string.key_apsarg_iobfactor, 4d);
+				// Actualizar interfaz
 
 				// Debug
 	    		
@@ -3235,7 +3236,7 @@ public class IOMain{
 				
 	    		log.debug("[ARGPLUGIN:IOMAIN] CR: " + parameterCR + " - CF: " + parameterCF +
 	    			" - basalU: " + parameterBasal + " - TDI: " + parameterTDI + " - Weight: " + parameterWeight + 
-	    			" - setPoint: " + parameterSetpoint " - IOB_factor: " + parameterIOBFactor);
+	    			" - setPoint: " + parameterSetpoint + " - IOB_factor: " + parameterIOBFactor);
 
 	    		log.debug("[ARGPLUGIN:IOMAIN] IOB FactorF : "+ parameterIOBFactorF);
 	    		
