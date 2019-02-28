@@ -62,6 +62,7 @@ import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSgv;
 import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 
@@ -159,6 +160,7 @@ public class IOMain{
 
     // Variables de control en rutinas
     long lastTimeCGM_get = 0;
+    long lastTimeInsulin_get = 0;
 
     long lastEjectuarCada5Min_tick = 0;
 
@@ -194,7 +196,7 @@ public class IOMain{
 
     		if (cgm_uri_list.size() > 0){
 	    		cgm_uri_argTable = cgm_uri_list.get(0);
-	    		lastTimeCGM_get = cgm_uri_argTable.getLong("time");
+	    		lastTimeCGM_get = cgm_uri_argTable.getLong("time") * 1000;
 
 	    		// Entonces a partir de esta ultima medida es que consulto
 		    	bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, true);
@@ -243,9 +245,72 @@ public class IOMain{
     	// Campos
     	// deliv_time 		cuando fue infundido ?
     	// deliv_total 		cantidad del bolo (double)
-    	// status 			2=se_infundió_correctamente , status!=2 ¿¿¿??? 
-    	// type 			3=bolo_de_inicializacion , 3=bolo_correccion ¿¿¿???
+    	// status 			2=se_infundió_correctamente
+    	// type 			2=bolo_correccion
     	// req_time			calculo que será cuando se solicitó
+    	
+    	long fromTime = 0, now = System.currentTimeMillis() ;
+    	List<ExtendedBolus> bolusData;
+    	ARGTable insulin_uri_argTable;
+    	int added = 0;
+
+    	// Primera vez
+    	if (lastTimeInsulin_get == 0){
+    		// Obtengo lecturas de como mucho hace 48 horas
+    		fromTime = now - 48*3600*1000L;
+
+    		// Verifico cual fue la ultima medida almacenada en el INSULIN_URI
+    		List<ARGTable> insulin_uri_list = MainApp.getDbHelper()
+    				.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
+
+    		if (insulin_uri_list.size() > 0){
+	    		insulin_uri_argTable = insulin_uri_list.get(0);
+	    		lastTimeInsulin_get = insulin_uri_argTable.getLong("time")*1000;
+
+	    		// Entonces a partir de esta ultima medida es que consulto
+		    	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
+
+	    	}else{
+	    		// no hay medidas desde ese tiempo en CGM_URI, chequeamos en AAPS
+		    	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(fromTime, false);
+	    	}
+    	}else{
+		   	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
+    	}
+
+    	// hay nuevas medidas?
+    	if (bolusData.size() > 0){
+		    // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
+    		for (int i = 0;i < bolusData.size(); i++){
+    			JSONObject insulin_uri_json = new JSONObject();
+    			try{
+    				log.debug("[ARGPLUGIN] BOLUS Source " + bolusData.get(i).source);
+
+	    			insulin_uri_json.put("time", bolusData.get(i).date/1000);
+	                insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
+	                insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
+	                insulin_uri_json.put("deliv_total", bolusData.get(i).insulin); // cantidad de insulina
+	                insulin_uri_json.put("deliv_time", bolusData.get(i).date/1000); 
+
+					insulin_uri_argTable = new ARGTable(bolusData.get(i).date,
+														 "Biometrics.INSULIN_URI", 
+														 	insulin_uri_json);
+
+			        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
+
+			        added++;
+    			}catch(JSONException e){
+
+    			}
+
+
+    		}
+
+    	}
+
+    	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeCGM_get) + " currentLastTime: " + String.valueOf(now));
+	    lastTimeInsulin_get = now;
+
     }
 
     private void TEMP_BASAL_URI_Clone(){
@@ -565,10 +630,7 @@ public class IOMain{
 		subjectBasal = new Tvector();
         for (int i = 0; i < 24; i++) {
         	// obtengo basal de la hora i
-        	// TODO_APS: chrashea aca, profile no es null, pero se ve que la implementacion
-        	// de la interfaz no está
-
-            double rate = 1.0; // profile.getBasalTimeFromMidnight(i * 60 * 60);
+            double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
 
 			subjectBasal.put_with_replace(i*60, rate);
         }
@@ -619,21 +681,7 @@ public class IOMain{
 			List<Pair> iobInput = new ArrayList<Pair>(); // Defino una lista de pares. 
 														 // Cada par representa: 
 														 // la velocidad de infusión y el tiempo que se aplica
-			
-			// Get the latest subject data and profiles from biometricsContentProvider
-			//DiAsSubjectData subject_data;
-			//if ((subject_data = DiAsSubjectData.readDiAsSubjectData(getApplicationContext())) == null) {
-				
-				// Debug
-				
-			//	log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Subject database failed to be read...");
-				
-				//
-				
-			//	Toast.makeText(IOMain.this, "Error reading subject information!" , Toast.LENGTH_SHORT).show();
-				
-			//}
-				    			    		
+			    			    		
 			// Get basal values
 			List<Integer> indicesAux  = new ArrayList<Integer>();
 			indicesAux = subjectBasal.find(">", -1, "<", -1); // Cargo todos los índices del vector de insulina basal
@@ -2003,10 +2051,6 @@ public class IOMain{
 	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Save CGM Vector");
 	    		
 				double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
-
-	    		//
-	    		// TODO_APS: insercion, solo revisar
-
 				JSONObject cgmVectorTable = new JSONObject();
 	    		try{	
 					cgmVectorTable.put("cgm0", cgmVector[0][0]);
@@ -2025,15 +2069,13 @@ public class IOMain{
 
 	    		// Debug
 	    	
-	    		// TODO_APS: ver este debug	
 	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. CGM Vector: " +
 	    		" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
 	    		". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
 	    		
 	    		//
 	    		
-	    		// TODO_APS terminar
- 	    		if(rCFBolusIni!=0){
+	    		if(rCFBolusIni!=0){
 		    		// Puntero a la tabla del controlador
 		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("ARG_CONTROLLER_STATES",1);
 		    		int rCFBolus = 0;
@@ -2249,7 +2291,8 @@ public class IOMain{
         	int tEndAggIni = 0;
         	
         	if (cMeal.size() > 0) 
-        		// TODO_APS: hay que ver cuando lo inserta
+        		// TODO_APS: hay que ver cuando se inserta este campo, si era algo
+        		// autonomo del DiAS
 	        	tEndAggIni = (int)cMeal.get(0).getDouble("endAggIni");
 	        	
 	        	// Debug
@@ -2317,8 +2360,6 @@ public class IOMain{
 
 					this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
         		}else{
-
-        			// TODO_APS: actualizacion con condiciones
 					JSONObject statesTableK = new JSONObject();
         			
 		    		try{
@@ -2346,134 +2387,6 @@ public class IOMain{
         	//cMeal.close();
     }
 
-    private void rutina_luces_semaforo(){
-
-		/*
-    	// ************************************************************************************************************ //
-		// ************************************************************************************************************ //
-		
-		// Rutina manejo de luces del semáforo
-		
-		// ************************************************************************************************************ //
-		
-		if (DIAS_STATE != State.DIAS_STATE_STOPPED && !basalCase){
-    		
-    		// El DiAs prende las luces en cualquier modo menos en Stop Mode
-    		
-    		// Debug
-    		
-    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&&SS. Actualización luces semáforo. Inicio");
-    		
-    		//
-    		
-    		// Obtengo el valor medio de glucosa de los últimos 30 min
-    		
-    		double gMean = Math.round(gController.getEstimator().getMean()); // Redondeo al entero más próximo
-    		
-    		// Genero un estimador con las últimas 3 muestras (15 min previos)
-    		
-    		Estimator estimator3M = new Estimator(3,gController.getSlqgController().getTs());
-    		double[][] cgmVector  = gController.getEstimator().getCgmVector().getData();
-    		
-    		for(int ii = 0; ii < 3; ++ii){
-    			estimator3M.insert(cgmVector[cgmVector.length-1-2+ii][0]);
-    		}
-    		
-    		// Hago una estimación a 10 min y capturo el trend y la predicción
-    		
-    		estimator3M.updatePred(10);
-    		double gTrend = Math.round(10.0*estimator3M.getTrend())/10.0; // Redondeo con un decimal
-    		double gPred  = Math.round(estimator3M.getPred()); // Redondeo al entero más próximo
-    		
-    		// ************************************************************************************************************ //
-    		// Rutina luces de hiperglucemia
-    		
-    		if(gMean>250.0 && gTrend>2.0 || gMean>350.0)
-    		{
-    			hyperLight = 2; // Enciendo luz roja
-    		}
-    		else if(gMean>180.0)
-    		{
-    			hyperLight = 1; // Enciendo luz amarilla
-    		}
-    		else
-    		{
-    			hyperLight = 0; // Enciendo luz verde
-    		}
-    		
-    		// ************************************************************************************************************ //
-    		// Rutina luces de hipoglucemia
-    		
-    		// Capturo la última muestra del vector de CGM
-    		
-    		double[][] cgmV = gController.getEstimator().getCgmVector().getData();
-    		double lastCgm  = cgmV[gController.getEstimator().getCgmVector().getM()-1][0]; 
-    		
-    		if(lastCgm<60.0)
-    		{
-    			hypoLight = 2; // Enciendo luz roja
-    		}
-    		else if(gPred>=70.0 && gPred<90.0)
-    		{
-    			if(gTrend<-1.0)
-    			{
-	    			hypoLight  = 1; // Enciendo luz amarilla
-    			}
-    			else
-    			{
-    				hypoLight  = 0; // Enciendo luz verde
-    			}
-    		}
-    		else if(gPred<70.0)
-    		{
-    			if(gTrend<-1.0)
-    			{
-	    			hypoLight  = 2; // Enciendo luz roja
-    			}
-    			else
-    			{
-    				hypoLight  = 1; // Enciendo luz amarilla
-    			}
-    		}
-    		else
-    		{
-    			hypoLight = 0; // Enciendo luz verde
-    		}
-    		
-    		// Debug
-    		
-    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. gMean: " + 
-    		gMean + ". gTrend: " + gTrend + ". gPred: " + gPred+". hypoLight: "+hypoLight+". hyperLight: "+hyperLight);
-    		
-    		//
-    			
-		}
-		
-		// Si se activó el flag basalCase o estoy en Stop Mode, entonces apago las luces del semáforo 
-		
-		else
-		{
-			
-			hypoLight  = 3;
-			hyperLight = 3;
-			
-			if(basalCase)
-			{
-			
-				// Debug
-			
-				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. No hay info suficiente.");
-			
-				//
-			
-				Toast.makeText(IOMain.this, "Shutting down traffic lights: Lack of CGM info!" , Toast.LENGTH_SHORT).show();
-				
-			}
-    		
-		}
-		*/
-
-    }
 
     private void rutina_7_cargar_estados_controlador(){
 
@@ -2624,11 +2537,6 @@ public class IOMain{
 						gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
 						gController.setpCBolus(0.0);
 						
-						//ContentValues userTable = new ContentValues();
-
-						// TODO_APS: insercion , solo revisar
-						// TODO_APS: Esta insercion está bien, lo que resetea es
-						// la tabla que contiene la acción de resetear el modo conservador
 						JSONObject userTable = new JSONObject();
 						try{
     						userTable.put("time", rTime);
@@ -3120,7 +3028,7 @@ public class IOMain{
     }
 
 	public double ejecutarCada5Min(GController g) {
-        Profile profile = ProfileFunctions.getInstance().getProfile();
+        profile = ProfileFunctions.getInstance().getProfile();
         gController = g;
 
 		// Debug
@@ -3172,8 +3080,6 @@ public class IOMain{
 			//
 			
 			if (!asynchronous) {
-
-
 				// Debug
 	    		
 	    		log.debug("[ARGPLUGIN:IOMAIN] Llamado sincronico");
@@ -3239,8 +3145,7 @@ public class IOMain{
 	    			// ************************************************************************************************************ //
 		    		// Guardo el IOB actualizado
 		        	
-		        	// TODO_APS: inserción!
-	    			double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+		        	double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
 	    			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 					double[][] iobStates = gController.getSafe().getIob().getX().getData();
 
@@ -3399,7 +3304,7 @@ public class IOMain{
 		   	MainApp.getDbHelper().updateARGTable(obj);
 
 			// paso 4 llamar a actualizar nightscout 
-		   	// MMMMM
+		   	// TODO_APS: faltaría subir la actualizacion a nightscout :/
 		}else{
 			log.debug("[ARGPLUGIN] NO SE PUEDE ACTUALIZAR CONTROLLER STATE, NO EXISTE EL REGISTRO.");
 		}
@@ -3414,4 +3319,133 @@ public class IOMain{
 		NSUpload.uploadARGTable(argTable);
 	}
 
+
+    private void rutina_luces_semaforo(){
+
+		/*
+    	// ************************************************************************************************************ //
+		// ************************************************************************************************************ //
+		
+		// Rutina manejo de luces del semáforo
+		
+		// ************************************************************************************************************ //
+		
+		if (DIAS_STATE != State.DIAS_STATE_STOPPED && !basalCase){
+    		
+    		// El DiAs prende las luces en cualquier modo menos en Stop Mode
+    		
+    		// Debug
+    		
+    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&&SS. Actualización luces semáforo. Inicio");
+    		
+    		//
+    		
+    		// Obtengo el valor medio de glucosa de los últimos 30 min
+    		
+    		double gMean = Math.round(gController.getEstimator().getMean()); // Redondeo al entero más próximo
+    		
+    		// Genero un estimador con las últimas 3 muestras (15 min previos)
+    		
+    		Estimator estimator3M = new Estimator(3,gController.getSlqgController().getTs());
+    		double[][] cgmVector  = gController.getEstimator().getCgmVector().getData();
+    		
+    		for(int ii = 0; ii < 3; ++ii){
+    			estimator3M.insert(cgmVector[cgmVector.length-1-2+ii][0]);
+    		}
+    		
+    		// Hago una estimación a 10 min y capturo el trend y la predicción
+    		
+    		estimator3M.updatePred(10);
+    		double gTrend = Math.round(10.0*estimator3M.getTrend())/10.0; // Redondeo con un decimal
+    		double gPred  = Math.round(estimator3M.getPred()); // Redondeo al entero más próximo
+    		
+    		// ************************************************************************************************************ //
+    		// Rutina luces de hiperglucemia
+    		
+    		if(gMean>250.0 && gTrend>2.0 || gMean>350.0)
+    		{
+    			hyperLight = 2; // Enciendo luz roja
+    		}
+    		else if(gMean>180.0)
+    		{
+    			hyperLight = 1; // Enciendo luz amarilla
+    		}
+    		else
+    		{
+    			hyperLight = 0; // Enciendo luz verde
+    		}
+    		
+    		// ************************************************************************************************************ //
+    		// Rutina luces de hipoglucemia
+    		
+    		// Capturo la última muestra del vector de CGM
+    		
+    		double[][] cgmV = gController.getEstimator().getCgmVector().getData();
+    		double lastCgm  = cgmV[gController.getEstimator().getCgmVector().getM()-1][0]; 
+    		
+    		if(lastCgm<60.0)
+    		{
+    			hypoLight = 2; // Enciendo luz roja
+    		}
+    		else if(gPred>=70.0 && gPred<90.0)
+    		{
+    			if(gTrend<-1.0)
+    			{
+	    			hypoLight  = 1; // Enciendo luz amarilla
+    			}
+    			else
+    			{
+    				hypoLight  = 0; // Enciendo luz verde
+    			}
+    		}
+    		else if(gPred<70.0)
+    		{
+    			if(gTrend<-1.0)
+    			{
+	    			hypoLight  = 2; // Enciendo luz roja
+    			}
+    			else
+    			{
+    				hypoLight  = 1; // Enciendo luz amarilla
+    			}
+    		}
+    		else
+    		{
+    			hypoLight = 0; // Enciendo luz verde
+    		}
+    		
+    		// Debug
+    		
+    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. gMean: " + 
+    		gMean + ". gTrend: " + gTrend + ". gPred: " + gPred+". hypoLight: "+hypoLight+". hyperLight: "+hyperLight);
+    		
+    		//
+    			
+		}
+		
+		// Si se activó el flag basalCase o estoy en Stop Mode, entonces apago las luces del semáforo 
+		
+		else
+		{
+			
+			hypoLight  = 3;
+			hyperLight = 3;
+			
+			if(basalCase)
+			{
+			
+				// Debug
+			
+				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. No hay info suficiente.");
+			
+				//
+			
+				Toast.makeText(IOMain.this, "Shutting down traffic lights: Lack of CGM info!" , Toast.LENGTH_SHORT).show();
+				
+			}
+    		
+		}
+		*/
+
+    }
 }

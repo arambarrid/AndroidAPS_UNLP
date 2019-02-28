@@ -71,8 +71,6 @@ public class NewInitBolusDialog extends DialogFragment implements OnClickListene
     public static final double PLUS2_DEFAULT = 1d;
     public static final double PLUS3_DEFAULT = 2d;
 
-    private LinearLayout editLayout;
-    private NumberPicker editTime;
     private NumberPicker editInsulin;
     private Double maxInsulin;
 
@@ -87,30 +85,6 @@ public class NewInitBolusDialog extends DialogFragment implements OnClickListene
         mHandlerThread.start();
     }
 
-    final private TextWatcher textWatcher = new TextWatcher() {
-        @Override
-        public void afterTextChanged(Editable s) {
-            validateInputs();
-        }
-
-        @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-        }
-
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-        }
-    };
-
-    private void validateInputs() {
-        int time = editTime.getValue().intValue();
-        if (Math.abs(time) > 12 * 60) {
-            editTime.setValue(0d);
-            ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.gs(R.string.constraintapllied));
-        }
-
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -121,16 +95,11 @@ public class NewInitBolusDialog extends DialogFragment implements OnClickListene
 
         getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-
-        editLayout = view.findViewById(R.id.newinitbolus_time_layout);
-        editLayout.setVisibility(View.GONE);
-        editTime = view.findViewById(R.id.newinitbolus_time);
-        editTime.setParams(0d, -12 * 60d, 12 * 60d, 5d, new DecimalFormat("0"), false, textWatcher);
-
-        maxInsulin = MainApp.getConstraintChecker().getMaxBolusAllowed().value();
+        
+        maxInsulin = 100.0;
 
         editInsulin = view.findViewById(R.id.newinitbolus_amount);
-        editInsulin.setParams(0d, 0d, maxInsulin, ConfigBuilderPlugin.getPlugin().getActivePump().getPumpDescription().bolusStep, DecimalFormatter.pumpSupportedBolusFormat(), false, textWatcher);
+        editInsulin.setParams(0d, 0d, maxInsulin, ConfigBuilderPlugin.getPlugin().getActivePump().getPumpDescription().bolusStep, DecimalFormatter.pumpSupportedBolusFormat(), false);
 
         Button plus1Button = view.findViewById(R.id.newinitbolus_plus05);
         plus1Button.setOnClickListener(this);
@@ -151,7 +120,6 @@ public class NewInitBolusDialog extends DialogFragment implements OnClickListene
         if (savedInstanceState != null) {
 //            log.debug("savedInstanceState in onCreate is:" + savedInstanceState.toString());
             editInsulin.setValue(savedInstanceState.getDouble("editInsulin"));
-            editTime.setValue(savedInstanceState.getDouble("editTime"));
         }
         return view;
     }
@@ -182,17 +150,14 @@ public class NewInitBolusDialog extends DialogFragment implements OnClickListene
             case R.id.newinitbolus_plus05:
                 editInsulin.setValue(Math.max(0, editInsulin.getValue()
                         + SP.getDouble(MainApp.gs(R.string.key_insulin_button_increment_1), PLUS1_DEFAULT)));
-                validateInputs();
                 break;
             case R.id.newinitbolus_plus10:
                 editInsulin.setValue(Math.max(0, editInsulin.getValue()
                         + SP.getDouble(MainApp.gs(R.string.key_insulin_button_increment_2), PLUS2_DEFAULT)));
-                validateInputs();
                 break;
             case R.id.newinitbolus_plus20:
                 editInsulin.setValue(Math.max(0, editInsulin.getValue()
                         + SP.getDouble(MainApp.gs(R.string.key_insulin_button_increment_3), PLUS3_DEFAULT)));
-                validateInputs();
                 break;
         }
     }
