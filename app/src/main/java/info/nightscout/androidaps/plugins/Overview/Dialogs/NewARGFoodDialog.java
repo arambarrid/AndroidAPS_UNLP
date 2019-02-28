@@ -189,7 +189,7 @@ public class NewARGFoodDialog extends DialogFragment implements OnClickListener,
 
         if (foodSmall.isChecked()) {
             mealClass = 1;
-        }else if (foodLarge.isChecked()){
+        }else if (foodMedium.isChecked()){
             mealClass = 2;
         }else if (foodLarge.isChecked()){
             mealClass = 3;

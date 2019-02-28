@@ -215,7 +215,7 @@ public class IOMain{
     		for (int i = 0;i < bgData.size(); i++){
     			JSONObject cgm_uri_json = new JSONObject();
     			try{
-	    			cgm_uri_json.put("time", bgData.get(i).date);
+	    			cgm_uri_json.put("time", bgData.get(i).date/1000);
 	    			cgm_uri_json.put("cgm", bgData.get(i).value);
 	    			cgm_uri_json.put("state", 0);
 
@@ -305,25 +305,14 @@ public class IOMain{
     	iobInitBolus = 0.0;   // Bolo de inicialización
     	timeDiff     = 0;     // Diferencia entre el tiempo actual y el de la infusión
     	iobInitFlag  = false; // Flag para indicar que se debe ejecutar la rutina de inicialización de IOB
-    	
-    	// Puntero a la tabla de insulina. Capturo las filas cuyo tiempo sea del actual hasta 5 min anteriores
-    	// Consulto la columna deliv_time para asegurarme que el bolo fue infundido
 
-		// Cursor aTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
-		//         new String("deliv_time") + "> ?", new String[]{Long.toString(currentTime-299)}, null);
-		
-		List<ARGTable> aTime = INSULIN_URI_query_deliv_time((currentTime-299) * 1000L);
+		List<ARGTable> aTime = INSULIN_URI_query_deliv_time(currentTime-299);
 
 		if (aTime.size() > 0) {// if (aTime != null) {
 			log.debug("[ARGPLUGIN:IOMAIN]     -> : aTime.size() > 0");
 		
     		for (ARGTable item : aTime) { //while(aTime.moveToNext()){
     			
-    			//lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
-	        	//delTotal  = aTime.getDouble(aTime.getColumnIndex("deliv_total"));
-	        	//statusIns = aTime.getInt(aTime.getColumnIndex("status"));
-	        	//type      = aTime.getInt(aTime.getColumnIndex("type"));
-	        	
 	        	lastTime = item.getLong("deliv_time");
 	        	delTotal = item.getDouble("deliv_total");
 	        	statusIns = item.getInt("status");
@@ -389,7 +378,7 @@ public class IOMain{
 		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 : Correcion IOB - Bolos Sincronicos No Infundidos ###");
 
 		// Puntero al último bolo de insulina sincrónico
-		sBTime = INSULIN_URI_query_reqtime_and_type((currentTime-305) * 1000L, 1);
+		sBTime = INSULIN_URI_query_reqtime_and_type(currentTime-305, 1);
 
 
 		if (sBTime.size() > 0) {
@@ -3345,7 +3334,7 @@ public class IOMain{
 					greaterTime - (10*60*1000L), false);
 
 		ret.removeIf(item -> (
-			(item.getLong("deliv_time") < greaterTime) && 
+			(item.getLong("req_time") < greaterTime) && 
 			(item.getInt("type") == 2)
 		));
 
