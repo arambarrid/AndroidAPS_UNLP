@@ -2046,14 +2046,12 @@ public class IOMain{
 	    		// TODO_APS terminar
  	    		if(rCFBolusIni!=0){
 		    		// Puntero a la tabla del controlador
-		    		
-		    		//Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
 		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI",1);
 		    		int rCFBolus = 0;
 		    		
 		    		if (cKStates.size() > 0) { // (cKStates != null) {			        				
 	        			lastTime = cKStates.get(0).getLong("time");
-	        			rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
+	        			rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
 	        			
 	        			// Debug
 			    		
@@ -2099,13 +2097,15 @@ public class IOMain{
 		    		}
 
 		    		if(lastTime == currentTime){
-			        	
-			    		//ContentValues statesTableK = new ContentValues();
-			    		
-			    		//statesTableK.put("time", currentTime);
-			    		//statesTableK.put("correction_in_units", (double)rCFBolusIni);
+						JSONObject statesTableK = new JSONObject();
+			    		try{
+			    			statesTableK.put("time", currentTime);
+							statesTableK.put("rCFBolus", (double)rCFBolusIni);
+						}catch(JSONException e){
 
-						//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+						}
+
+						this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
 						
 	        		}
 	        		
@@ -2120,18 +2120,18 @@ public class IOMain{
 		        		
 		        		/*if (nIter-1>0){
 		        			if(rCFBolus>=rCFBolusIni+nIter-1){
-		        				statesTableK.put("correction_in_units", (double)(rCFBolus));
+		        				statesTableK.put("rCFBolus", (double)(rCFBolus));
 		        			}
 		        			else{
-		        				statesTableK.put("correction_in_units", (double)(rCFBolusIni+nIter-1));
+		        				statesTableK.put("rCFBolus", (double)(rCFBolusIni+nIter-1));
 		        			}
 		        		}
 		        		else{
 		        			if(rCFBolus>=rCFBolusIni){
-		        				statesTableK.put("correction_in_units", (double)rCFBolus);
+		        				statesTableK.put("rCFBolus", (double)rCFBolus);
 		        			}
 		        			else{
-		        				statesTableK.put("correction_in_units", (double)(rCFBolusIni));
+		        				statesTableK.put("rCFBolus", (double)(rCFBolusIni));
 		        			}
 		        			
 		        		}
@@ -2321,30 +2321,19 @@ public class IOMain{
 					JSONObject statesTableK = new JSONObject();
 		    		try{
 		    			statesTableK.put("time", currentTime);
-						statesTableK.put("creditRequest", (double)tEndAggIni);
+						statesTableK.put("endAggIni", (double)tEndAggIni);
 					}catch(JSONException e){
 
 					}
 
 					this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
-
-
-		    		//ContentValues statesTableK = new ContentValues();
-		    		
-		    		//statesTableK.put("time", currentTime);
-		    		//statesTableK.put("creditRequest", (double)tEndAggIni);
-
-					//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-					
-        		}
-        		
-        		else{
+        		}else{
 
         			// TODO_APS: actualizacion con condiciones
         			
         			//ContentValues statesTableK = new ContentValues();
 		    		
-        			//statesTableK.put("creditRequest", (double)tEndAggIni);
+        			//statesTableK.put("endAggIni", (double)tEndAggIni);
 		    		
 					//getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
 				
@@ -2518,8 +2507,8 @@ public class IOMain{
 			// Si hay registros guardados los capturo, luego los actualizo al tiempo actual
 			
 			lastTime     = cKStates.get(0).getLong("time");
-			int rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
-			int tEndAgg  = (int)cKStates.get(0).getDouble("creditRequest");
+			int rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
+			int tEndAgg  = (int)cKStates.get(0).getDouble("endAggInit");
 			
 			if(Objects.equals(lastTime, null)){
 				
@@ -2667,14 +2656,14 @@ public class IOMain{
 		        		
 		        		// No se pulsó el botón de reset, por ende se cargan las variables guardadas
 		        		
-    					int tMeal          = (int)cKStates.get(0).getDouble("bolus_amount");
-    					int extAgg         = (int)cKStates.get(0).getDouble("MealBolusA");
-    					int slqgStateFlag  = (int)cKStates.get(0).getDouble("IOBrem");
-    					int listening      = (int)cKStates.get(0).getDouble("hmin");
-    					int mCount         = (int)cKStates.get(0).getDouble("Hmax");
-    					double iobMaxCF    = cKStates.get(0).getDouble("d");
-    					double iobMax      = cKStates.get(0).getDouble("CORRA");
-    					double pCBolus     = cKStates.get(0).getDouble("MealBolusArem");
+    					int tMeal          = (int)cKStates.get(0).getDouble("tMeal");
+    					int extAgg         = (int)cKStates.get(0).getDouble("extAgg");
+    					int slqgStateFlag  = (int)cKStates.get(0).getDouble("slqgStateFlag");
+    					int listening      = (int)cKStates.get(0).getDouble("Listening");
+    					int mCount         = (int)cKStates.get(0).getDouble("MCount");
+    					double iobMaxCF    = cKStates.get(0).getDouble("IOBMaxCF");
+    					double iobMax      = cKStates.get(0).getDouble("IobMax");
+    					double pCBolus     = cKStates.get(0).getDouble("pCBolus");
 			        	
     					gController.getSlqgController().settMeal(tMeal);
     					gController.getSlqgController().setExtAgg(extAgg);
@@ -2734,19 +2723,19 @@ public class IOMain{
 		        	
 					double[][] kStatesAux = new double[13][1];
         			
-        			kStatesAux[0][0]  = cKStates.get(0).getDouble("IOB");
-        			kStatesAux[1][0]  = cKStates.get(0).getDouble("GPred");
-        			kStatesAux[2][0]  = cKStates.get(0).getDouble("GPred_correction");
-        			kStatesAux[3][0]  = cKStates.get(0).getDouble("Gpred_bolus");
-        			kStatesAux[4][0]  = cKStates.get(0).getDouble("Xi00");
-        			kStatesAux[5][0]  = cKStates.get(0).getDouble("Xi01");
-        			kStatesAux[6][0]  = cKStates.get(0).getDouble("Xi02");
-        			kStatesAux[7][0]  = cKStates.get(0).getDouble("Xi03");
-        			kStatesAux[8][0]  = cKStates.get(0).getDouble("Xi04");
-        			kStatesAux[9][0]  = cKStates.get(0).getDouble("Xi05");
-        			kStatesAux[10][0] = cKStates.get(0).getDouble("Xi06");
-        			kStatesAux[11][0] = cKStates.get(0).getDouble("Xi07");
-        			kStatesAux[12][0] = cKStates.get(0).getDouble("brakes_coeff");
+        			kStatesAux[0][0]  = cKStates.get(0).getDouble("xstates0");
+        			kStatesAux[1][0]  = cKStates.get(0).getDouble("xstates1");
+        			kStatesAux[2][0]  = cKStates.get(0).getDouble("xstates2");
+        			kStatesAux[3][0]  = cKStates.get(0).getDouble("xstates3");
+        			kStatesAux[4][0]  = cKStates.get(0).getDouble("xstates4");
+        			kStatesAux[5][0]  = cKStates.get(0).getDouble("xstates5");
+        			kStatesAux[6][0]  = cKStates.get(0).getDouble("xstates6");
+        			kStatesAux[7][0]  = cKStates.get(0).getDouble("xstates7");
+        			kStatesAux[8][0]  = cKStates.get(0).getDouble("xstates8");
+        			kStatesAux[9][0]  = cKStates.get(0).getDouble("xstates9");
+        			kStatesAux[10][0] = cKStates.get(0).getDouble("xstates10");
+        			kStatesAux[11][0] = cKStates.get(0).getDouble("xstates11");
+        			kStatesAux[12][0] = cKStates.get(0).getDouble("xstates12");
         			
         			kStates = new Matrix(kStatesAux);
         			
@@ -2832,43 +2821,39 @@ public class IOMain{
 		double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
 
 		try{
-	    		statesTableK.put("IOB", xstates[0][0]);
-	    		statesTableK.put("Gpred", xstates[1][0]);
-	    		statesTableK.put("Gpred_correction", xstates[2][0]);
-	    		statesTableK.put("Gpred_bolus", xstates[3][0]);
-	    		statesTableK.put("Xi00", xstates[4][0]);
-	    		statesTableK.put("Xi01", xstates[5][0]);
-	    		statesTableK.put("Xi02", xstates[6][0]);
-	    		statesTableK.put("Xi03", xstates[7][0]);
-	    		statesTableK.put("Xi04", xstates[8][0]);
-	    		statesTableK.put("Xi05", xstates[9][0]);
-	    		statesTableK.put("Xi06", xstates[10][0]);
-	    		statesTableK.put("Xi07", xstates[11][0]);
-	    		statesTableK.put("brakes_coeff", xstates[12][0]);
 	    		statesTableK.put("time", currentTime);
-	    		statesTableK.put("bolus_amount", (double)gController.getSlqgController().gettMeal());
-	    		statesTableK.put("MealBolusA", (double)gController.getSlqgController().getExtAgg());
-	    		statesTableK.put("MealBolusArem", gController.getpCBolus());
-	    		statesTableK.put("CORRA", gController.getSafe().getIobMax());
+	    		statesTableK.put("xstates0", xstates[0][0]);
+	    		statesTableK.put("xstates1", xstates[1][0]);
+	    		statesTableK.put("xstates2", xstates[2][0]);
+	    		statesTableK.put("xstates3", xstates[3][0]);
+	    		statesTableK.put("xstates4", xstates[4][0]);
+	    		statesTableK.put("xstates5", xstates[5][0]);
+	    		statesTableK.put("xstates6", xstates[6][0]);
+	    		statesTableK.put("xstates7", xstates[7][0]);
+	    		statesTableK.put("xstates8", xstates[8][0]);
+	    		statesTableK.put("xstates9", xstates[9][0]);
+	    		statesTableK.put("xstates10", xstates[10][0]);
+	    		statesTableK.put("xstates11", xstates[11][0]);
+	    		statesTableK.put("xstates12", xstates[12][0]);
+	    		statesTableK.put("tMeal", (double)gController.getSlqgController().gettMeal());
+	    		statesTableK.put("extAgg", (double)gController.getSlqgController().getExtAgg());
+	    		statesTableK.put("pCBolus", gController.getpCBolus());
+	    		statesTableK.put("IobMax", gController.getSafe().getIobMax());
 	    		int slqgStateFlag = 0;
 	    		if(Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive")){
 	    			slqgStateFlag = 1;
 	    		}
-	    		statesTableK.put("IOBrem", (double)slqgStateFlag);
-	    		statesTableK.put("d", gController.getSafe().getIOBMaxCF());
-	    		statesTableK.put("hmin", (double)gController.getEstimator().getListening());
-	    		statesTableK.put("Hmax", (double)gController.getEstimator().getMCount());
-	    		statesTableK.put("correction_in_units", (double)gController.getrCFBolus());
-	    		statesTableK.put("creditRequest", (double)gController.gettEndAgg());
+	    		statesTableK.put("slqgStateFlag", (double)slqgStateFlag);
+	    		statesTableK.put("IOBMaxCF", gController.getSafe().getIOBMaxCF());
+	    		statesTableK.put("Listening", (double)gController.getEstimator().getListening());
+	    		statesTableK.put("MCount", (double)gController.getEstimator().getMCount());
+	    		statesTableK.put("rCFBolus", (double)gController.getrCFBolus());
+	    		statesTableK.put("endAggIni", (double)gController.gettEndAgg());
 		}catch(JSONException e){
 
 		}
 		
-		// TODO_APS: insercion
 		this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
-
-		//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-
     }
 
     private void rutina_8(){
