@@ -2046,7 +2046,7 @@ public class IOMain{
 	    		// TODO_APS terminar
  	    		if(rCFBolusIni!=0){
 		    		// Puntero a la tabla del controlador
-		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI",1);
+		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("ARG_CONTROLLER_STATES",1);
 		    		int rCFBolus = 0;
 		    		
 		    		if (cKStates.size() > 0) { // (cKStates != null) {			        				
@@ -2105,40 +2105,40 @@ public class IOMain{
 
 						}
 
-						this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
+						this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
 						
 	        		}
 	        		
 	        		else{
-	        			
-	        			//ContentValues statesTableK = new ContentValues();
-			    		
 	        			long diffT = currentTime-lastTime;
-		        		
 		        		int nIter = (int)Math.round(diffT/300.0);
 		        		
+						JSONObject statesTableK = new JSONObject();
 		        		
-		        		/*if (nIter-1>0){
-		        			if(rCFBolus>=rCFBolusIni+nIter-1){
-		        				statesTableK.put("rCFBolus", (double)(rCFBolus));
-		        			}
-		        			else{
-		        				statesTableK.put("rCFBolus", (double)(rCFBolusIni+nIter-1));
-		        			}
-		        		}
-		        		else{
-		        			if(rCFBolus>=rCFBolusIni){
-		        				statesTableK.put("rCFBolus", (double)rCFBolus);
-		        			}
-		        			else{
-		        				statesTableK.put("rCFBolus", (double)(rCFBolusIni));
-		        			}
-		        			
-		        		}
-			    		
+		        		try{
+			        		if (nIter-1>0){
+			        			if(rCFBolus>=rCFBolusIni+nIter-1){
+									statesTableK.put("rCFBolus", (double)rCFBolus);
+			        			}
+			        			else{
+			        				statesTableK.put("rCFBolus", (double)(rCFBolusIni+nIter-1));
+			        			}
+			        		}
+			        		else{
+			        			if(rCFBolus>=rCFBolusIni){
+			        				statesTableK.put("rCFBolus", (double)rCFBolus);
+			        			}
+			        			else{
+			        				statesTableK.put("rCFBolus", (double)rCFBolusIni);
+			        			}
+			        			
+			        		}
+			        	}catch(JSONException e){
 
-						getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-					*/
+			        	}
+			    		
+						updateHMSTable(lastTime, statesTableK);
+
 	        		}
 	    		}
 	        			
@@ -2272,7 +2272,7 @@ public class IOMain{
 	    		
 	    		// Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
 	    		List<ARGTable> cKStates = MainApp.getDbHelper()
-							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+							.getLastsARGTable("ARG_CONTROLLER_STATES", 1);
 
 
 	    		if (cKStates.size() > 0) { // (cKStates != null) {
@@ -2326,17 +2326,19 @@ public class IOMain{
 
 					}
 
-					this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
+					this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
         		}else{
 
         			// TODO_APS: actualizacion con condiciones
+					JSONObject statesTableK = new JSONObject();
         			
-        			//ContentValues statesTableK = new ContentValues();
-		    		
-        			//statesTableK.put("endAggIni", (double)tEndAggIni);
-		    		
-					//getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-				
+		    		try{
+						statesTableK.put("endAggIni", (double)tEndAggIni);
+					}catch(JSONException e){
+
+					}
+
+					updateHMSTable(lastTime, statesTableK);
         		}
         	}
         	
@@ -2498,7 +2500,7 @@ public class IOMain{
 		
 		//    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
 		List<ARGTable> cKStates = MainApp.getDbHelper()
-							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+							.getLastsARGTable("ARG_CONTROLLER_STATES", 1);
 
     	if (cKStates.size() > 0) {
 
@@ -2853,7 +2855,7 @@ public class IOMain{
 
 		}
 		
-		this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
+		this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
     }
 
     private void rutina_8(){
@@ -3370,6 +3372,20 @@ public class IOMain{
 		));
 
 		return ret;
+	}
+
+	private void updateHMSTable(long lastTime, JSONObject newTableValues){
+		// paso 1 Obtener json viejo
+			// obtener los ultimos 10 registros
+			// ver cual tiene ese lastTime
+
+		// paso 2 reemplazar que aparezcan en newTablesValues
+
+		// paso 3 llamar a actualziar db
+
+		// paso 4 llamar a actualizar nightscout 
+
+
 	}
 
 	private void insertNewTable(String table, JSONObject argTableJSON){
