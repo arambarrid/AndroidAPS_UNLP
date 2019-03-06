@@ -60,6 +60,7 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSgv;
 import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
+import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.Bolus;
 import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.PumpHistory;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
@@ -252,9 +253,10 @@ public class IOMain{
     	// type 			2=bolo_correccion
     	// req_time			calculo que será cuando se solicitó
     	PumpHistory history = ConfigBuilderPlugin.getPlugin().getActivePump().readBolus();
-    	/*
-    	long fromTime = 0, now = System.currentTimeMillis() ;
-    	List<ExtendedBolus> bolusData;
+
+    	long fromTime=0, now = System.currentTimeMillis() ;
+    	long tiempoDeConsulta;
+    	Bolus bolusData;
     	ARGTable insulin_uri_argTable;
     	int added = 0;
 
@@ -270,52 +272,51 @@ public class IOMain{
     		if (insulin_uri_list.size() > 0){
 	    		insulin_uri_argTable = insulin_uri_list.get(0);
 	    		lastTimeInsulin_get = insulin_uri_argTable.getLong("time")*1000;
-
-	    		// Entonces a partir de esta ultima medida es que consulto
-		    	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
+	    		tiempoDeConsulta=lastTimeInsulin_get;
 
 	    	}else{
-	    		// no hay medidas desde ese tiempo en CGM_URI, chequeamos en AAPS
-		    	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(fromTime, false);
+	    		// no hay medidas desde ese tiempo en INSULIN_URI, chequeamos en AAPS
+		    	tiempoDeConsulta=fromTime;
 	    	}
     	}else{
-		   	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
+    		tiempoDeConsulta=lastTimeInsulin_get;
+		   	//bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
     	}
+    	if(!history.bolusHistory.isEmpty()){
+			for (int i = 0;i < history.bolusHistory.size(); i++){
+				JSONObject insulin_uri_json = new JSONObject();
+				try{
+					//log.debug("[ARGPLUGIN] BOLUS Source " + bolusData.get(i).source);
+					bolusData=history.bolusHistory.get(i);
+					if(bolusData.timestamp>tiempoDeConsulta){
+						insulin_uri_json.put("time", bolusData.timestamp/1000);
+						insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
+						insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
+						insulin_uri_json.put("deliv_total", bolusData.amount); // cantidad de insulina
+						insulin_uri_json.put("deliv_time", bolusData.timestamp/1000);
 
-    	// hay nuevas medidas?
-    	if (bolusData.size() > 0){
-		    // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
-    		for (int i = 0;i < bolusData.size(); i++){
-    			JSONObject insulin_uri_json = new JSONObject();
-    			try{
-    				log.debug("[ARGPLUGIN] BOLUS Source " + bolusData.get(i).source);
+						insulin_uri_argTable = new ARGTable(bolusData.timestamp,
+								"Biometrics.INSULIN_URI",
+								insulin_uri_json);
 
-	    			insulin_uri_json.put("time", bolusData.get(i).date/1000);
-	                insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
-	                insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
-	                insulin_uri_json.put("deliv_total", bolusData.get(i).insulin); // cantidad de insulina
-	                insulin_uri_json.put("deliv_time", bolusData.get(i).date/1000); 
-
-					insulin_uri_argTable = new ARGTable(bolusData.get(i).date,
-														 "Biometrics.INSULIN_URI", 
-														 	insulin_uri_json);
-
-			        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
-
-			        added++;
-    			}catch(JSONException e){
-
-    			}
+						MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
+						added++;
+					}
 
 
-    		}
+				}catch(JSONException e){
 
-    	}
+				}
+
+
+			}
+		}
+
 
     	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeCGM_get) + " currentLastTime: " + String.valueOf(now));
 	    lastTimeInsulin_get = now;
 
-*/
+
     }
 
     private void TEMP_BASAL_URI_Clone(){
