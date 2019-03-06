@@ -49,9 +49,8 @@ import info.nightscout.utils.HardLimits;
 import info.nightscout.utils.Profiler;
 import info.nightscout.utils.Round;
 import info.nightscout.utils.ToastUtils;
-
-
-
+import info.nightscout.utils.DecimalFormatter;
+import info.nightscout.utils.SP;
 
 public class ARGPlugin extends PluginBase implements APSInterface {
     // Clases de control
@@ -144,25 +143,28 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         }
 
         if (gController == null) {
-        
-            // La forma en que aca se instancia el gController debe leer
-            // desde interfaz todos los parametros.
-
-            gController = new GController(
-                    120.0, 
-                    72, 
-                    8.995080905333818, 
-                    25.889600543516560, 
-                    73.007221559706540, 
-                    1.902187239282904, 
-                    miContexto);
+            double parameterCF = profile.getIsf();
+            double parameterCR = profile.getIc();
+            double parameterUBasal = profile.getBasal();
+            double parameterTDI = SP.getDouble(R.string.key_apsarg_tdi, 4d);
+            double parameterWeight = SP.getDouble(R.string.key_apsarg_weight, 4d);
+            double parameterSetpoint = SP.getDouble(R.string.key_apsarg_setpoint, 4d);
+            
+            gController = new GController(parameterSetpoint, 
+                                    parameterTDI, 
+                                    parameterCR, 
+                                    parameterCF, 
+                                    parameterWeight, 
+                                    parameterUBasal, 
+                                    miContexto);   
         }
 
         if (ioMain == null){
             ioMain = new IOMain();
         }
 
-        double bolusResult = ioMain.ejecutarCada5Min(gController);
+        // Resultado en unidades
+        double bolusResult = ioMain.ejecutarCada5Min(gController) / 1200.0;
 
         // Caso ideal Si pasan 5 minutos y se ejecuta con una nueva muestra
         // Caso probable Se ejecute mas seguido

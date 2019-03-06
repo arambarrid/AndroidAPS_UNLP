@@ -616,12 +616,22 @@
                     android:layout_height="wrap_content"
                     android:text="Correr controlador" />
 
+
                 <Button
-                    android:id="@+id/arg_reset"
+                    android:id="@+id/arg_config"
                     style="?android:attr/buttonStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Resetear controlador" />
+                    android:text="Ir a configuración" />
+
+                <View
+                    android:layout_width="fill_parent"
+                    android:layout_height="2dip"
+                    android:layout_marginBottom="5dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="5dp"
+                    android:background="@color/listdelimiter" />
 
                 <Button
                     android:id="@+id/arg_force_controller"
@@ -632,11 +642,27 @@
 
 
                 <Button
-                    android:id="@+id/arg_config"
+                    android:id="@+id/arg_reset"
                     style="?android:attr/buttonStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Ir a configuración" />
+                    android:text="Resetear controlador" />
+
+                <Button
+                    android:id="@+id/arg_init_bolus"
+                    style="?android:attr/buttonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Bolo de inicializacion" />
+                    
+                <View
+                    android:layout_width="fill_parent"
+                    android:layout_height="2dip"
+                    android:layout_marginBottom="5dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="5dp"
+                    android:background="@color/listdelimiter" />
 
             </LinearLayout>
 

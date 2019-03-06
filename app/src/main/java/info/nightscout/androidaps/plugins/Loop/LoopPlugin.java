@@ -533,7 +533,7 @@ public class LoopPlugin extends PluginBase {
                     }
                 }
             } else if (activeTemp != null
-                    && activeTemp.getPlannedRemainingMinutes() > 5
+                    && activeTemp.getPlannedRemainingMinutes() > 10
                     && request.duration - activeTemp.getPlannedRemainingMinutes() < 30
                     && request.percent == activeTemp.percentRate) {
                 if (L.isEnabled(L.APS))
@@ -563,7 +563,7 @@ public class LoopPlugin extends PluginBase {
                     }
                 }
             } else if (activeTemp != null
-                    && activeTemp.getPlannedRemainingMinutes() > 5
+                    && activeTemp.getPlannedRemainingMinutes() > 10
                     && request.duration - activeTemp.getPlannedRemainingMinutes() < 30
                     && Math.abs(request.rate - activeTemp.tempBasalConvertedToAbsolute(now, profile)) < pump.getPumpDescription().basalStep) {
                 if (L.isEnabled(L.APS))

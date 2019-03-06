@@ -63,6 +63,7 @@ import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.PumpHistory;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
@@ -162,6 +163,7 @@ public class IOMain{
 
     // Variables de control en rutinas
     long lastTimeCGM_get = 0;
+    long lastTimeInsulin_get = 0;
 
     long lastEjectuarCada5Min_tick = 0;
 
@@ -197,7 +199,7 @@ public class IOMain{
 
     		if (cgm_uri_list.size() > 0){
 	    		cgm_uri_argTable = cgm_uri_list.get(0);
-	    		lastTimeCGM_get = cgm_uri_argTable.getLong("time");
+	    		lastTimeCGM_get = cgm_uri_argTable.getLong("time") * 1000;
 
 	    		// Entonces a partir de esta ultima medida es que consulto
 		    	bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, true);
@@ -218,7 +220,7 @@ public class IOMain{
     		for (int i = 0;i < bgData.size(); i++){
     			JSONObject cgm_uri_json = new JSONObject();
     			try{
-	    			cgm_uri_json.put("time", bgData.get(i).date);
+	    			cgm_uri_json.put("time", bgData.get(i).date/1000);
 	    			cgm_uri_json.put("cgm", bgData.get(i).value);
 	    			cgm_uri_json.put("state", 0);
 
@@ -246,10 +248,74 @@ public class IOMain{
     	// Campos
     	// deliv_time 		cuando fue infundido ?
     	// deliv_total 		cantidad del bolo (double)
-    	// status 			2=se_infundió_correctamente , status!=2 ¿¿¿??? 
-    	// type 			3=bolo_de_inicializacion , 3=bolo_correccion ¿¿¿???
+    	// status 			2=se_infundió_correctamente
+    	// type 			2=bolo_correccion
     	// req_time			calculo que será cuando se solicitó
     	PumpHistory history = ConfigBuilderPlugin.getPlugin().getActivePump().readBolus();
+    	/*
+    	long fromTime = 0, now = System.currentTimeMillis() ;
+    	List<ExtendedBolus> bolusData;
+    	ARGTable insulin_uri_argTable;
+    	int added = 0;
+
+    	// Primera vez
+    	if (lastTimeInsulin_get == 0){
+    		// Obtengo lecturas de como mucho hace 48 horas
+    		fromTime = now - 48*3600*1000L;
+
+    		// Verifico cual fue la ultima medida almacenada en el INSULIN_URI
+    		List<ARGTable> insulin_uri_list = MainApp.getDbHelper()
+    				.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
+
+    		if (insulin_uri_list.size() > 0){
+	    		insulin_uri_argTable = insulin_uri_list.get(0);
+	    		lastTimeInsulin_get = insulin_uri_argTable.getLong("time")*1000;
+
+	    		// Entonces a partir de esta ultima medida es que consulto
+		    	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
+
+	    	}else{
+	    		// no hay medidas desde ese tiempo en CGM_URI, chequeamos en AAPS
+		    	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(fromTime, false);
+	    	}
+    	}else{
+		   	bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
+    	}
+
+    	// hay nuevas medidas?
+    	if (bolusData.size() > 0){
+		    // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
+    		for (int i = 0;i < bolusData.size(); i++){
+    			JSONObject insulin_uri_json = new JSONObject();
+    			try{
+    				log.debug("[ARGPLUGIN] BOLUS Source " + bolusData.get(i).source);
+
+	    			insulin_uri_json.put("time", bolusData.get(i).date/1000);
+	                insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
+	                insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
+	                insulin_uri_json.put("deliv_total", bolusData.get(i).insulin); // cantidad de insulina
+	                insulin_uri_json.put("deliv_time", bolusData.get(i).date/1000); 
+
+					insulin_uri_argTable = new ARGTable(bolusData.get(i).date,
+														 "Biometrics.INSULIN_URI", 
+														 	insulin_uri_json);
+
+			        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
+
+			        added++;
+    			}catch(JSONException e){
+
+    			}
+
+
+    		}
+
+    	}
+
+    	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeCGM_get) + " currentLastTime: " + String.valueOf(now));
+	    lastTimeInsulin_get = now;
+
+*/
     }
 
     private void TEMP_BASAL_URI_Clone(){
@@ -309,25 +375,14 @@ public class IOMain{
     	iobInitBolus = 0.0;   // Bolo de inicialización
     	timeDiff     = 0;     // Diferencia entre el tiempo actual y el de la infusión
     	iobInitFlag  = false; // Flag para indicar que se debe ejecutar la rutina de inicialización de IOB
-    	
-    	// Puntero a la tabla de insulina. Capturo las filas cuyo tiempo sea del actual hasta 5 min anteriores
-    	// Consulto la columna deliv_time para asegurarme que el bolo fue infundido
 
-		// Cursor aTime = getContentResolver().query(Biometrics.INSULIN_URI,null,
-		//         new String("deliv_time") + "> ?", new String[]{Long.toString(currentTime-299)}, null);
-		
-		List<ARGTable> aTime = INSULIN_URI_query_deliv_time((currentTime-299) * 1000L);
+		List<ARGTable> aTime = INSULIN_URI_query_deliv_time(currentTime-299);
 
 		if (aTime.size() > 0) {// if (aTime != null) {
 			log.debug("[ARGPLUGIN:IOMAIN]     -> : aTime.size() > 0");
 		
     		for (ARGTable item : aTime) { //while(aTime.moveToNext()){
     			
-    			//lastTime  = aTime.getLong(aTime.getColumnIndex("deliv_time"));
-	        	//delTotal  = aTime.getDouble(aTime.getColumnIndex("deliv_total"));
-	        	//statusIns = aTime.getInt(aTime.getColumnIndex("status"));
-	        	//type      = aTime.getInt(aTime.getColumnIndex("type"));
-	        	
 	        	lastTime = item.getLong("deliv_time");
 	        	delTotal = item.getDouble("deliv_total");
 	        	statusIns = item.getInt("status");
@@ -393,7 +448,7 @@ public class IOMain{
 		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 : Correcion IOB - Bolos Sincronicos No Infundidos ###");
 
 		// Puntero al último bolo de insulina sincrónico
-		sBTime = INSULIN_URI_query_reqtime_and_type((currentTime-305) * 1000L, 1);
+		sBTime = INSULIN_URI_query_reqtime_and_type(currentTime-305, 1);
 
 
 		if (sBTime.size() > 0) {
@@ -580,10 +635,7 @@ public class IOMain{
 		subjectBasal = new Tvector();
         for (int i = 0; i < 24; i++) {
         	// obtengo basal de la hora i
-        	// TODO_APS: chrashea aca, profile no es null, pero se ve que la implementacion
-        	// de la interfaz no está
-
-            double rate = 1.0; // profile.getBasalTimeFromMidnight(i * 60 * 60);
+            double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
 
 			subjectBasal.put_with_replace(i*60, rate);
         }
@@ -634,21 +686,7 @@ public class IOMain{
 			List<Pair> iobInput = new ArrayList<Pair>(); // Defino una lista de pares. 
 														 // Cada par representa: 
 														 // la velocidad de infusión y el tiempo que se aplica
-			
-			// Get the latest subject data and profiles from biometricsContentProvider
-			//DiAsSubjectData subject_data;
-			//if ((subject_data = DiAsSubjectData.readDiAsSubjectData(getApplicationContext())) == null) {
-				
-				// Debug
-				
-			//	log.error("ARG /////// "+"DIAS_STATE_CL&OP&ST&SS: Subject database failed to be read...");
-				
-				//
-				
-			//	Toast.makeText(IOMain.this, "Error reading subject information!" , Toast.LENGTH_SHORT).show();
-				
-			//}
-				    			    		
+			    			    		
 			// Get basal values
 			List<Integer> indicesAux  = new ArrayList<Integer>();
 			indicesAux = subjectBasal.find(">", -1, "<", -1); // Cargo todos los índices del vector de insulina basal
@@ -2018,10 +2056,6 @@ public class IOMain{
 	    		log.debug("[ARGPLUGIN:IOMAIN]     -> : Actualización vector CGM. Save CGM Vector");
 	    		
 				double[][] cgmVector = gController.getEstimator().getCgmVector().getData();
-
-	    		//
-	    		// TODO_APS: insercion, solo revisar
-
 				JSONObject cgmVectorTable = new JSONObject();
 	    		try{	
 					cgmVectorTable.put("cgm0", cgmVector[0][0]);
@@ -2040,24 +2074,20 @@ public class IOMain{
 
 	    		// Debug
 	    	
-	    		// TODO_APS: ver este debug	
 	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Actualización vector CGM. CGM Vector: " +
 	    		" [0]: " + cgmVector[0][0] + ". [1]: " + cgmVector[1][0] + ". [2]: " + cgmVector[2][0] + ". [3]: " + cgmVector[3][0] + 
 	    		". [4]: " + cgmVector[4][0] + ". [5]: " + cgmVector[5][0] + ". timeStampCgmV: " + timeStampCgmV + ". flag2c2: " + flag2c2);
 	    		
 	    		//
 	    		
-	    		// TODO_APS terminar
- 	    		if(rCFBolusIni!=0){
+	    		if(rCFBolusIni!=0){
 		    		// Puntero a la tabla del controlador
-		    		
-		    		//Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
-		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI",1);
+		    		List<ARGTable> cKStates = MainApp.getDbHelper().getLastsARGTable("ARG_CONTROLLER_STATES",1);
 		    		int rCFBolus = 0;
 		    		
 		    		if (cKStates.size() > 0) { // (cKStates != null) {			        				
 	        			lastTime = cKStates.get(0).getLong("time");
-	        			rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
+	        			rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
 	        			
 	        			// Debug
 			    		
@@ -2103,46 +2133,48 @@ public class IOMain{
 		    		}
 
 		    		if(lastTime == currentTime){
-			        	
-			    		//ContentValues statesTableK = new ContentValues();
-			    		
-			    		//statesTableK.put("time", currentTime);
-			    		//statesTableK.put("correction_in_units", (double)rCFBolusIni);
+						JSONObject statesTableK = new JSONObject();
+			    		try{
+			    			statesTableK.put("time", currentTime);
+							statesTableK.put("rCFBolus", (double)rCFBolusIni);
+						}catch(JSONException e){
 
-						//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
+						}
+
+						this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
 						
 	        		}
 	        		
 	        		else{
-	        			
-	        			//ContentValues statesTableK = new ContentValues();
-			    		
 	        			long diffT = currentTime-lastTime;
-		        		
 		        		int nIter = (int)Math.round(diffT/300.0);
 		        		
+						JSONObject statesTableK = new JSONObject();
 		        		
-		        		/*if (nIter-1>0){
-		        			if(rCFBolus>=rCFBolusIni+nIter-1){
-		        				statesTableK.put("correction_in_units", (double)(rCFBolus));
-		        			}
-		        			else{
-		        				statesTableK.put("correction_in_units", (double)(rCFBolusIni+nIter-1));
-		        			}
-		        		}
-		        		else{
-		        			if(rCFBolus>=rCFBolusIni){
-		        				statesTableK.put("correction_in_units", (double)rCFBolus);
-		        			}
-		        			else{
-		        				statesTableK.put("correction_in_units", (double)(rCFBolusIni));
-		        			}
-		        			
-		        		}
-			    		
+		        		try{
+			        		if (nIter-1>0){
+			        			if(rCFBolus>=rCFBolusIni+nIter-1){
+									statesTableK.put("rCFBolus", (double)rCFBolus);
+			        			}
+			        			else{
+			        				statesTableK.put("rCFBolus", (double)(rCFBolusIni+nIter-1));
+			        			}
+			        		}
+			        		else{
+			        			if(rCFBolus>=rCFBolusIni){
+			        				statesTableK.put("rCFBolus", (double)rCFBolus);
+			        			}
+			        			else{
+			        				statesTableK.put("rCFBolus", (double)rCFBolusIni);
+			        			}
+			        			
+			        		}
+			        	}catch(JSONException e){
 
-						getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-					*/
+			        	}
+			    		
+						updateHMSTable(lastTime, statesTableK);
+
 	        		}
 	    		}
 	        			
@@ -2188,7 +2220,7 @@ public class IOMain{
         	lastTime         = 0;     // Última actualización de la tabla de anuncio
         	mealClass    = 1;     // Clase de comida
         	mealFlag = false; // Flag de anuncio
-        	int forCon       = 0;     // Flag para indicar si se forzó el reseteo
+        	forCon       = 0;     // Flag para indicar si se forzó el reseteo
         							  // No se declara boolean por cómo se termina guardando en la tabla
         							  // 0: No se forzó, 1: Se forzó el reseteo
         	
@@ -2264,7 +2296,8 @@ public class IOMain{
         	int tEndAggIni = 0;
         	
         	if (cMeal.size() > 0) 
-        		// TODO_APS: hay que ver cuando lo inserta
+        		// TODO_APS: hay que ver cuando se inserta este campo, si era algo
+        		// autonomo del DiAS
 	        	tEndAggIni = (int)cMeal.get(0).getDouble("endAggIni");
 	        	
 	        	// Debug
@@ -2276,7 +2309,7 @@ public class IOMain{
 	    		
 	    		// Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null);
 	    		List<ARGTable> cKStates = MainApp.getDbHelper()
-							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+							.getLastsARGTable("ARG_CONTROLLER_STATES", 1);
 
 
 	    		if (cKStates.size() > 0) { // (cKStates != null) {
@@ -2325,33 +2358,22 @@ public class IOMain{
 					JSONObject statesTableK = new JSONObject();
 		    		try{
 		    			statesTableK.put("time", currentTime);
-						statesTableK.put("creditRequest", (double)tEndAggIni);
+						statesTableK.put("endAggIni", (double)tEndAggIni);
 					}catch(JSONException e){
 
 					}
 
-					this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
-
-
-		    		//ContentValues statesTableK = new ContentValues();
-		    		
-		    		//statesTableK.put("time", currentTime);
-		    		//statesTableK.put("creditRequest", (double)tEndAggIni);
-
-					//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-					
-        		}
-        		
-        		else{
-
-        			// TODO_APS: actualizacion con condiciones
+					this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
+        		}else{
+					JSONObject statesTableK = new JSONObject();
         			
-        			//ContentValues statesTableK = new ContentValues();
-		    		
-        			//statesTableK.put("creditRequest", (double)tEndAggIni);
-		    		
-					//getContentResolver().update(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK,"time =?",new String[]{ Long.toString(lastTime) });
-				
+		    		try{
+						statesTableK.put("endAggIni", (double)tEndAggIni);
+					}catch(JSONException e){
+
+					}
+
+					updateHMSTable(lastTime, statesTableK);
         		}
         	}
         	
@@ -2370,134 +2392,6 @@ public class IOMain{
         	//cMeal.close();
     }
 
-    private void rutina_luces_semaforo(){
-
-		/*
-    	// ************************************************************************************************************ //
-		// ************************************************************************************************************ //
-		
-		// Rutina manejo de luces del semáforo
-		
-		// ************************************************************************************************************ //
-		
-		if (DIAS_STATE != State.DIAS_STATE_STOPPED && !basalCase){
-    		
-    		// El DiAs prende las luces en cualquier modo menos en Stop Mode
-    		
-    		// Debug
-    		
-    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&&SS. Actualización luces semáforo. Inicio");
-    		
-    		//
-    		
-    		// Obtengo el valor medio de glucosa de los últimos 30 min
-    		
-    		double gMean = Math.round(gController.getEstimator().getMean()); // Redondeo al entero más próximo
-    		
-    		// Genero un estimador con las últimas 3 muestras (15 min previos)
-    		
-    		Estimator estimator3M = new Estimator(3,gController.getSlqgController().getTs());
-    		double[][] cgmVector  = gController.getEstimator().getCgmVector().getData();
-    		
-    		for(int ii = 0; ii < 3; ++ii){
-    			estimator3M.insert(cgmVector[cgmVector.length-1-2+ii][0]);
-    		}
-    		
-    		// Hago una estimación a 10 min y capturo el trend y la predicción
-    		
-    		estimator3M.updatePred(10);
-    		double gTrend = Math.round(10.0*estimator3M.getTrend())/10.0; // Redondeo con un decimal
-    		double gPred  = Math.round(estimator3M.getPred()); // Redondeo al entero más próximo
-    		
-    		// ************************************************************************************************************ //
-    		// Rutina luces de hiperglucemia
-    		
-    		if(gMean>250.0 && gTrend>2.0 || gMean>350.0)
-    		{
-    			hyperLight = 2; // Enciendo luz roja
-    		}
-    		else if(gMean>180.0)
-    		{
-    			hyperLight = 1; // Enciendo luz amarilla
-    		}
-    		else
-    		{
-    			hyperLight = 0; // Enciendo luz verde
-    		}
-    		
-    		// ************************************************************************************************************ //
-    		// Rutina luces de hipoglucemia
-    		
-    		// Capturo la última muestra del vector de CGM
-    		
-    		double[][] cgmV = gController.getEstimator().getCgmVector().getData();
-    		double lastCgm  = cgmV[gController.getEstimator().getCgmVector().getM()-1][0]; 
-    		
-    		if(lastCgm<60.0)
-    		{
-    			hypoLight = 2; // Enciendo luz roja
-    		}
-    		else if(gPred>=70.0 && gPred<90.0)
-    		{
-    			if(gTrend<-1.0)
-    			{
-	    			hypoLight  = 1; // Enciendo luz amarilla
-    			}
-    			else
-    			{
-    				hypoLight  = 0; // Enciendo luz verde
-    			}
-    		}
-    		else if(gPred<70.0)
-    		{
-    			if(gTrend<-1.0)
-    			{
-	    			hypoLight  = 2; // Enciendo luz roja
-    			}
-    			else
-    			{
-    				hypoLight  = 1; // Enciendo luz amarilla
-    			}
-    		}
-    		else
-    		{
-    			hypoLight = 0; // Enciendo luz verde
-    		}
-    		
-    		// Debug
-    		
-    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. gMean: " + 
-    		gMean + ". gTrend: " + gTrend + ". gPred: " + gPred+". hypoLight: "+hypoLight+". hyperLight: "+hyperLight);
-    		
-    		//
-    			
-		}
-		
-		// Si se activó el flag basalCase o estoy en Stop Mode, entonces apago las luces del semáforo 
-		
-		else
-		{
-			
-			hypoLight  = 3;
-			hyperLight = 3;
-			
-			if(basalCase)
-			{
-			
-				// Debug
-			
-				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. No hay info suficiente.");
-			
-				//
-			
-				Toast.makeText(IOMain.this, "Shutting down traffic lights: Lack of CGM info!" , Toast.LENGTH_SHORT).show();
-				
-			}
-    		
-		}
-		*/
-
-    }
 
     private void rutina_7_cargar_estados_controlador(){
 
@@ -2513,7 +2407,7 @@ public class IOMain{
 		
 		//    		Cursor cKStates = getContentResolver().query(Biometrics.HMS_STATE_ESTIMATE_URI, null, null, null, null); 
 		List<ARGTable> cKStates = MainApp.getDbHelper()
-							.getLastsARGTable("Biometrics.HMS_STATE_ESTIMATE_URI", 1);
+							.getLastsARGTable("ARG_CONTROLLER_STATES", 1);
 
     	if (cKStates.size() > 0) {
 
@@ -2522,8 +2416,8 @@ public class IOMain{
 			// Si hay registros guardados los capturo, luego los actualizo al tiempo actual
 			
 			lastTime     = cKStates.get(0).getLong("time");
-			int rCFBolus = (int)cKStates.get(0).getDouble("correction_in_units");
-			int tEndAgg  = (int)cKStates.get(0).getDouble("creditRequest");
+			int rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
+			int tEndAgg  = (int)cKStates.get(0).getDouble("endAggInit");
 			
 			if(Objects.equals(lastTime, null)){
 				
@@ -2648,11 +2542,6 @@ public class IOMain{
 						gController.getSafe().setIobMax(gController.getSafe().getIobMaxSmall());
 						gController.setpCBolus(0.0);
 						
-						//ContentValues userTable = new ContentValues();
-
-						// TODO_APS: insercion , solo revisar
-						// TODO_APS: Esta insercion está bien, lo que resetea es
-						// la tabla que contiene la acción de resetear el modo conservador
 						JSONObject userTable = new JSONObject();
 						try{
     						userTable.put("time", rTime);
@@ -2671,14 +2560,14 @@ public class IOMain{
 		        		
 		        		// No se pulsó el botón de reset, por ende se cargan las variables guardadas
 		        		
-    					int tMeal          = (int)cKStates.get(0).getDouble("bolus_amount");
-    					int extAgg         = (int)cKStates.get(0).getDouble("MealBolusA");
-    					int slqgStateFlag  = (int)cKStates.get(0).getDouble("IOBrem");
-    					int listening      = (int)cKStates.get(0).getDouble("hmin");
-    					int mCount         = (int)cKStates.get(0).getDouble("Hmax");
-    					double iobMaxCF    = cKStates.get(0).getDouble("d");
-    					double iobMax      = cKStates.get(0).getDouble("CORRA");
-    					double pCBolus     = cKStates.get(0).getDouble("MealBolusArem");
+    					int tMeal          = (int)cKStates.get(0).getDouble("tMeal");
+    					int extAgg         = (int)cKStates.get(0).getDouble("extAgg");
+    					int slqgStateFlag  = (int)cKStates.get(0).getDouble("slqgStateFlag");
+    					int listening      = (int)cKStates.get(0).getDouble("Listening");
+    					int mCount         = (int)cKStates.get(0).getDouble("MCount");
+    					double iobMaxCF    = cKStates.get(0).getDouble("IOBMaxCF");
+    					double iobMax      = cKStates.get(0).getDouble("IobMax");
+    					double pCBolus     = cKStates.get(0).getDouble("pCBolus");
 			        	
     					gController.getSlqgController().settMeal(tMeal);
     					gController.getSlqgController().setExtAgg(extAgg);
@@ -2738,19 +2627,19 @@ public class IOMain{
 		        	
 					double[][] kStatesAux = new double[13][1];
         			
-        			kStatesAux[0][0]  = cKStates.get(0).getDouble("IOB");
-        			kStatesAux[1][0]  = cKStates.get(0).getDouble("GPred");
-        			kStatesAux[2][0]  = cKStates.get(0).getDouble("GPred_correction");
-        			kStatesAux[3][0]  = cKStates.get(0).getDouble("Gpred_bolus");
-        			kStatesAux[4][0]  = cKStates.get(0).getDouble("Xi00");
-        			kStatesAux[5][0]  = cKStates.get(0).getDouble("Xi01");
-        			kStatesAux[6][0]  = cKStates.get(0).getDouble("Xi02");
-        			kStatesAux[7][0]  = cKStates.get(0).getDouble("Xi03");
-        			kStatesAux[8][0]  = cKStates.get(0).getDouble("Xi04");
-        			kStatesAux[9][0]  = cKStates.get(0).getDouble("Xi05");
-        			kStatesAux[10][0] = cKStates.get(0).getDouble("Xi06");
-        			kStatesAux[11][0] = cKStates.get(0).getDouble("Xi07");
-        			kStatesAux[12][0] = cKStates.get(0).getDouble("brakes_coeff");
+        			kStatesAux[0][0]  = cKStates.get(0).getDouble("xstates0");
+        			kStatesAux[1][0]  = cKStates.get(0).getDouble("xstates1");
+        			kStatesAux[2][0]  = cKStates.get(0).getDouble("xstates2");
+        			kStatesAux[3][0]  = cKStates.get(0).getDouble("xstates3");
+        			kStatesAux[4][0]  = cKStates.get(0).getDouble("xstates4");
+        			kStatesAux[5][0]  = cKStates.get(0).getDouble("xstates5");
+        			kStatesAux[6][0]  = cKStates.get(0).getDouble("xstates6");
+        			kStatesAux[7][0]  = cKStates.get(0).getDouble("xstates7");
+        			kStatesAux[8][0]  = cKStates.get(0).getDouble("xstates8");
+        			kStatesAux[9][0]  = cKStates.get(0).getDouble("xstates9");
+        			kStatesAux[10][0] = cKStates.get(0).getDouble("xstates10");
+        			kStatesAux[11][0] = cKStates.get(0).getDouble("xstates11");
+        			kStatesAux[12][0] = cKStates.get(0).getDouble("xstates12");
         			
         			kStates = new Matrix(kStatesAux);
         			
@@ -2836,43 +2725,39 @@ public class IOMain{
 		double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
 
 		try{
-	    		statesTableK.put("IOB", xstates[0][0]);
-	    		statesTableK.put("Gpred", xstates[1][0]);
-	    		statesTableK.put("Gpred_correction", xstates[2][0]);
-	    		statesTableK.put("Gpred_bolus", xstates[3][0]);
-	    		statesTableK.put("Xi00", xstates[4][0]);
-	    		statesTableK.put("Xi01", xstates[5][0]);
-	    		statesTableK.put("Xi02", xstates[6][0]);
-	    		statesTableK.put("Xi03", xstates[7][0]);
-	    		statesTableK.put("Xi04", xstates[8][0]);
-	    		statesTableK.put("Xi05", xstates[9][0]);
-	    		statesTableK.put("Xi06", xstates[10][0]);
-	    		statesTableK.put("Xi07", xstates[11][0]);
-	    		statesTableK.put("brakes_coeff", xstates[12][0]);
 	    		statesTableK.put("time", currentTime);
-	    		statesTableK.put("bolus_amount", (double)gController.getSlqgController().gettMeal());
-	    		statesTableK.put("MealBolusA", (double)gController.getSlqgController().getExtAgg());
-	    		statesTableK.put("MealBolusArem", gController.getpCBolus());
-	    		statesTableK.put("CORRA", gController.getSafe().getIobMax());
+	    		statesTableK.put("xstates0", xstates[0][0]);
+	    		statesTableK.put("xstates1", xstates[1][0]);
+	    		statesTableK.put("xstates2", xstates[2][0]);
+	    		statesTableK.put("xstates3", xstates[3][0]);
+	    		statesTableK.put("xstates4", xstates[4][0]);
+	    		statesTableK.put("xstates5", xstates[5][0]);
+	    		statesTableK.put("xstates6", xstates[6][0]);
+	    		statesTableK.put("xstates7", xstates[7][0]);
+	    		statesTableK.put("xstates8", xstates[8][0]);
+	    		statesTableK.put("xstates9", xstates[9][0]);
+	    		statesTableK.put("xstates10", xstates[10][0]);
+	    		statesTableK.put("xstates11", xstates[11][0]);
+	    		statesTableK.put("xstates12", xstates[12][0]);
+	    		statesTableK.put("tMeal", (double)gController.getSlqgController().gettMeal());
+	    		statesTableK.put("extAgg", (double)gController.getSlqgController().getExtAgg());
+	    		statesTableK.put("pCBolus", gController.getpCBolus());
+	    		statesTableK.put("IobMax", gController.getSafe().getIobMax());
 	    		int slqgStateFlag = 0;
 	    		if(Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive")){
 	    			slqgStateFlag = 1;
 	    		}
-	    		statesTableK.put("IOBrem", (double)slqgStateFlag);
-	    		statesTableK.put("d", gController.getSafe().getIOBMaxCF());
-	    		statesTableK.put("hmin", (double)gController.getEstimator().getListening());
-	    		statesTableK.put("Hmax", (double)gController.getEstimator().getMCount());
-	    		statesTableK.put("correction_in_units", (double)gController.getrCFBolus());
-	    		statesTableK.put("creditRequest", (double)gController.gettEndAgg());
+	    		statesTableK.put("slqgStateFlag", (double)slqgStateFlag);
+	    		statesTableK.put("IOBMaxCF", gController.getSafe().getIOBMaxCF());
+	    		statesTableK.put("Listening", (double)gController.getEstimator().getListening());
+	    		statesTableK.put("MCount", (double)gController.getEstimator().getMCount());
+	    		statesTableK.put("rCFBolus", (double)gController.getrCFBolus());
+	    		statesTableK.put("endAggIni", (double)gController.gettEndAgg());
 		}catch(JSONException e){
 
 		}
 		
-		// TODO_APS: insercion
-		this.insertNewTable("Biometrics.HMS_STATE_ESTIMATE_URI", statesTableK);
-
-		//getContentResolver().insert(Biometrics.HMS_STATE_ESTIMATE_URI, statesTableK);
-
+		this.insertNewTable("ARG_CONTROLLER_STATES", statesTableK);
     }
 
     private void rutina_8(){
@@ -3148,7 +3033,7 @@ public class IOMain{
     }
 
 	public double ejecutarCada5Min(GController g) {
-        Profile profile = ProfileFunctions.getInstance().getProfile();
+        profile = ProfileFunctions.getInstance().getProfile();
         gController = g;
 
 		// Debug
@@ -3200,8 +3085,6 @@ public class IOMain{
 			//
 			
 			if (!asynchronous) {
-
-
 				// Debug
 	    		
 	    		log.debug("[ARGPLUGIN:IOMAIN] Llamado sincronico");
@@ -3223,6 +3106,7 @@ public class IOMain{
 	    		double parameterTDI = SP.getDouble(R.string.key_apsarg_tdi, 4d);
 	    		double parameterWeight = SP.getDouble(R.string.key_apsarg_weight, 4d);
 	    		double parameterSetpoint = SP.getDouble(R.string.key_apsarg_setpoint, 4d);
+				parameterIOBFactor = SP.getDouble(R.string.key_apsarg_iobfactor, 4d);
 
 				gController.getPatient().setTdi(parameterTDI); 
 				gController.getPatient().setWeight(parameterWeight); 
@@ -3231,7 +3115,7 @@ public class IOMain{
 				gController.getPatient().setCr(parameterCR);
 				gController.getPatient().setBasalU(parameterBasal);
 
-				parameterIOBFactor = SP.getDouble(R.string.key_apsarg_iobfactor, 4d);
+				// Actualizar interfaz
 
 				// Debug
 	    		
@@ -3266,8 +3150,7 @@ public class IOMain{
 	    			// ************************************************************************************************************ //
 		    		// Guardo el IOB actualizado
 		        	
-		        	// TODO_APS: inserción!
-	    			double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+		        	double iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
 	    			double iobBasal = gController.getSafe().getIobBasal(gController.getPatient().getBasalU(),gController.getPatient().getWeight());
 					double[][] iobStates = gController.getSafe().getIob().getX().getData();
 
@@ -3361,7 +3244,7 @@ public class IOMain{
 					greaterTime - (10*60*1000L), false);
 
 		ret.removeIf(item -> (
-			(item.getLong("deliv_time") < greaterTime) && 
+			(item.getLong("req_time") < greaterTime) && 
 			(item.getInt("type") == 2)
 		));
 
@@ -3390,6 +3273,50 @@ public class IOMain{
 		return ret;
 	}
 
+	private void updateHMSTable(long lastTime, JSONObject newTableValues){
+		List<ARGTable> ret = MainApp.getDbHelper()
+			.getAllARGTableFromTimeByDiASType("ARG_CONTROLLER_STATES", 
+					lastTime - (12*60*1000L), false);
+		
+		ret.removeIf(item -> (
+			(item.getLong("time") != lastTime)
+		));
+
+		
+		// paso 1 Obtener json viejo
+			// obtener los ultimos 10 registros
+			// ver cual tiene ese lastTime
+
+		if (ret.size() > 0){
+			ARGTable obj = ret.get(0);
+			JSONObject oldData = obj.getAllData();
+
+			// paso 2 reemplazar que aparezcan en newTablesValues
+			for ( Iterator<String> iterator = newTableValues.keys(); iterator.hasNext(); ) {
+		        String      key     = iterator.next();
+		        JSONObject  value   = newTableValues.optJSONObject(key);
+
+		        try {
+		            oldData.put(key, value);
+		        } catch ( JSONException e ) {
+		        	log.debug("[ARGPLUGIN] Error al copiar clave en estados de controlador.");
+		        }
+		    }
+
+		   	obj.setData(oldData);
+
+			// paso 3 llamar a actualziar db
+		   	MainApp.getDbHelper().updateARGTable(obj);
+
+			// paso 4 llamar a actualizar nightscout 
+		   	// TODO_APS: faltaría subir la actualizacion a nightscout :/
+		}else{
+			log.debug("[ARGPLUGIN] NO SE PUEDE ACTUALIZAR CONTROLLER STATE, NO EXISTE EL REGISTRO.");
+		}
+
+		log.debug("[ARGPLUGIN] Llamado a actualizar variables del controlador");
+	}
+
 	private void insertNewTable(String table, JSONObject argTableJSON){
 		ARGTable argTable = new ARGTable(System.currentTimeMillis(), table, argTableJSON);
 
@@ -3397,4 +3324,133 @@ public class IOMain{
 		NSUpload.uploadARGTable(argTable);
 	}
 
+
+    private void rutina_luces_semaforo(){
+
+		/*
+    	// ************************************************************************************************************ //
+		// ************************************************************************************************************ //
+		
+		// Rutina manejo de luces del semáforo
+		
+		// ************************************************************************************************************ //
+		
+		if (DIAS_STATE != State.DIAS_STATE_STOPPED && !basalCase){
+    		
+    		// El DiAs prende las luces en cualquier modo menos en Stop Mode
+    		
+    		// Debug
+    		
+    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&&SS. Actualización luces semáforo. Inicio");
+    		
+    		//
+    		
+    		// Obtengo el valor medio de glucosa de los últimos 30 min
+    		
+    		double gMean = Math.round(gController.getEstimator().getMean()); // Redondeo al entero más próximo
+    		
+    		// Genero un estimador con las últimas 3 muestras (15 min previos)
+    		
+    		Estimator estimator3M = new Estimator(3,gController.getSlqgController().getTs());
+    		double[][] cgmVector  = gController.getEstimator().getCgmVector().getData();
+    		
+    		for(int ii = 0; ii < 3; ++ii){
+    			estimator3M.insert(cgmVector[cgmVector.length-1-2+ii][0]);
+    		}
+    		
+    		// Hago una estimación a 10 min y capturo el trend y la predicción
+    		
+    		estimator3M.updatePred(10);
+    		double gTrend = Math.round(10.0*estimator3M.getTrend())/10.0; // Redondeo con un decimal
+    		double gPred  = Math.round(estimator3M.getPred()); // Redondeo al entero más próximo
+    		
+    		// ************************************************************************************************************ //
+    		// Rutina luces de hiperglucemia
+    		
+    		if(gMean>250.0 && gTrend>2.0 || gMean>350.0)
+    		{
+    			hyperLight = 2; // Enciendo luz roja
+    		}
+    		else if(gMean>180.0)
+    		{
+    			hyperLight = 1; // Enciendo luz amarilla
+    		}
+    		else
+    		{
+    			hyperLight = 0; // Enciendo luz verde
+    		}
+    		
+    		// ************************************************************************************************************ //
+    		// Rutina luces de hipoglucemia
+    		
+    		// Capturo la última muestra del vector de CGM
+    		
+    		double[][] cgmV = gController.getEstimator().getCgmVector().getData();
+    		double lastCgm  = cgmV[gController.getEstimator().getCgmVector().getM()-1][0]; 
+    		
+    		if(lastCgm<60.0)
+    		{
+    			hypoLight = 2; // Enciendo luz roja
+    		}
+    		else if(gPred>=70.0 && gPred<90.0)
+    		{
+    			if(gTrend<-1.0)
+    			{
+	    			hypoLight  = 1; // Enciendo luz amarilla
+    			}
+    			else
+    			{
+    				hypoLight  = 0; // Enciendo luz verde
+    			}
+    		}
+    		else if(gPred<70.0)
+    		{
+    			if(gTrend<-1.0)
+    			{
+	    			hypoLight  = 2; // Enciendo luz roja
+    			}
+    			else
+    			{
+    				hypoLight  = 1; // Enciendo luz amarilla
+    			}
+    		}
+    		else
+    		{
+    			hypoLight = 0; // Enciendo luz verde
+    		}
+    		
+    		// Debug
+    		
+    		log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. gMean: " + 
+    		gMean + ". gTrend: " + gTrend + ". gPred: " + gPred+". hypoLight: "+hypoLight+". hyperLight: "+hyperLight);
+    		
+    		//
+    			
+		}
+		
+		// Si se activó el flag basalCase o estoy en Stop Mode, entonces apago las luces del semáforo 
+		
+		else
+		{
+			
+			hypoLight  = 3;
+			hyperLight = 3;
+			
+			if(basalCase)
+			{
+			
+				// Debug
+			
+				log.debug("ARG /////// "+"DIAS_STATE_CL&OP&SS. Actualización luces semáforo. No hay info suficiente.");
+			
+				//
+			
+				Toast.makeText(IOMain.this, "Shutting down traffic lights: Lack of CGM info!" , Toast.LENGTH_SHORT).show();
+				
+			}
+    		
+		}
+		*/
+
+    }
 }
