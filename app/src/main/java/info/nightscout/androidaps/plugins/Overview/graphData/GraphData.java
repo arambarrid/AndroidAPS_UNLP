@@ -263,6 +263,25 @@ public class GraphData {
         }   
     }
 
+
+    class TimeInJSONComparator implements Comparator<ARGTable>
+    {
+        @Override
+        public int compare(ARGTable o1, ARGTable o2) {    
+            // Deolver 1 si o2 tiene que estar antes que o1
+            // Devolver -1 si o1 tiene que estar antes que o2
+            // devoler 0 si da igual
+            long time1 = o1.getLong("time");
+            long time2 = o2.getLong("time");
+            if (time1 > time2)
+                return -1;
+            else if (time2 > time1)
+                return 1;
+            else
+                return 0;
+        }   
+    }
+
     public void addARGInsulin(long fromTime, long toTime) {
         FixedLineGraphSeries<ScaledDataPoint> insulinSeries;
         List<ScaledDataPoint> insulinArray = new ArrayList<>();
@@ -332,71 +351,66 @@ public class GraphData {
     }
 
     public void addARGIob(long fromTime, long toTime) {
-        FixedLineGraphSeries<ScaledDataPoint> insulinSeries;
-        List<ScaledDataPoint> insulinArray = new ArrayList<>();
-        Double maxInsulinValueFound = Double.MIN_VALUE;
-        double lastInsulin = 0;
-        long lastInsulinTime = 0;
-        Scale insulinScale = new Scale();
+        FixedLineGraphSeries<ScaledDataPoint> iobSeries;
+        List<ScaledDataPoint> iobArray = new ArrayList<>();
+        Double maxIobValueFound = Double.MIN_VALUE;
+        double lastIob = 0;
+        long lastIobTime = 0;
+        Scale iobScale = new Scale();
 
-        List<ARGTable> bolusData = MainApp.getDbHelper()
+        List<ARGTable> iobData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", fromTime, false);
         //List<ARGTable>
 
         log.debug("[ARGPLUGIN-GUI] Dibujando insulina desde " + fromTime + " hasta " + toTime);
 
-        Collections.sort(bolusData, new DelivTimeInJSONComparator());
+        Collections.sort(iobData, new TimeInJSONComparator());
 
         //bolusData.sort()
         // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
         // Lo recorro desde la mas antigua hasta la mas nueva
-        for (int i = bolusData.size() - 1;i >= 0; i--){
-            double bolus = bolusData.get(i).getDouble("deliv_total");
-            long time = bolusData.get(i).getLong("deliv_time") * 1000; // Paso de segs a ms
+        for (int i = iobData.size() - 1;i >= 0; i--){
+            double iob = iobData.get(i).getDouble("iobEst");
+            long time = iobData.get(i).date;//getLong("iobLastTime") * 1000; // Paso de segs a ms
          
             if (time >= fromTime && time <= toTime){
-                if ( lastInsulinTime > 0){
-                    if (time - lastInsulinTime > ((5*60) + 30) * 1000L){
-                        insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L), lastInsulin, insulinScale));   
+                if ( lastIobTime > 0){
+                    if (time - lastIobTime > ((5*60) + 30) * 1000L){
+               //         iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L), lastIob, iobScale));   
                     }
                 }
-                insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));   
+                iobArray.add(new ScaledDataPoint(time, iob, iobScale));   
 
-                lastInsulinTime = time;
-                lastInsulin = bolus;
-                maxInsulinValueFound = Math.max(maxInsulinValueFound, Math.abs(bolus));
+                lastIobTime = time;
+                lastIob = iob;
+                maxIobValueFound = Math.max(maxIobValueFound, Math.abs(iob));
 
-                log.debug("[ARGPLUGIN-GUI] INSULINA EN GRAFICO TIEMPO " + time + " de " + bolus);
+                log.debug("[ARGPLUGIN-GUI] IOB ESTIMADO EN GRAFICO TIEMPO " + time + " de " + iob);
             }else{
-                log.debug("[ARGPLUGIN-GUI] Insulina ignorada en grafico tiempo " + time + " de " + bolus);
+                log.debug("[ARGPLUGIN-GUI] IOB Estimado ignorado en grafico tiempo " + time + " de " + iob);
             }
 
         }
 
-        if ( lastInsulinTime > 0){
-            if (toTime - lastInsulinTime > ((5*60) + 30) * 1000L){
-                insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L), lastInsulin, insulinScale));   
+        if ( lastIobTime > 0){
+            if (toTime - lastIobTime > ((5*60) + 30) * 1000L){
+              //  iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L), lastIob, iobScale));   
             }else{
-                insulinArray.add(new ScaledDataPoint(toTime, lastInsulin, insulinScale));
+           //     iobArray.add(new ScaledDataPoint(toTime, lastIob, iobScale));
             }
         }
 
-        ScaledDataPoint[] insulinData = new ScaledDataPoint[insulinArray.size()];
-        insulinData = insulinArray.toArray(insulinData);
-        insulinSeries = new FixedLineGraphSeries<>(insulinData);
-        insulinSeries.setDrawBackground(true);
-        insulinSeries.setBackgroundColor(0x8042eef4); //50%
-        insulinSeries.setColor(0xFF42EEF4);
-        insulinSeries.setThickness(3);
-        insulinScale.setMultiplier(50);
+        ScaledDataPoint[] iobDataPoint = new ScaledDataPoint[iobArray.size()];
+        iobDataPoint = iobArray.toArray(iobDataPoint);
+        iobSeries = new FixedLineGraphSeries<>(iobDataPoint);
+        iobSeries.setDrawBackground(true);
+        iobSeries.setBackgroundColor(0x8042eef4); //50%
+        iobSeries.setColor(0xFF42EEF4);
+        iobSeries.setThickness(3);
 
-        //if (useForScale) {
-        //    maxY = maxIobValueFound;
-        //    minY = -maxIobValueFound;
-        //}
+        iobScale.setMultiplier(1);
 
-
-        addSeries(insulinSeries);
+        addSeries(iobSeries);
     }
 
     public void addTargetLine(long fromTime, long toTime, Profile profile) {
