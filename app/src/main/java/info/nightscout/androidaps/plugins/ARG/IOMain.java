@@ -39,6 +39,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 
 import android.content.res.Resources;
+import info.nightscout.androidaps.db.Source;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
@@ -242,7 +243,7 @@ public class IOMain{
 	    lastTimeCGM_get = now;
     }
 
-    private void INSULIN_URI_Clone(){
+    public void INSULIN_URI_Clone(){
 	    // #########################################################################################################
 	    // Biometrics.INSULIN_URI
 	    // #########################################################################################################
@@ -252,6 +253,72 @@ public class IOMain{
     	// status 			2=se_infundió_correctamente
     	// type 			2=bolo_correccion
     	// req_time			calculo que será cuando se solicitó
+
+
+      	long fromTime = 0, now = System.currentTimeMillis() ;
+    	List<Treatment> treatments;
+    	ARGTable insulin_uri_argTable;
+    	int added = 0;
+
+    	// Primera vez
+    	if (lastTimeInsulin_get == 0){
+    		// Obtengo lecturas de como mucho hace 6 horas
+    		fromTime = now - 6*3600*1000L;
+
+    		// Verifico cual fue la ultima medida almacenada en el INSULIN_URI
+    		List<ARGTable> insulin_uri_list = MainApp.getDbHelper()
+    				.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
+
+    		if (insulin_uri_list.size() > 0){
+	    		insulin_uri_argTable = insulin_uri_list.get(0);
+	    		lastTimeInsulin_get = insulin_uri_argTable.getLong("time") * 1000;
+
+	    		// Entonces a partir de esta ultima medida es que consulto
+		    	// bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, true);
+
+	    	}else{
+	    		// no hay medidas desde ese tiempo en CGM_URI, chequeamos en AAPS
+		    	// bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(fromTime, false);
+	    		lastTimeCGM_get = fromTime;
+	    	}
+    	}else{
+		  //  bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, false);
+    	}
+
+      	treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+
+        for (int tx = 0; tx < treatments.size(); tx++) {
+            Treatment t = treatments.get(tx);
+            if (t.getX() > lastTimeInsulin_get && t.isValid 
+            	&& t.source == Source.PUMP) // ESTO NO SE SI ES NECESARIO PERO POR LAS DUDAS
+            {
+    			JSONObject insulin_uri_json = new JSONObject();
+    			try{
+					insulin_uri_json.put("time", t.date/1000);
+					insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
+					insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
+					insulin_uri_json.put("deliv_total", t.insulin); // cantidad de insulina
+					insulin_uri_json.put("deliv_time", t.date/1000);
+
+					insulin_uri_argTable = new ARGTable(t.date, "Biometrics.INSULIN_URI", insulin_uri_json);
+			        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
+
+			        log.debug("[ARGPLUGIN] Insulina clonada source: " + t.source + " time:" + t.date + " insulin:" + t.insulin);
+			        added++;
+    			}catch(JSONException e){
+
+    			}
+            }
+
+
+        }
+
+    	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeInsulin_get) + " currentLastTime: " + String.valueOf(now));
+	    lastTimeInsulin_get = now;
+
+    	/*
+
+    	// Comento esto para ver si funciona la otra manera de obtener los datos
     	PumpHistory history = ConfigBuilderPlugin.getPlugin().getActivePump().readBolus();
 
     	long fromTime=0, now = System.currentTimeMillis() ;
@@ -315,7 +382,7 @@ public class IOMain{
 
     	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeCGM_get) + " currentLastTime: " + String.valueOf(now));
 	    lastTimeInsulin_get = now;
-
+*/
 
     }
 
@@ -344,7 +411,9 @@ public class IOMain{
 	    this.CGM_URI_Clone();
 	    
 	    // Biometrics.INSULIN_URI
-	    this.INSULIN_URI_Clone();
+
+	    // TODO_APS: Tiene que ser asincronico
+	     this.INSULIN_URI_Clone();
 
 	    // Biometrics.TEMP_BASAL_URI
 	    this.TEMP_BASAL_URI_Clone();

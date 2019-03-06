@@ -294,7 +294,8 @@ public class GraphData {
                     .getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
         //List<ARGTable>
 
-        log.debug("[ARGPLUGIN-GUI] Dibujando insulina desde " + fromTime + " hasta " + toTime);
+        log.debug("[ARGPLUGIN-GUI] Dibujando insulina desde "
+         + fromTime + " hasta " + toTime + " (" + bolusData.size() + " resultados )");
 
         Collections.sort(bolusData, new DelivTimeInJSONComparator());
 
@@ -306,15 +307,27 @@ public class GraphData {
             long time = bolusData.get(i).getLong("deliv_time") * 1000; // Paso de segs a ms
          
             if (time >= fromTime && time <= toTime){
+
                 if ( lastInsulinTime > 0){
-                    if (time - lastInsulinTime > ((5*60) + 30) * 1000L){
+                    // Tolerancia de 60 segundos (delays de comunicacion con bomba)
+                    // para que el grafico sea continuo, sino, que la discontinuidad
+                    // sea visual para ver que hay lapsos sin infundir
+                    if (time - lastInsulinTime > ((5*60) + 60) * 1000L){
                         insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L), lastInsulin, insulinScale));   
+                        insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L) + 10, 0, insulinScale));    
+                        insulinArray.add(new ScaledDataPoint(time - 10, 0, insulinScale));  
+                        insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
+                    }else{
+                        insulinArray.add(new ScaledDataPoint(time - 10, lastInsulin, insulinScale));  
+                        insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
                     }
+                }else{
+                    insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale)); 
                 }
-                insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));   
 
                 lastInsulinTime = time;
                 lastInsulin = bolus;
+                
                 maxInsulinValueFound = Math.max(maxInsulinValueFound, Math.abs(bolus));
 
                 log.debug("[ARGPLUGIN-GUI] INSULINA EN GRAFICO TIEMPO " + time + " de " + bolus);
@@ -327,6 +340,7 @@ public class GraphData {
         if ( lastInsulinTime > 0){
             if (toTime - lastInsulinTime > ((5*60) + 30) * 1000L){
                 insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L), lastInsulin, insulinScale));   
+                insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L) + 10, 0, insulinScale));
             }else{
                 insulinArray.add(new ScaledDataPoint(toTime, lastInsulin, insulinScale));
             }
@@ -360,11 +374,9 @@ public class GraphData {
 
         List<ARGTable> iobData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", fromTime, false);
-        //List<ARGTable>
 
-        log.debug("[ARGPLUGIN-GUI] Dibujando insulina desde " + fromTime + " hasta " + toTime);
+        log.debug("[ARGPLUGIN-GUI] Dibujando iob estimado desde " + fromTime + " hasta " + toTime);
 
-        Collections.sort(iobData, new TimeInJSONComparator());
 
         //bolusData.sort()
         // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
