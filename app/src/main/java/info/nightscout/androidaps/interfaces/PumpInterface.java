@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.PumpEnactResult;
+import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.PumpHistory;
 
 /**
  * Created by mike on 04.06.2016.
@@ -57,4 +58,5 @@ public interface PumpInterface {
 
     PumpEnactResult loadTDDs();
 
+    PumpHistory readBolus();
 }

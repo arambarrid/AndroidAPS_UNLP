@@ -60,10 +60,13 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSgv;
 import info.nightscout.androidaps.plugins.Overview.OverviewPlugin;
+import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.PumpHistory;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
+import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
+
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.db.ARGTable;
@@ -246,6 +249,7 @@ public class IOMain{
     	// status 			2=se_infundió_correctamente , status!=2 ¿¿¿??? 
     	// type 			3=bolo_de_inicializacion , 3=bolo_correccion ¿¿¿???
     	// req_time			calculo que será cuando se solicitó
+    	PumpHistory history = ConfigBuilderPlugin.getPlugin().getActivePump().readBolus();
     }
 
     private void TEMP_BASAL_URI_Clone(){
@@ -3235,7 +3239,7 @@ public class IOMain{
 				
 	    		log.debug("[ARGPLUGIN:IOMAIN] CR: " + parameterCR + " - CF: " + parameterCF +
 	    			" - basalU: " + parameterBasal + " - TDI: " + parameterTDI + " - Weight: " + parameterWeight + 
-	    			" - setPoint: " + parameterSetpoint " - IOB_factor: " + parameterIOBFactor);
+	    			" - setPoint: " + parameterSetpoint + " - IOB_factor: " + parameterIOBFactor);
 
 	    		log.debug("[ARGPLUGIN:IOMAIN] IOB FactorF : "+ parameterIOBFactorF);
 	    		

@@ -39,6 +39,7 @@ import info.nightscout.androidaps.plugins.Overview.events.EventDismissNotificati
 import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.Overview.events.EventOverviewBolusProgress;
 import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
+import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.PumpHistory;
 import info.nightscout.androidaps.plugins.PumpCommon.defs.PumpType;
 import info.nightscout.androidaps.plugins.PumpInsight.connector.CancelBolusSilentlyTaskRunner;
 import info.nightscout.androidaps.plugins.PumpInsight.connector.CancelTBRSilentlyTaskRunner;
@@ -175,6 +176,11 @@ public class InsightPlugin extends PluginBase implements PumpInterface, Constrai
         PumpEnactResult result = new PumpEnactResult();
         result.success = true;
         return result;
+    }
+
+    @Override
+    public PumpHistory readBolus() {
+        return null;
     }
 
     @Override

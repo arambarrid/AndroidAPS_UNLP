@@ -17,6 +17,7 @@ import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.PumpCombo.ruffyscripter.history.PumpHistory;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DateUtil;
 
@@ -61,6 +62,11 @@ public class MDIPlugin extends PluginBase implements PumpInterface {
         //no result, could read DB in the future?
         PumpEnactResult result = new PumpEnactResult();
         return result;
+    }
+
+    @Override
+    public PumpHistory readBolus() {
+        return null;
     }
 
     @Override

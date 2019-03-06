@@ -1113,6 +1113,26 @@ public class ComboPlugin extends PluginBase implements PumpInterface, Constraint
             TreatmentsPlugin.getPlugin().addToHistoryTempBasal(newTempBasal);
         }
     }
+    /**
+     * Método agregado: lee los bolos inyectados.
+     */
+    public PumpHistory readBolus() {
+        CommandResult historyResult = runCommand(MainApp.gs(R.string.combo_activity_reading_pump_history), 3, () -> ruffyScripter.readHistory(new PumpHistoryRequest().bolusHistory(PumpHistoryRequest.FULL)));
+        PumpHistory history = historyResult.history;
+        if (!historyResult.success || history == null) {
+            return null;
+        }
+        // update local cache
+        if (!history.pumpAlertHistory.isEmpty()) {
+            pump.errorHistory = history.pumpAlertHistory;
+        }
+        if (!history.tddHistory.isEmpty()) {
+            pump.tddHistory = history.tddHistory;
+        }
+        return history;
+    }
+
+
 
     /**
      * Reads the pump's history and updates the DB accordingly.
