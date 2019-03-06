@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Objects;
+import java.util.Comparator;
 
 import org.json.JSONObject;
 import org.json.JSONException;
@@ -195,6 +196,42 @@ public class ARGTable {
         return ret;
     }
 
+/*
+    class TimeInJSONComparator implements Comparator<ARGTable>
+    {
+        @Override
+        public int compare(ARGTable o1, ARGTable o2) {    
+            // Deolver 1 si o2 tiene que estar antes que o1
+            // Devolver -1 si o1 tiene que estar antes que o2
+            // devoler 0 si da igual
+            long time1 = o1.getLong("time");
+            long time2 = o2.getLong("time");
+            if (time1 > time2)
+                return -1;
+            else if (time2 > time1)
+                return 1;
+            else
+                return 0;
+        }   
+    }
 
 
+    class DelivTimeInJSONComparator implements Comparator<ARGTable>
+    {
+        @Override
+        public int compare(ARGTable o1, ARGTable o2) {    
+            // Deolver 1 si o2 tiene que estar antes que o1
+            // Devolver -1 si o1 tiene que estar antes que o2
+            // devoler 0 si da igual
+            long time1 = o1.getLong("deliv_time");
+            long time2 = o2.getLong("deliv_time");
+            if (time1 > time2)
+                return -1;
+            else if (time2 > time1)
+                return 1;
+            else
+                return 0;
+        }   
+    }
+*/
 }

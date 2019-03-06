@@ -190,7 +190,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     Handler sLoopHandler = new Handler();
     Runnable sRefreshLoop = null;
 
-    public enum CHARTTYPE {PRE, BAS, IOB, COB, DEV, SEN, DEVSLOPE}
+    public enum CHARTTYPE {PRE, BAS, IOB,ARGIOB,ARGINS, COB, DEV, SEN, DEVSLOPE}
 
     private static final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     private static ScheduledFuture<?> scheduledUpdate = null;
@@ -324,9 +324,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
         rangeToDisplay = SP.getInt(R.string.key_rangetodisplay, 6);
 
+        // COMENTARIO: Aca podemos cambiar el tema del zoom 
         bgGraph.setOnLongClickListener(v -> {
-            rangeToDisplay += 6;
-            rangeToDisplay = rangeToDisplay > 24 ? 6 : rangeToDisplay;
+            rangeToDisplay += 2;
+            rangeToDisplay = rangeToDisplay > 24 ? 2 : rangeToDisplay;
             SP.putInt(R.string.key_rangetodisplay, rangeToDisplay);
             updateGUI("rangeChange");
             return false;
@@ -380,6 +381,22 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showiob", true));
 
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ARGINS.ordinal(), Menu.NONE,"Insulina - ARG");
+            title = item.getTitle();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showarginsulin", true));
+
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ARGIOB.ordinal(), Menu.NONE, "IOB Estimado - ARG");
+            title = item.getTitle();
+            s = new SpannableString(title);
+            s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
+            item.setTitle(s);
+            item.setCheckable(true);
+            item.setChecked(SP.getBoolean("showargiob", true));
+
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.COB.ordinal(), Menu.NONE, MainApp.gs(R.string.overview_show_cob));
             title = item.getTitle();
             s = new SpannableString(title);
@@ -423,6 +440,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                         SP.putBoolean("showbasals", !item.isChecked());
                     } else if (item.getItemId() == CHARTTYPE.IOB.ordinal()) {
                         SP.putBoolean("showiob", !item.isChecked());
+                    } else if (item.getItemId() == CHARTTYPE.ARGIOB.ordinal()) {
+                        SP.putBoolean("showargiob", !item.isChecked());
+                    } else if (item.getItemId() == CHARTTYPE.ARGINS.ordinal()) {
+                        SP.putBoolean("showarginsulin", !item.isChecked());
                     } else if (item.getItemId() == CHARTTYPE.COB.ordinal()) {
                         SP.putBoolean("showcob", !item.isChecked());
                     } else if (item.getItemId() == CHARTTYPE.DEV.ordinal()) {
@@ -1461,6 +1482,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             // add target line
             graphData.addTargetLine(fromTime, toTime, profile);
 
+            if (SP.getBoolean("showarginsulin", true))
+                graphData.addARGInsulin(fromTime, toTime);
+
             // **** NOW line ****
             graphData.addNowLine(now);
 
@@ -1490,6 +1514,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
             if (SP.getBoolean("showiob", true))
                 secondGraphData.addIob(fromTime, now, useIobForScale, 1d);
+            if (SP.getBoolean("showargiob", true))
+                secondGraphData.addARGIob(fromTime, now);
             if (SP.getBoolean("showcob", true))
                 secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d);
             if (SP.getBoolean("showdeviations", false))
@@ -1498,6 +1524,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 secondGraphData.addRatio(fromTime, now, useRatioForScale, 1d);
             if (SP.getBoolean("showdevslope", false) && MainApp.devBranch)
                 secondGraphData.addDeviationSlope(fromTime, now, useDSForScale, 1d);
+            if (SP.getBoolean("showdevslope", false) && MainApp.devBranch)
+                secondGraphData.addDeviationSlope(fromTime, now, useDSForScale, 1d);
+
 
             // **** NOW line ****
             // set manual x bounds to have nice steps
@@ -1509,6 +1538,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (activity != null) {
                 activity.runOnUiThread(() -> {
                     if (SP.getBoolean("showiob", true)
+                        || SP.getBoolean("showargiob", true)
                             || SP.getBoolean("showcob", true)
                             || SP.getBoolean("showdeviations", false)
                             || SP.getBoolean("showratios", false)
