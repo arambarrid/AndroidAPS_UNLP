@@ -47,6 +47,7 @@ import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.ConstraintsObjectives.ObjectivesPlugin;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.ARG.ARGPlugin;
 import info.nightscout.androidaps.plugins.IobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.Loop.events.EventLoopSetLastRunGui;
 import info.nightscout.androidaps.plugins.Loop.events.EventLoopUpdateGui;
@@ -382,6 +383,19 @@ public class LoopPlugin extends PluginBase {
                                         if (result.enacted || result.success) {
                                             lastRun.smbSetByPump = result;
                                             lastRun.lastEnact = lastRun.lastAPSRun;
+
+                                            // TODO_APS: No sabia donde meterlo
+                                            // aca funciona para actualizar la DB
+                                            // por ende actualizar interfaz
+
+                                            new Thread(() -> {
+                                                SystemClock.sleep(5000);
+                                                if (ARGPlugin.getPlugin(MainApp.instance().getApplicationContext()).ioMain != null){
+                                                    ARGPlugin.getPlugin(MainApp.instance().getApplicationContext())
+                                                        .ioMain.AAPStoDiAS();
+                                                }
+                                            }).start();
+
                                         } else {
                                             new Thread(() -> {
                                                 SystemClock.sleep(1000);
