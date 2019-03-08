@@ -654,6 +654,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Bolo de inicializacion" />
+
+                <Button
+                    android:id="@+id/arg_reset_ruffy"
+                    style="?android:attr/buttonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Boton Magico Accu-chek" />
                     
                 <View
                     android:layout_width="fill_parent"

@@ -322,6 +322,7 @@ public class GraphData {
                         insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
                     }
                 }else{
+                    insulinArray.add(new ScaledDataPoint(time-10, 0, insulinScale)); 
                     insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale)); 
                 }
 
@@ -353,7 +354,7 @@ public class GraphData {
         insulinSeries.setBackgroundColor(0x8042eef4); //50%
         insulinSeries.setColor(0xFF42EEF4);
         insulinSeries.setThickness(3);
-        insulinScale.setMultiplier(50);
+        insulinScale.setMultiplier(200);
 
         //if (useForScale) {
         //    maxY = maxIobValueFound;

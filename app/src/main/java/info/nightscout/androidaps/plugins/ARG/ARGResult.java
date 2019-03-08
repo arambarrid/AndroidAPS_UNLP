@@ -42,12 +42,7 @@ public class ARGResult extends APSResult {
             }
 
             if (result.has("deliverAt")) {
-                String date = result.getString("deliverAt");
-                try {
-                    deliverAt = DateUtil.fromISODateString(date).getTime();
-                } catch (Exception e) {
-                    log.warn("Error parsing 'deliverAt' date: " + date, e);
-                }
+                deliverAt = result.getLong("deliverAt");
             }
         } catch (JSONException e) {
             log.error("Error parsing determine-basal result JSON", e);

@@ -115,8 +115,6 @@ public class ARGPlugin extends PluginBase implements APSInterface {
         if (L.isEnabled(L.APS))
             log.debug("invoke from " + initiator + " tempBasalFallback: " + tempBasalFallback);
 
-        lastAPSResult = null;
-
         GlucoseStatus glucoseStatus = GlucoseStatus.getGlucoseStatusData();
         Profile profile = ProfileFunctions.getInstance().getProfile();
         PumpInterface pump = ConfigBuilderPlugin.getPlugin().getActivePump();
@@ -163,39 +161,64 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             ioMain = new IOMain();
         }
 
-        // Resultado en unidades
-        double bolusResult = ioMain.ejecutarCada5Min(gController) / 1200.0;
+        // Resultado no en unidades
+        double bolusResult = ioMain.ejecutarCada5Min(gController);
 
-        // Caso ideal Si pasan 5 minutos y se ejecuta con una nueva muestra
-        // Caso probable Se ejecute mas seguido
-        JSONObject jsonResult = new JSONObject();
-        try{
-            jsonResult.put("reason", "Caso de prueba");
+        lastAPSResult = null;
 
-            // Siempre basal a 0%
-            jsonResult.put("rate", 0);
-            jsonResult.put("duration", 30);
-            
-            // Asegurarse de dar el bolo
-            jsonResult.put("bolus", bolusResult);
-        } catch(JSONException e){
+        if (bolusResult != -1){
+            // Conversion de resultado a unidades
+            bolusResult = bolusResult / 1200.0;
 
+            // Caso ideal Si pasan 5 minutos y se ejecuta con una nueva muestra
+            // Caso probable Se ejecute mas seguido
+            JSONObject jsonResult = new JSONObject();
+            try{
+                jsonResult.put("reason", "Resultado luego de correr el controlador");
+
+                // Siempre basal a 0%
+                jsonResult.put("rate", 0);
+                jsonResult.put("duration", 30);
+                
+                if (bolusResult > 0){
+                    // Asegurarse de dar el bolo
+                    jsonResult.put("bolus", bolusResult);
+                    jsonResult.put("deliverAt", System.currentTimeMillis());
+                }
+            } catch(JSONException e){
+
+            }
+
+            ARGResult argResult = new ARGResult(jsonResult);
+
+            // Estimación de IOB? 
+            // argResult.iob = iobArray[0];
+            argResult.iob = new IobTotal(0);
+
+            // Es necesario determinar esto ? 
+            // determineBasalResultARG.inputConstraints = inputConstraints;
+
+            lastAPSResult = argResult;
+
+            // TODO_APS: no se usa igual
+            // lastAPSRun = now;   
+        }else{
+            JSONObject jsonResult = new JSONObject();
+            try{
+                jsonResult.put("reason", "Llamado antes de los 5 min, o bien controlador/perfil es null.");
+
+                // Siempre basal a 0%
+                //jsonResult.put("rate", 0);
+                //jsonResult.put("duration", 30);
+            } catch(JSONException e){
+
+            }
+
+            ARGResult argResult = new ARGResult(jsonResult);
+
+            argResult.iob = new IobTotal(0);
+            lastAPSResult = argResult;
         }
-
-        ARGResult argResult = new ARGResult(jsonResult);
-
-        // Estimación de IOB? 
-        // argResult.iob = iobArray[0];
-        argResult.iob = new IobTotal(0);
-
-        // Es necesario determinar esto ? 
-        // determineBasalResultARG.inputConstraints = inputConstraints;
-
-        lastAPSResult = argResult;
-
-        // TODO_APS: no se usa igual
-        // lastAPSRun = now;   
-
         MainApp.bus().post(new EventOpenAPSUpdateGui());
     }
 

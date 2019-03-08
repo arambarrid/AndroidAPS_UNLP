@@ -43,6 +43,7 @@ import org.json.JSONException;
 
 import android.support.v4.app.FragmentManager;
 import info.nightscout.androidaps.plugins.ARG.Dialogs.NewInitBolusDialog;
+import info.nightscout.androidaps.plugins.PumpCombo.ComboPlugin;
 
 public class ARGFragment extends SubscriberFragment {
     private static Logger log = LoggerFactory.getLogger(L.APS);
@@ -57,6 +58,8 @@ public class ARGFragment extends SubscriberFragment {
     Button forceController;
     @BindView(R.id.arg_init_bolus)
     Button initBolus;
+    @BindView(R.id.arg_reset_ruffy)
+    Button resetRuffy;
     @BindView(R.id.arg_lastrun)
     TextView lastRunView;
     @BindView(R.id.arg_result)
@@ -128,6 +131,14 @@ public class ARGFragment extends SubscriberFragment {
         FragmentManager manager = getFragmentManager();
         new NewInitBolusDialog().show(manager, "InitBolusDialog");
         FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Init_Bolus"));
+    }
+
+    @OnClick(R.id.arg_reset_ruffy)
+    public void onResetRuffyClick() {
+        // Corroborar que sea la combo;
+        ComboPlugin.getPlugin().killRuffyAndRestart();
+        ComboPlugin.getPlugin().resetPlugin();
+
     }
 
     @OnClick(R.id.arg_force_controller)

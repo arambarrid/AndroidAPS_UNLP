@@ -65,6 +65,10 @@ import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
 import info.nightscout.utils.DateUtil;
 import info.nightscout.utils.SP;
 
+import android.app.ActivityManager;
+import android.content.Context;
+import android.os.Process;
+
 /**
  * Created by mike on 05.08.2016.
  */
@@ -79,6 +83,13 @@ public class ComboPlugin extends PluginBase implements PumpInterface, Constraint
         if (plugin == null)
             plugin = new ComboPlugin();
         return plugin;
+    }
+
+    public static void resetPlugin(){
+        if (plugin != null)
+            plugin = null;
+        
+        plugin = new ComboPlugin();
     }
 
     private final static PumpDescription pumpDescription = new PumpDescription();
@@ -1381,5 +1392,24 @@ public class ComboPlugin extends PluginBase implements PumpInterface, Constraint
         if (lowSuspendOnlyLoopEnforcedUntil > System.currentTimeMillis())
             maxIob.setIfSmaller(0d, String.format(MainApp.gs(R.string.limitingmaxiob), 0d, MainApp.gs(R.string.unsafeusage)), this);
         return maxIob;
+    }
+
+    public void killRuffyAndRestart(){
+        Context context = MainApp.instance().getApplicationContext();
+        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> pids = am.getRunningAppProcesses();
+        int processid = 0;
+        for (int i = 0; i < pids.size(); i++) {
+            ActivityManager.RunningAppProcessInfo info = pids.get(i);
+            if (info.processName.equalsIgnoreCase("org.monkey.d.ruffy.ruffy")) {
+               processid = info.pid;
+            } 
+        }
+
+        if (processid != 0)
+            log.debug("[ARGPLUGIN] killing ruffy app pid: " + processid);
+
+        am.killBackgroundProcesses("org.monkey.d.ruffy.ruffy");
+        Process.sendSignal(processid, Process.SIGNAL_KILL);
     }
 }

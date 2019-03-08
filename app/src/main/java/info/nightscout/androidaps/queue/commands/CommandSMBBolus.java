@@ -36,12 +36,20 @@ public class CommandSMBBolus extends Command {
             if (L.isEnabled(L.PUMPQUEUE))
                 log.debug("SMB requsted but still in 3 min interval");
             r = new PumpEnactResult().enacted(false).success(false).comment("SMB requsted but still in 3 min interval");
-        } else if (detailedBolusInfo.deliverAt != 0 && detailedBolusInfo.deliverAt + T.mins(1).msecs() > System.currentTimeMillis()) {
-            r = ConfigBuilderPlugin.getPlugin().getActivePump().deliverTreatment(detailedBolusInfo);
+        } else if (detailedBolusInfo.deliverAt != 0) {
+            if (detailedBolusInfo.deliverAt + T.mins(1).msecs() > System.currentTimeMillis()){
+                r = ConfigBuilderPlugin.getPlugin().getActivePump().deliverTreatment(detailedBolusInfo);
+            }else{
+                r = new PumpEnactResult().enacted(false).success(false).comment("SMB request too old");
+                if (L.isEnabled(L.PUMPQUEUE))
+                    log.debug("SMB bolus canceled. delivetAt: " + DateUtil.dateAndTimeString(detailedBolusInfo.deliverAt) 
+                        + " long:" + detailedBolusInfo.deliverAt);
+            }
         } else {
-            r = new PumpEnactResult().enacted(false).success(false).comment("SMB request too old");
+            r = new PumpEnactResult().enacted(false).success(false).comment("SMB request too old (zero)");
             if (L.isEnabled(L.PUMPQUEUE))
-                log.debug("SMB bolus canceled. delivetAt: " + DateUtil.dateAndTimeString(detailedBolusInfo.deliverAt));
+                log.debug("SMB bolus canceled. delivetAt: " + DateUtil.dateAndTimeString(detailedBolusInfo.deliverAt) 
+                    + " long:" + detailedBolusInfo.deliverAt);
         }
 
         if (L.isEnabled(L.PUMPQUEUE))

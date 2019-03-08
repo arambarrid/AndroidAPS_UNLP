@@ -228,6 +228,7 @@ public class IOMain{
 
 					cgm_uri_argTable = new ARGTable(bgData.get(i).date, "Biometrics.CGM_URI", cgm_uri_json);
 			        MainApp.getDbHelper().createARGTableIfNotExists(cgm_uri_argTable, "CGM_URI_Clone()");
+					NSUpload.uploadARGTable(cgm_uri_argTable);
 
 			        added++;
     			}catch(JSONException e){
@@ -302,6 +303,7 @@ public class IOMain{
 
 					insulin_uri_argTable = new ARGTable(t.date, "Biometrics.INSULIN_URI", insulin_uri_json);
 			        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
+					NSUpload.uploadARGTable(insulin_uri_argTable);
 
 			        log.debug("[ARGPLUGIN] Insulina clonada source: " + t.source + " time:" + t.date + " insulin:" + t.insulin);
 			        added++;
@@ -3111,10 +3113,10 @@ public class IOMain{
 
         if (gController == null){
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY CONTROLADOR ACTIVO");
-			return 0;
+			return -1;
         }else if (profile == null){
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY PERFIL ACTIVO");
-			return 0;
+			return -1;
         }
 
 		// Clonacion de tablas de AAPS a como las adquiere DiAS
@@ -3135,7 +3137,7 @@ public class IOMain{
 
 		if (nowMS - lastEjectuarCada5Min_tick < ( ( (5 * 60) - 10)  * 1000L ) ){
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() < 5 min(-10segs), exit");
-			return 0;
+			return -1;
 		}
 
 		lastEjectuarCada5Min_tick = nowMS;
