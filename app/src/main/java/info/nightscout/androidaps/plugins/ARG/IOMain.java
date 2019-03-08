@@ -255,7 +255,7 @@ public class IOMain{
     	// type 			2=bolo_correccion
     	// req_time			calculo que será cuando se solicitó
 
-
+    	long prevlastTime = lastTimeInsulin_get, newLastTime = -1;
       	long fromTime = 0, now = System.currentTimeMillis() ;
     	List<Treatment> treatments;
     	ARGTable insulin_uri_argTable;
@@ -263,7 +263,7 @@ public class IOMain{
 
     	// Primera vez
     	if (lastTimeInsulin_get == 0){
-    		// Obtengo lecturas de como mucho hace 6 horas
+    		// Voy a copiar lecturas de como mucho hace 6 horas
     		fromTime = now - 6*3600*1000L;
 
     		// Verifico cual fue la ultima medida almacenada en el INSULIN_URI
@@ -271,120 +271,73 @@ public class IOMain{
     				.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
 
     		if (insulin_uri_list.size() > 0){
-	    		insulin_uri_argTable = insulin_uri_list.get(0);
-	    		lastTimeInsulin_get = insulin_uri_argTable.getLong("time") * 1000;
-
-	    		// Entonces a partir de esta ultima medida es que consulto
-		    	// bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, true);
-
-	    	}else{
-	    		// no hay medidas desde ese tiempo en CGM_URI, chequeamos en AAPS
-		    	// bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(fromTime, false);
+        		for (int tx = 0; tx < insulin_uri_list.size(); tx++){
+		    		insulin_uri_argTable = insulin_uri_list.get(tx);
+		    		long time =  insulin_uri_argTable.getLong("time_ms");
+		    		if (time > lastTimeInsulin_get)
+		    			lastTimeInsulin_get = time;
+        		}
+	    	}else{	
 	    		lastTimeCGM_get = fromTime;
 	    	}
-    	}else{
-		  //  bgData = MainApp.getDbHelper().getBgreadingsDataFromTime(lastTimeCGM_get, false);
     	}
 
       	treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
 
         for (int tx = 0; tx < treatments.size(); tx++) {
             Treatment t = treatments.get(tx);
-            if (t.getX() > lastTimeInsulin_get && t.isValid 
-            	&& t.source == Source.PUMP) // ESTO NO SE SI ES NECESARIO PERO POR LAS DUDAS
+            if (t.date > lastTimeInsulin_get)
             {
-    			JSONObject insulin_uri_json = new JSONObject();
-    			try{
-					insulin_uri_json.put("time", t.date/1000);
-					insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
-					insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
-					insulin_uri_json.put("deliv_total", t.insulin); // cantidad de insulina
-					insulin_uri_json.put("deliv_time", t.date/1000);
+            	if (t.isValid && t.source == Source.PUMP){ // ESTO NO SE SI ES NECESARIO PERO POR LAS DUDAS
+	    			JSONObject insulin_uri_json = new JSONObject();
+	    			try{
+						insulin_uri_json.put("time", t.date/1000);
+						insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
+						insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
+						insulin_uri_json.put("deliv_total", t.insulin); // cantidad de insulina
+						insulin_uri_json.put("deliv_time", t.date/1000);
+						insulin_uri_json.put("time_ms", t.date);
 
-					insulin_uri_argTable = new ARGTable(t.date, "Biometrics.INSULIN_URI", insulin_uri_json);
-			        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
-					NSUpload.uploadARGTable(insulin_uri_argTable);
+						insulin_uri_argTable = new ARGTable(t.date, "Biometrics.INSULIN_URI", insulin_uri_json);
+				        MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
+						NSUpload.uploadARGTable(insulin_uri_argTable);
 
-			        log.debug("[ARGPLUGIN] Insulina clonada source: " + t.source + " time:" + t.date + " insulin:" + t.insulin);
-			        added++;
-    			}catch(JSONException e){
+				        log.debug("[ARGPLUGIN] Insulina clonada (lastTimeInsulin_get-t.date = " + 
+            					(t.date - lastTimeInsulin_get) + " ms) source: " 
+				        		+ t.source + " time:" + t.date + " insulin:"
+				        		 + t.insulin + " isValid:" + t.isValid 
+				        		 + " lastTimeInsulin_get= " + lastTimeInsulin_get);
+				        added++;
 
-    			}
+				        if (t.date > newLastTime)
+				        	newLastTime = t.date;
+	    			}catch(JSONException e){
+
+	    			}
+	    		}else{
+            		log.debug("[ARGPLUGIN] Insulina ignorada, es invalida o no proviene de la bomba - source: " 
+			        		+ t.source + " time:" + t.date + " insulin:"
+			        		 + t.insulin + " isValid:" + t.isValid
+				        		 + " lastTimeInsulin_get= " + lastTimeInsulin_get);
+	    		}
+            }else{
+            	log.debug("[ARGPLUGIN] Insulina ignorada es mas vieja de lo solicitado (lastTimeInsulin_get-t.date = " + 
+            			(lastTimeInsulin_get - t.date) + " ms) - source: " 
+			        		+ t.source + " time:" + t.date + " insulin:"
+			        		 + t.insulin + " isValid:" + t.isValid
+				        		 + " lastTimeInsulin_get= " + lastTimeInsulin_get);
+			        
             }
 
 
         }
 
-    	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeInsulin_get) + " currentLastTime: " + String.valueOf(now));
-	    lastTimeInsulin_get = now;
+        if (newLastTime > lastTimeInsulin_get)
+        	lastTimeInsulin_get = newLastTime;
 
-    	/*
-
-    	// Comento esto para ver si funciona la otra manera de obtener los datos
-    	PumpHistory history = ConfigBuilderPlugin.getPlugin().getActivePump().readBolus();
-
-    	long fromTime=0, now = System.currentTimeMillis() ;
-    	long tiempoDeConsulta;
-    	Bolus bolusData;
-    	ARGTable insulin_uri_argTable;
-    	int added = 0;
-
-    	// Primera vez
-    	if (lastTimeInsulin_get == 0){
-    		// Obtengo lecturas de como mucho hace 48 horas
-    		fromTime = now - 48*3600*1000L;
-
-    		// Verifico cual fue la ultima medida almacenada en el INSULIN_URI
-    		List<ARGTable> insulin_uri_list = MainApp.getDbHelper()
-    				.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
-
-    		if (insulin_uri_list.size() > 0){
-	    		insulin_uri_argTable = insulin_uri_list.get(0);
-	    		lastTimeInsulin_get = insulin_uri_argTable.getLong("time")*1000;
-	    		tiempoDeConsulta=lastTimeInsulin_get;
-
-	    	}else{
-	    		// no hay medidas desde ese tiempo en INSULIN_URI, chequeamos en AAPS
-		    	tiempoDeConsulta=fromTime;
-	    	}
-    	}else{
-    		tiempoDeConsulta=lastTimeInsulin_get;
-		   	//bolusData = MainApp.getDbHelper().getExtendedBolusDataFromTime(lastTimeInsulin_get, false);
-    	}
-    	if(!history.bolusHistory.isEmpty()){
-			for (int i = 0;i < history.bolusHistory.size(); i++){
-				JSONObject insulin_uri_json = new JSONObject();
-				try{
-					//log.debug("[ARGPLUGIN] BOLUS Source " + bolusData.get(i).source);
-					bolusData=history.bolusHistory.get(i);
-					if(bolusData.timestamp>tiempoDeConsulta){
-						insulin_uri_json.put("time", bolusData.timestamp/1000);
-						insulin_uri_json.put("type", 2); // 2 : tipo de bolo: de correccion
-						insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
-						insulin_uri_json.put("deliv_total", bolusData.amount); // cantidad de insulina
-						insulin_uri_json.put("deliv_time", bolusData.timestamp/1000);
-
-						insulin_uri_argTable = new ARGTable(bolusData.timestamp,
-								"Biometrics.INSULIN_URI",
-								insulin_uri_json);
-
-						MainApp.getDbHelper().createARGTableIfNotExists(insulin_uri_argTable, "INSULIN_URI_Clone()");
-						added++;
-					}
-
-
-				}catch(JSONException e){
-
-				}
-
-
-			}
-		}
-
-
-    	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) + " added, prevlastTime: " + String.valueOf(lastTimeCGM_get) + " currentLastTime: " + String.valueOf(now));
-	    lastTimeInsulin_get = now;
-*/
+    	log.debug("[ARGPLUGIN] INSULIN_URI : " + String.valueOf(added) +
+    			 " added, prevlastTime: " + String.valueOf(prevlastTime) +
+    			 " currentLastTime: " + String.valueOf(lastTimeInsulin_get));
 
     }
 
