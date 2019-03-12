@@ -296,6 +296,7 @@ public class IOMain{
 						insulin_uri_json.put("status", 2); // 2 es que fue totalmente infundida
 						insulin_uri_json.put("deliv_total", t.insulin); // cantidad de insulina
 						insulin_uri_json.put("deliv_time", t.date/1000);
+						insulin_uri_json.put("req_time", t.date/1000);
 						insulin_uri_json.put("time_ms", t.date);
 
 						insulin_uri_argTable = new ARGTable(t.date, "Biometrics.INSULIN_URI", insulin_uri_json);
@@ -1429,7 +1430,7 @@ public class IOMain{
 	        	if (hayResultadosEnDB){ //(cCGMV != null) {
 	        		if (ultimoResultado){ // (cCGMV.moveToLast()) {
 	        			
-	        			timeCGMV = cCGMV.get(0).getLong("time");
+	        			timeCGMV = cCGMV.get(0).getLong("lastUpdated");
 	        			flag2c2  = cCGMV.get(0).getDouble("flag2c2");
 	        			
 	        			// Cargo todos las mediciones almacenadas en la tabla
@@ -3342,7 +3343,7 @@ public class IOMain{
 		log.debug("[ARGPLUGIN] Llamado a actualizar variables del controlador");
 	}
 
-	private void insertNewTable(String table, JSONObject argTableJSON){
+	public void insertNewTable(String table, JSONObject argTableJSON){
 		ARGTable argTable = new ARGTable(System.currentTimeMillis(), table, argTableJSON);
 
 		MainApp.getDbHelper().createARGTableIfNotExists(argTable, "insertNewTable()");

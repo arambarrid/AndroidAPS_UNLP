@@ -202,6 +202,7 @@ public class ARGPlugin extends PluginBase implements APSInterface {
 
             // TODO_APS: no se usa igual
             // lastAPSRun = now;   
+
         }else{
             JSONObject jsonResult = new JSONObject();
             try{
@@ -219,6 +220,11 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             argResult.iob = new IobTotal(0);
             lastAPSResult = argResult;
         }
+        // Guardo el resultado 
+
+        JSONObject resultJson = lastAPSResult.json();
+        ioMain.insertNewTable("ARG_RESULT", resultJson);
+        
         MainApp.bus().post(new EventOpenAPSUpdateGui());
     }
 
