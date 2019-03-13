@@ -1515,6 +1515,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (SP.getBoolean("showarginsulin", true))
                 graphData.addARGInsulin(fromTime, toTime);
 
+            graphData.addARGExtras(fromTime, toTime);
+
             // **** NOW line ****
             graphData.addNowLine(now);
 

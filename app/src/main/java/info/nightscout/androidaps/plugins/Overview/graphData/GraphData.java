@@ -46,6 +46,7 @@ import info.nightscout.androidaps.plugins.Overview.graphExtensions.ScaledDataPoi
 import info.nightscout.androidaps.plugins.Overview.graphExtensions.TimeAsXAxisLabelFormatter;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.plugins.ARG.Graphic.ARGDataPoint;
 import info.nightscout.utils.Round;
 
 import info.nightscout.androidaps.MainApp;
@@ -434,6 +435,72 @@ public class GraphData {
         addSeries(iobSeries);
     }
 
+    public void addARGExtras(long fromTime, long toTime) {
+        List<DataPointWithLabelInterface> filteredExtras = new ArrayList<>();
+
+        List<ARGTable> mealData = MainApp.getDbHelper()
+                    .getAllARGTableFromTimeByDiASType("ARG_MEAL", fromTime, false);
+        
+
+        // COMIDAS
+        for (int tx = 0; tx < mealData.size(); tx++) {
+            ARGTable t = mealData.get(tx);
+
+            if (!(t.date < fromTime || t.date > toTime)){
+                ARGDataPoint p = new ARGDataPoint();
+                int tipo = t.getInt("mealClass");
+
+                p.dp_x = t.date;
+                p.dp_y = -1;
+                p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGFOOD;
+                p.dp_color = 0xfff2a935;
+                
+                if (tipo == 1)
+                    p.dp_label = "Chica";
+                else if (tipo == 2)
+                    p.dp_label = "Media";
+                else if (tipo == 3)
+                    p.dp_label = "Grande";
+                else
+                    p.dp_label = "Descon.";
+
+                filteredExtras.add(p);
+
+                log.debug("[ARGPLUGIN-GUI] COMIDA ENCONTRADA");
+            }else{
+
+                log.debug("[ARGPLUGIN-GUI] COMIDA IGNORADA");
+            }
+        }
+
+
+        List<ARGTable> bolusData = MainApp.getDbHelper()
+                    .getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
+
+        // Bolos comunes
+        for (int i = 0; i< bolusData.size(); i++) {
+            double bolus = bolusData.get(i).getDouble("deliv_total");
+            long time = bolusData.get(i).getLong("deliv_time") * 1000; // Paso de segs a ms
+
+            if (!(time < fromTime || time > toTime)){
+                ARGDataPoint p = new ARGDataPoint();
+
+                p.dp_x = time;
+                p.dp_y = -1;
+                p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBOLUS;
+                p.dp_color = 0xFF42EEF4;
+                p.dp_label = String.valueOf(bolus) + "U";
+
+                filteredExtras.add(p);
+            }
+        }
+
+        DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[filteredExtras.size()];
+        filteredExtrasArray = filteredExtras.toArray(filteredExtrasArray);
+        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
+    }
+
+
     public void addTargetLine(long fromTime, long toTime, Profile profile) {
         LineGraphSeries<DataPoint> targetsSeries;
 
@@ -482,6 +549,9 @@ public class GraphData {
         List<DataPointWithLabelInterface> filteredTreatments = new ArrayList<>();
 
         List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
+/*  
+
+        // TODO_APS: Esto corresponde a los triangulitos de bolos y a los textos en gris 
 
         for (int tx = 0; tx < treatments.size(); tx++) {
             Treatment t = treatments.get(tx);
@@ -500,6 +570,7 @@ public class GraphData {
             filteredTreatments.add(t);
         }
 
+*/
         // Extended bolus
         if (!ConfigBuilderPlugin.getPlugin().getActivePump().isFakingTempsByExtendedBoluses()) {
             List<ExtendedBolus> extendedBoluses = TreatmentsPlugin.getPlugin().getExtendedBolusesFromHistory().getList();

@@ -25,6 +25,10 @@ package info.nightscout.androidaps.plugins.Overview.graphExtensions;
 /**
  * Added by mike
  */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import info.nightscout.androidaps.logging.L;
+
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -51,6 +55,8 @@ import info.nightscout.androidaps.MainApp;
  * @author jjoe64
  */
 public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> extends BaseSeries<E> {
+        private static Logger log = LoggerFactory.getLogger(L.DATABASE);
+
     // Default spSize
     int spSize = 14;
     // Convert the sp to pixels
@@ -79,7 +85,9 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
         EXERCISE,
         GENERAL,
         GENERALWITHDURATION,
-        COBFAILOVER
+        COBFAILOVER,
+        ARGFOOD,
+        ARGBOLUS,
     }
 
     /**
@@ -342,8 +350,21 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
                         mPaint.setStrokeWidth(5);
                         canvas.drawRect(px - 3, bounds.top + py - 3, xpluslength + 3, bounds.bottom + py + 3, mPaint);
                     }
+                } else if (value.getShape() == Shape.ARGFOOD) {
+                    log.debug("[ARGPLUGIN-GUI] Dibujando ARGFOOD");
+                    mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+                    mPaint.setStrokeWidth(0);
+                    canvas.drawCircle(endX, endY, scaledPxSize * 2, mPaint);
+                    if (value.getLabel() != null) {
+                        drawLabel45(endX, endY, value, canvas);
+                    }
+                } else if (value.getShape() == Shape.ARGBOLUS) {
+                    log.debug("[ARGPLUGIN-GUI] Dibujando ARGBOLUS");
+
+                    if (value.getLabel() != null) {
+                        drawLabel45(endX, endY, value, canvas);
+                    }
                 }
-                // set values above point
             }
 
             i++;
