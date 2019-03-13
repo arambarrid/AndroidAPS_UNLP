@@ -70,6 +70,7 @@ import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 
+import info.nightscout.androidaps.plugins.PumpVirtual.VirtualPumpPlugin;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.db.ARGTable;
@@ -260,6 +261,12 @@ public class IOMain{
     	List<Treatment> treatments;
     	ARGTable insulin_uri_argTable;
     	int added = 0;
+    	boolean virtualPumpEnable = false;
+
+    	if (ConfigBuilderPlugin.getPlugin().getActivePump() == 
+    		VirtualPumpPlugin.getPlugin()){
+    		virtualPumpEnable = true;
+    	}
 
     	// Primera vez
     	if (lastTimeInsulin_get == 0){
@@ -288,7 +295,7 @@ public class IOMain{
             Treatment t = treatments.get(tx);
             if (t.date > lastTimeInsulin_get)
             {
-            	if (t.isValid && t.source == Source.PUMP){ // ESTO NO SE SI ES NECESARIO PERO POR LAS DUDAS
+            	if (t.isValid && (t.source == Source.PUMP || virtualPumpEnable)){ // ESTO NO SE SI ES NECESARIO PERO POR LAS DUDAS
 	    			JSONObject insulin_uri_json = new JSONObject();
 	    			try{
 						insulin_uri_json.put("time", t.date/1000);
@@ -545,6 +552,8 @@ public class IOMain{
 			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
 			    		
 
+			    		iobLastTime = currentTime;
+
 						JSONObject statesTableIOB = new JSONObject();
 						try{
 							statesTableIOB.put("iobStates0", iobStates[0][0]);
@@ -565,6 +574,8 @@ public class IOMain{
 			    				". iobState3: "+iobStates[2][0]+". iobBasal: "+iobBasal+
 			    				"iobEst: "+iobEst);	
         			}else{
+			    		iobLastTime = currentTime;
+			    		
 
 						JSONObject statesTableIOB = new JSONObject();
 						try{
@@ -1207,6 +1218,9 @@ public class IOMain{
 
 
 			JSONObject statesTableIOB = new JSONObject();
+    		
+    		iobLastTime = currentTime;
+    		
 			try{
 				statesTableIOB.put("iobStates0", iobStates[0][0]);
 				statesTableIOB.put("iobStates1", iobStates[1][0]);
@@ -3030,6 +3044,8 @@ public class IOMain{
 
 			double[][] iobStates1         = gController.getSafe().getIob().getX().getData();
 
+    		iobLastTime = currentTime;
+
 			JSONObject statesTableIOB = new JSONObject();
 			try{
 				statesTableIOB.put("iobStates0", iobStates1[0][0]);
@@ -3181,6 +3197,8 @@ public class IOMain{
 					double[][] iobStates = gController.getSafe().getIob().getX().getData();
 
 					JSONObject statesTableIOB = new JSONObject();
+    				iobLastTime = currentTime;
+
 					try{
 						statesTableIOB.put("iobStates0", iobStates[0][0]);
 						statesTableIOB.put("iobStates1", iobStates[1][0]);

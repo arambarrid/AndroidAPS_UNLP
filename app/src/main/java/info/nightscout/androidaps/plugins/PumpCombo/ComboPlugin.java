@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
+import java.io.IOException;
 
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -1395,21 +1396,30 @@ public class ComboPlugin extends PluginBase implements PumpInterface, Constraint
     }
 
     public void killRuffyAndRestart(){
-        Context context = MainApp.instance().getApplicationContext();
+        try {
+              Runtime.getRuntime().exec("am force-stop org.monkey.d.ruffy.ruffy");
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+
+       /* Context context = MainApp.instance().getApplicationContext();
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> pids = am.getRunningAppProcesses();
         int processid = 0;
         for (int i = 0; i < pids.size(); i++) {
             ActivityManager.RunningAppProcessInfo info = pids.get(i);
+            log.debug("procesos "+ info.processName);
             if (info.processName.equalsIgnoreCase("org.monkey.d.ruffy.ruffy")) {
                processid = info.pid;
             } 
         }
 
-        if (processid != 0)
+        if (processid != 0){
             log.debug("[ARGPLUGIN] killing ruffy app pid: " + processid);
-
-        am.killBackgroundProcesses("org.monkey.d.ruffy.ruffy");
-        Process.sendSignal(processid, Process.SIGNAL_KILL);
+            am.killBackgroundProcesses("org.monkey.d.ruffy.ruffy");
+            Process.sendSignal(processid, Process.SIGNAL_KILL);
+        }else{
+            log.debug("[ARGPLUGIN] no ruffy id");
+        }*/
     }
 }

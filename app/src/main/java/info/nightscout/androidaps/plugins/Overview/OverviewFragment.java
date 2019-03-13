@@ -157,6 +157,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     GraphView bgGraph;
     GraphView iobGraph;
     ImageButton chartButton;
+    ImageButton zoomOut;
+    ImageButton zoomIn;
 
     TextView iage;
     TextView cage;
@@ -263,6 +265,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         bgGraph = (GraphView) view.findViewById(R.id.overview_bggraph);
         iobGraph = (GraphView) view.findViewById(R.id.overview_iobgraph);
 
+        zoomIn = (ImageButton) view.findViewById(R.id.overview_zoomIn);
+        zoomIn.setOnClickListener(this);
+        zoomOut = (ImageButton) view.findViewById(R.id.overview_zoomOut);
+        zoomOut.setOnClickListener(this);
+
         treatmentButton = (SingleClickButton) view.findViewById(R.id.overview_treatmentbutton);
         treatmentButton.setOnClickListener(this);
         wizardButton = (SingleClickButton) view.findViewById(R.id.overview_wizardbutton);
@@ -315,10 +322,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
         bgGraph.getGridLabelRenderer().setGridColor(MainApp.gc(R.color.graphgrid));
         bgGraph.getGridLabelRenderer().reloadStyles();
+        bgGraph.getGridLabelRenderer().setLabelVerticalWidth(axisWidth);
+        
         iobGraph.getGridLabelRenderer().setGridColor(MainApp.gc(R.color.graphgrid));
         iobGraph.getGridLabelRenderer().reloadStyles();
         iobGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
-        bgGraph.getGridLabelRenderer().setLabelVerticalWidth(axisWidth);
         iobGraph.getGridLabelRenderer().setLabelVerticalWidth(axisWidth);
         iobGraph.getGridLabelRenderer().setNumVerticalLabels(3);
 
@@ -701,6 +709,18 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             case R.id.overview_treatmentbutton:
                 NewTreatmentDialog treatmentDialogFragment = new NewTreatmentDialog();
                 treatmentDialogFragment.show(manager, "TreatmentDialog");
+                break;
+            case R.id.overview_zoomIn: 
+                rangeToDisplay -= 2;
+                rangeToDisplay = rangeToDisplay < 1 ? 1 : rangeToDisplay;
+                SP.putInt(R.string.key_rangetodisplay, rangeToDisplay);
+                updateGUI("rangeChange");
+                break;
+            case R.id.overview_zoomOut:
+                rangeToDisplay += 2;
+                rangeToDisplay = rangeToDisplay > 24 ? 2 : rangeToDisplay;
+                SP.putInt(R.string.key_rangetodisplay, rangeToDisplay);
+                updateGUI("rangeChange");
                 break;
             case R.id.overview_insulinbutton:
                 new NewInsulinDialog().show(manager, "InsulinDialog");
@@ -1443,12 +1463,22 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 fromTime = toTime - T.hours(hoursToFetch).msecs();
                 endTime = toTime + T.hours(predHours).msecs();
             } else {
-                hoursToFetch = rangeToDisplay;
-                toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
-                fromTime = toTime - T.hours(hoursToFetch).msecs();
-                endTime = toTime;
+                if (rangeToDisplay >= 6){
+                    hoursToFetch = rangeToDisplay;
+                    toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
+                    fromTime = toTime - T.hours(hoursToFetch).msecs();
+                    endTime = toTime;
+                }else{
+                    hoursToFetch = rangeToDisplay;
+                    toTime = System.currentTimeMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
+                    fromTime = toTime - T.hours(hoursToFetch).msecs();
+                    endTime = toTime;
+                }
             }
+            log.debug("[ARGPLUGIN] OverView fromTime: "+ fromTime + " toTime: " + toTime + " endTime: " + endTime);
 
+// OverView fromTime: 1552507299995 toTime: 1552507300000 endTime: 1552507300000
+// OverView fromTime: 1552485700000 toTime: 1552507300000 endTime: 1552507300000
 
             final long now = System.currentTimeMillis();
 
@@ -1515,7 +1545,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (SP.getBoolean("showiob", true))
                 secondGraphData.addIob(fromTime, now, useIobForScale, 1d);
             if (SP.getBoolean("showargiob", true))
-                secondGraphData.addARGIob(fromTime, now);
+                secondGraphData.addARGIob(fromTime, now, useIobForScale, 1d);
             if (SP.getBoolean("showcob", true))
                 secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d);
             if (SP.getBoolean("showdeviations", false))

@@ -51,7 +51,7 @@
     <color name="colorInsulinButton">#67dfe8</color>
     <color name="colorCarbsButton">#ffae01</color>
     <color name="colorCalibrationButton">#e93057</color>
-    <color name="colorARGFoodButton">#2b961f</color>
+    <color name="colorARGFoodButton">#f2a935</color>
     <color name="colorCalculatorButton">#67e86a</color>
     <color name="colorQuickWizardButton">#ffae01</color>
     <color name="colorSetTempButton">#FF478EFF</color>

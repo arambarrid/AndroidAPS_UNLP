@@ -284,6 +284,34 @@
 
                     </LinearLayout>
 
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:id="@+id/zoom_group"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/overview_zoomOut"
+                            android:layout_width="30dp"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_alignParentTop="true"
+                            android:paddingTop="5dp"
+                            app:srcCompat="@drawable/ic_arrow_drop_down_white_24dp" />
+
+
+                        <ImageButton
+                            android:id="@+id/overview_zoomIn"
+                            android:layout_width="30dp"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_alignParentTop="true"
+                            android:paddingTop="5dp"
+                            app:srcCompat="@drawable/ic_arrow_drop_down_white_24dp" />
+
+                    </LinearLayout>
+
                 </com.google.android.flexbox.FlexboxLayout>
 
                 <RelativeLayout
@@ -424,7 +452,7 @@
                     android:layout_height="fill_parent"
                     android:layout_marginRight="-4dp"
                     android:layout_weight="0.5"
-                    android:drawableTop="@drawable/icon_cp_bolus_snack"
+                    android:drawableTop="@drawable/icon_milanesa"
                     android:paddingLeft="0dp"
                     android:paddingRight="0dp"
                     android:text="Anuncio comida ARG"

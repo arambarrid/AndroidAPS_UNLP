@@ -365,7 +365,7 @@ public class GraphData {
         addSeries(insulinSeries);
     }
 
-    public void addARGIob(long fromTime, long toTime) {
+    public void addARGIob(long fromTime, long toTime, boolean useForScale, double scale) {
         FixedLineGraphSeries<ScaledDataPoint> iobSeries;
         List<ScaledDataPoint> iobArray = new ArrayList<>();
         Double maxIobValueFound = Double.MIN_VALUE;
@@ -373,7 +373,7 @@ public class GraphData {
         long lastIobTime = 0;
         Scale iobScale = new Scale();
 
-        List<ARGTable> iobData = MainApp.getDbHelper()
+        List<ARGTable> iobARGData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", fromTime, false);
 
         log.debug("[ARGPLUGIN-GUI] Dibujando iob estimado desde " + fromTime + " hasta " + toTime);
@@ -382,20 +382,30 @@ public class GraphData {
         //bolusData.sort()
         // esta ordenado desde la ultima medida (0) hasta la mas antigua (N)
         // Lo recorro desde la mas antigua hasta la mas nueva
-        for (int i = iobData.size() - 1;i >= 0; i--){
-            double iob = iobData.get(i).getDouble("iobEst");
-            long time = iobData.get(i).date;//getLong("iobLastTime") * 1000; // Paso de segs a ms
+        for (int i = iobARGData.size() - 1;i >= 0; i--){
+            double iob = iobARGData.get(i).getDouble("iobEst");
+            long time = iobARGData.get(i).date;//getLong("iobLastTime") * 1000; // Paso de segs a ms
          
             if (time >= fromTime && time <= toTime){
+
                 if ( lastIobTime > 0){
-                    if (time - lastIobTime > ((5*60) + 30) * 1000L){
-               //         iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L), lastIob, iobScale));   
+                    if (time - lastIobTime > ((5*60) + 60) * 1000L){
+                        iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L), lastIob, iobScale));   
+                        iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L) + 10, 0, iobScale));    
+                        iobArray.add(new ScaledDataPoint(time - 10, 0, iobScale));  
+                        iobArray.add(new ScaledDataPoint(time, iob, iobScale));    
+                    }else{
+                        iobArray.add(new ScaledDataPoint(time - 10, lastIob, iobScale));  
+                        iobArray.add(new ScaledDataPoint(time, iob, iobScale));    
                     }
+                }else{
+                    iobArray.add(new ScaledDataPoint(time-10, 0, iobScale)); 
+                    iobArray.add(new ScaledDataPoint(time, iob, iobScale)); 
                 }
-                iobArray.add(new ScaledDataPoint(time, iob, iobScale));   
 
                 lastIobTime = time;
                 lastIob = iob;
+
                 maxIobValueFound = Math.max(maxIobValueFound, Math.abs(iob));
 
                 log.debug("[ARGPLUGIN-GUI] IOB ESTIMADO EN GRAFICO TIEMPO " + time + " de " + iob);
@@ -405,23 +415,21 @@ public class GraphData {
 
         }
 
-        if ( lastIobTime > 0){
-            if (toTime - lastIobTime > ((5*60) + 30) * 1000L){
-              //  iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L), lastIob, iobScale));   
-            }else{
-           //     iobArray.add(new ScaledDataPoint(toTime, lastIob, iobScale));
-            }
-        }
 
-        ScaledDataPoint[] iobDataPoint = new ScaledDataPoint[iobArray.size()];
-        iobDataPoint = iobArray.toArray(iobDataPoint);
-        iobSeries = new FixedLineGraphSeries<>(iobDataPoint);
+        ScaledDataPoint[] iobData = new ScaledDataPoint[iobArray.size()];
+        iobData = iobArray.toArray(iobData);
+        iobSeries = new FixedLineGraphSeries<>(iobData);
         iobSeries.setDrawBackground(true);
         iobSeries.setBackgroundColor(0x8042eef4); //50%
         iobSeries.setColor(0xFF42EEF4);
         iobSeries.setThickness(3);
 
-        iobScale.setMultiplier(1);
+        if (useForScale) {
+            maxY = maxIobValueFound;
+            minY = 0;
+        }
+
+        iobScale.setMultiplier(maxY * scale / maxIobValueFound);
 
         addSeries(iobSeries);
     }
@@ -551,6 +559,9 @@ public class GraphData {
                 iobArray.add(new ScaledDataPoint(time, iob, iobScale));
                 maxIobValueFound = Math.max(maxIobValueFound, Math.abs(iob));
                 lastIob = iob;
+                log.debug("[ARGPLUGIN-GUI] IOB AAPS EN GRAFICO TIEMPO " + time + " de " + iob);
+            }else{
+                log.debug("[ARGPLUGIN-GUI] IOB AAPS ignorado en grafico tiempo " + time + " de " + iob);
             }
         }
 
