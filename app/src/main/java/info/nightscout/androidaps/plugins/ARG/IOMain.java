@@ -2737,7 +2737,7 @@ public class IOMain{
 		//
 		
 		// TODO_APS: ver argumentos de la funcion run		    			    		
-		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0]); // ,parameterIOBFactorF); 
+		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0] ,parameterIOBFactorF);
 								        	
 		// Insulin signal is divided into basal and correction channels
 		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints

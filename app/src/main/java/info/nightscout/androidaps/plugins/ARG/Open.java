@@ -17,7 +17,7 @@ public class Open implements GControllerState {
 	/**************************************************************************************************************/
 	
 	@Override
-	public double run(boolean mealFlag, int mealClass, double cgm) {
+	public double run(boolean mealFlag, int mealClass, double cgm, double iobFactor) {
 		
 		/**************************************************************************************************************/
 		
@@ -36,11 +36,11 @@ public class Open implements GControllerState {
 		double cgmF = gController.getNsf().run(cgm, gController.getSlqgController().getTs());
 		gController.getEstimator().insert(cgmF);
 		
-		double pcb = gController.getpCBolus(); // Bolo anterior por cuantizaci´n no infundido
+		double pcb = gController.getpCBolus(); // Bolo anterior por cuantización no infundido
 		
-		double basalBolus = gController.getPump().quantizeBolus(gController.getPatient().getBasalU()/12.0+pcb); // Bolo asociado a la infusi´n basal cuantizado
+		double basalBolus = gController.getPump().quantizeBolus(gController.getPatient().getBasalU()/12.0+pcb); // Bolo asociado a la infusión basal cuantizado
 		
-		gController.setpCBolus(gController.getPatient().getBasalU()/12.0+pcb-basalBolus); // Calculo el bolo que por cuantizaci´n no inyect´ y lo guardo para la pr´xima iteraci´n
+		gController.setpCBolus(gController.getPatient().getBasalU()/12.0+pcb-basalBolus); // Calculo el bolo que por cuantización no inyecté y lo guardo para la próxima iteración
 		
 		return basalBolus;		
 		

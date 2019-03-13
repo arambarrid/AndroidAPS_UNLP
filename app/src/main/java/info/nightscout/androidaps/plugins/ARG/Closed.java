@@ -20,7 +20,7 @@ public class Closed implements GControllerState {
 	/**************************************************************************************************************/
 	
 	@Override
-	public double run(boolean mealFlag, int mealClass, double cgm) {
+	public double run(boolean mealFlag, int mealClass, double cgm, double iobFactor) {
 		
 		// mealFlag es el flag de anuncio de comida
 		// mealClass es la categor´a de la comida (small, medium, large)
@@ -33,10 +33,8 @@ public class Closed implements GControllerState {
 		/**************************************************************************************************************/
 		
 		// Actualizaci´n predicci´n
-		
-		gController.getEstimator().insert(cgmF); // Inserto la nueva muestra de CGM en el vector de CGM
-		
-		gController.getEstimator().updatePred(15); // Predigo la concentraci´n de glucosa a 15 min
+
+		gController.getEstimator().updatePred(15); // Predigo la concentración de glucosa a 15 min 
 		
 		/**************************************************************************************************************/
 		
@@ -80,7 +78,7 @@ public class Closed implements GControllerState {
 		
 		if(aggFlag){
 			
-			gController.getSlqgController().setExtAgg(30); // El l´mite de IOB para la comida se extiende por 30 min
+			gController.getSlqgController().setExtAgg(30); // El límite de IOB para la comida se extiende por 30 min
 			gController.settEndAgg(36); // No se permiten BACs durante el postprandial
 			
 		}
@@ -93,14 +91,14 @@ public class Closed implements GControllerState {
 		
 		Condition condition = new Condition(conditionM);
 		
-		gController.getSlqgController().apply(condition); // Aplico la condici´n
+		gController.getSlqgController().apply(condition); // Aplico la condición
 		gController.getSlqgController().updateLQG(); // Actualizo la matriz C del SLQG
 		
 		/**************************************************************************************************************/
 		
 		// Seteo l´mites IOB
 		
-		gController.getSafe().setIobLimit(mealClass, gController.getPatient().getCr(), gController.getPatient().getWeight(), gController.getPatient().getBasalU(),gController.getSlqgController());
+		gController.getSafe().setIobLimit(mealClass, gController.getPatient().getCr(), gController.getPatient().getWeight(), gController.getPatient().getBasalU(), gController.getSlqgController(), iobFactor);
 		
 		/**************************************************************************************************************/
 		
@@ -264,7 +262,7 @@ public class Closed implements GControllerState {
 				}
 				else{
 					int rCFBolus = gController.getrCFBolus();
-					gController.setrCFBolus(rCFBolus+18); // Extiendo la prohibici´n de generaci´n de otros BACs por 1 hora y media
+					gController.setrCFBolus(rCFBolus+18); // Extiendo la prohibición de generación de otros BACs por 1 hora y media
 				}
 			}
 		}

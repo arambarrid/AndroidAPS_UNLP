@@ -83,7 +83,7 @@ public class Estimator {
 		
 		// hor refiere a horizonte no hor. Las unidades de hor son [min]
 		
-		Matrix li = mLs.times(cgmVector); // El primer elemento de li es la pendiente, el segundo el t´rmino constante
+		Matrix li = mLs.times(cgmVector); // El primer elemento de li es la pendiente, el segundo el término constante
 		pred      = li.getData()[0][0]*(step*(cgmVector.getM()-1)+hor)+li.getData()[1][0];
 		trend     = li.getData()[0][0];
 		
@@ -110,7 +110,7 @@ public class Estimator {
 			}
 			log.debug("mSwitch=" + String.valueOf(mSwitch));
 			if(mSwitch==3){
-				mealFFlag = true; // La activaci´n de este flag indica la conmutaci´n al agresivo
+				mealFFlag = true; // La activación de este flag indica la conmutación al agresivo
 			}
 			
 			// Si se conmuta al agresivo o se estuvo en listening por 90 min o m´s, entonces se reinician las variables asociadas

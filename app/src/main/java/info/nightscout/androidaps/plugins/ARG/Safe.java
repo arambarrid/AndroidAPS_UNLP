@@ -54,19 +54,18 @@ public class Safe {
 		// depende del valor informado por el paciente
 		
 		double[][] uTemp = {{uBasal*100.0/weight}};
-		Matrix u         = new Matrix(uTemp); // [pmol/kg/min]
-		Matrix xIobIni   = Matrix.identity(aIob.getM()).minus(aIob).solve(bIob).times(u);
+		Matrix u = new Matrix(uTemp); // [pmol/kg/min]
 		
-		iob = new Filter(aIob,bIob,cIob,dIob,xIobIni);
+		iob = new Filter(aIob,bIob,cIob,dIob); // iob = 0
 		
 		/****************************************************************************************************************/
 		
-		// Se setea el l´mite de IOB inicial, por eso se toma en cuenta una comida chica (1 primer argumento)
-		// y sin BAC (´ltimo argumento 0.0)
+		// Se setea el límite de IOB inicial, por eso se toma en cuenta una comida chica (1 primer argumento)
+		// y sin BAC (último argumento 0.0)
 		
-		this.setIobLimit(1, CR, weight, uBasal,slqg); 
+		this.setIobLimit(1, CR, weight, uBasal,slqg,1);
 		
-		this.setIobMax(iobMaxSmall); // Se define el IOB m´ximo inicial igual al asociado a una comida chica
+		this.iobMax = this.iobMaxSmall; // Se define el IOB máximo inicial igual al asociado a una comida chica
 		
 		/****************************************************************************************************************/
 		
@@ -157,7 +156,7 @@ public class Safe {
 		
 		//gamma = gammaSum/(controllerTs/ts); // Defino el gamma como la salida del filtro de primer orden (NO SE UTILIZA)
 		
-		gamma = wSum/(controllerTs/ts); // Calculo el gamma como el promedio de w en los pr´ximos 5 min
+		gamma = wSum/(controllerTs/ts); // Calculo el gamma como el promedio de w en los próximos 5 min
 		
 	}
 	
@@ -196,7 +195,7 @@ public class Safe {
 	
 	/****************************************************************************************************************/
 	
-	public void setIobLimit(int mealClass, double CR, double weight, double uBasal,SLQGController slqg){
+	public void setIobLimit(int mealClass, double CR, double weight, double uBasal, SLQGController slqg, double iobFactor){
 		
 		/****************************************************************************************************************/
 		
@@ -228,9 +227,9 @@ public class Safe {
 		
 		/****************************************************************************************************************/
 		
-		// Seteo del l´mite y correcci´n del l´mite en caso de un BAC de comida
-				
-		slqg.setIobLimit(mealClass,this);
+		// Seteo del límite y corrección del límite en caso de un BAC de comida
+		
+		slqg.setIobLimit(mealClass,this,iobFactor);
 		
 	}
 	
