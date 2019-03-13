@@ -104,9 +104,9 @@ public class SLQGController {
 	
 	/**************************************************************************************************************/
 	
-	public void setIobLimit(int mClass, Safe safe){
+	public void setIobLimit(int mClass, Safe safe, double iobFactor){
 		
-		slqgState.setIobLimit(mClass, safe);
+		slqgState.setIobLimit(mClass, safe, iobFactor);
 		
 	}
 	

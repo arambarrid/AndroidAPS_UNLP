@@ -53,7 +53,7 @@ public class Conservative implements SLQGState {
 		
 		double cfBolus = 0.0;
 		
-		if(gController.getEstimator().getMCount()==0){ // Verifico que no est´ en modo listening
+		if(gController.getEstimator().getMCount()==0){ // Verifico que no esté en modo listening
 			
 			// Verifico que no se haya activado el flag de la capa de hipo y que los timers del BAC anterior est´n en 0
 			
@@ -103,7 +103,7 @@ public class Conservative implements SLQGState {
 					}
 					else{
 						cfBolus = 0.8*cfBolus;
-						gController.setrCFBolus(24); // Seteo la prohibici´n de generaci´n de otros BACs por 2 hs
+						gController.setrCFBolus(24); // Seteo la prohibición de generación de otros BACs por 2 hs
 					}
 				}
 			}
@@ -157,7 +157,7 @@ public class Conservative implements SLQGState {
 	
 	/**************************************************************************************************************/
 	
-	public void setIobLimit(int mClass, Safe safe){
+	public void setIobLimit(int mClass, Safe safe, double iobFactor){
 		
 	}
 	

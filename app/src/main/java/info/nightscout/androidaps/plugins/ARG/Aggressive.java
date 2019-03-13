@@ -61,15 +61,19 @@ public class Aggressive implements SLQGState {
 	
 	/**************************************************************************************************************/
 	
-	public void setIobLimit(int mClass, Safe safe){
+	public void setIobLimit(int mClass, Safe safe, double iobFactor){
 		
+		double iobMaxAux = 0.0;
 		if(mClass == 1){
-			safe.setIobMax(safe.getIobMaxSmall()+safe.getIOBMaxCF());
+			iobMaxAux = safe.getIobMaxSmall()+safe.getIOBMaxCF();
 		} else if(mClass == 2){
-			safe.setIobMax(safe.getIobMaxMedium()+safe.getIOBMaxCF());
+			iobMaxAux = safe.getIobMaxMedium()+safe.getIOBMaxCF();
 		} else if(mClass == 3){
-			safe.setIobMax(safe.getIobMaxBig()+safe.getIOBMaxCF());
+			iobMaxAux = safe.getIobMaxBig()+safe.getIOBMaxCF();
 		}
+		
+		safe.setIobMax(iobFactor*iobMaxAux);
+
 	}
 	
 	/**************************************************************************************************************/

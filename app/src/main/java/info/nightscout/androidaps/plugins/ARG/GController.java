@@ -122,9 +122,9 @@ public class GController {
 	
 	/**************************************************************************************************************/
 	
-	public double run(boolean mealFlag, int mealClass, double cgm){
+	public double run(boolean mealFlag, int mealClass, double cgm, double iobFactor){
 		
-		return gControllerState.run(mealFlag, mealClass, cgm);
+		return gControllerState.run(mealFlag, mealClass, cgm, iobFactor);
 		
 	}
 	

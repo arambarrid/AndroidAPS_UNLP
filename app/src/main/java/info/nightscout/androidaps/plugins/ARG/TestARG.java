@@ -22,7 +22,7 @@ public class TestARG {
 
         System.out.println("setPoint: " + gController.getSetpoint());
         while(true) {
-            resultado = gController.run(false, 1, 200);
+            resultado = gController.run(false, 1, 200,1); //Pongo iobFactor=1 para que compile
             System.out.println("Resultado: " + resultado);
             double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
             System.out.println("Matriz de estados: ");
