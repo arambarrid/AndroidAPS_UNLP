@@ -11,26 +11,6 @@
   <link rel="stylesheet"    href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 
-<style>
-
-body {
-  padding : 10px ;
-  
-}
-
-#exTab1 .tab-content {
-  color : white;
-  background-color: #428bca;
-  padding : 5px 15px;
-}
-
-/* remove border radius for the tab */
-
-#exTab1 .nav-pills > li > a {
-  border-radius: 0;
-}
-
-</style>
     <title>Monitor_NS!</title>
   </head>
   <body>
@@ -134,12 +114,12 @@ body {
 
             if (!existType){
               tab = tabs.length;
-              tabs.push({type: type, data:[row], headers: new Set(row_header)});
+              tabs.push({type: type, data:[Object.values(row)], headers: new Set(row_header)});
             }else{
               if (row_header.length != tabs[tab].headers.length){
                 console.log("Agregar row imposible", row_header, tabs[tab].headers  );
               }else{
-                tabs[tab].data.push(row);
+                tabs[tab].data.push(Object.values(row));
               }
 
             }
@@ -177,12 +157,10 @@ body {
 
             console.log(tabs);
 
-
             for (var tab = 0; tab < tabs.length;tab++){
-              console.log(tabs[tab]);
               var groupid = tab;
 
-              $("#tab-group").append("<li> <a href=\"#group" + groupid + "\" data-toggle=\"tab\">" + tabs[tab].type + "_" + groupid + "</a></li>");
+              $("#tab-group").append("<li class=\"nav-item\"> <a href=\"#group" + groupid + "\" data-toggle=\"tab\" class=\"nav-link\">" + tabs[tab].type + "_" + groupid + "</a></li>");
 
               var tableHtml = "<table id=\"" + tabs[tab].type  + "_" + groupid + "\" class=\"display\" style=\"width:100%\"><thead><tr>";
               for (var it = tabs[tab].headers.values(), val= null; val=it.next().value; ) {
@@ -192,16 +170,10 @@ body {
 
               $("#tab-group-content").append("<div class=\"tab-pane\" id=\"group" + groupid + "\">" + tableHtml + "</div>");
 
-              console.log(tableHtml);
-
               var newTable = $('#' + tabs[tab].type + "_" + groupid).DataTable({
-                  "order": [[ 0, "desc" ]]
+                  "order": [[ 0, "desc" ]],
+                  "data": tabs[tab].data
               });
-              console.log($('#' + tabs[tab].type + "_" + groupid));
-
-              for (var e = 0; e < tabs[tab].data.length; e++){
-                newTable.row.add(Object.values(tabs[tab].data[e])).draw(false);
-              }
             }
             return;
          /*   for (var i of result){
