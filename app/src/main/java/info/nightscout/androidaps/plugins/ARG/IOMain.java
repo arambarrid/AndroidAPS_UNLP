@@ -57,6 +57,7 @@ import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.Profile;
+import info.nightscout.androidaps.interfaces.Constraint;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSgv;
@@ -2736,9 +2737,8 @@ public class IOMain{
 		
 		//
 		
-		// TODO_APS: ver argumentos de la funcion run		    			    		
 		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0] ,parameterIOBFactorF);
-								        	
+
 		// Insulin signal is divided into basal and correction channels
 		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints
 		// El máximo bolo de corrección es de 6 U
@@ -3093,10 +3093,15 @@ public class IOMain{
 		this.AAPStoDiAS();
 
 		// TODO_AAPS: como determinar esto?
-		asynchronous = false; 
+		asynchronous = false;
 
-		// TODO_APS: leer estado si está en lazo abierto o cerrado
-		DIAS_STATE = State.DIAS_STATE_CLOSED_LOOP;
+		// Lee el estado del AAPS, si está en lazo abierto o cerrado y lo asigna al DIAS_STATE
+		Constraint<Boolean> closedLoopEnabled = MainApp.getConstraintChecker().isClosedLoopAllowed();
+		if(closedLoopEnabled.value()==true)
+			DIAS_STATE = State.DIAS_STATE_CLOSED_LOOP;
+		else
+			if(closedLoopEnabled.value()==false)
+				DIAS_STATE = State.DIAS_STATE_OPEN_LOOP;
 		
 		// Iniciar variables
 		correction = 0.0;

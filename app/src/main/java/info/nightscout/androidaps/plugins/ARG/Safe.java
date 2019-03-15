@@ -50,8 +50,7 @@ public class Safe {
 		
 		/****************************************************************************************************************/
 		
-		// En esta versi´n JAVA se considera que se inicia el modelo en el valor basal. En la versi´n DiAs la inicializaci´n
-		// depende del valor informado por el paciente
+		// En esta versión DiAs el IOB inicial es manejado por el IOMain.java
 		
 		double[][] uTemp = {{uBasal*100.0/weight}};
 		Matrix u = new Matrix(uTemp); // [pmol/kg/min]
