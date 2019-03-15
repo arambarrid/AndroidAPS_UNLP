@@ -17,29 +17,27 @@
     <div class="container">
       <h1>ARG</h1>
 
-      <div class="row">
-          <div class="col-sm-6">
-              <div class="form-group">
-                  <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
-                      <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker1"/>
-                      <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
-                          <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                      </div>
-                  </div>
-              </div>
+      <form action="#" onsubmit="consultar();">
+        <div class="form-group">
+          <label for="input_URL">URL</label>
+          <input type="text" class="form-control" id="input_URL" aria-describedby="emailHelp" placeholder="URL de nightscout" value="http://localhost:1337/api/v1/treatments.json">
+        </div>
 
-              <div class="form-group">
-                  <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
-                      <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker1"/>
-                      <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
-                          <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                      </div>
-                  </div>
-              </div>
-              
+        <div class="row">
+          <div class="col">
+            <input type="text" id="input_fromDate" class="form-control" placeholder="UNIX Time(en ms) desde cuando (por defecto hace un dia)" value="">
           </div>
-      </div>
+          <div class="col">
+            <input type="text" id="input_toDate" class="form-control" placeholder="UNIX Time(en ms) hasta cuando (por defecto ahora)" value="">
+          </div>
+        </div>
 
+        <br>
+        <button type="submit" class="btn btn-primary">Consultar</button>
+      </form>
+        <br>
+      <h2>Resultado:</h2>
+        <br>
       <div id="datosNightscout">
         <div id="exTab1" class="container"> 
           <ul id="tab-group" class="nav nav-pills">
@@ -133,20 +131,27 @@
       console.log("procesarCabecera -> ", tabs);
     }
 
-    $(document).ready(function(){
-      $(function () {
-          $('#datetimepicker1').datetimepicker();
-      });
-
+    function consultar(){
       var to = new Date().getTime();
       var from = to - 3600000000;
 
-            //alert('from ' + from + ' to ' + to);
+      var input_URL = $("#input_URL").val();
+      var input_fromDate = parseInt($("#input_fromDate").val());
+      var input_toDate = parseInt($("#input_toDate").val());
+
+      if (input_fromDate > 0)
+        from = input_fromDate;
+
+      if (input_toDate > 0)
+        to = input_toDate;
 
       var tquery = '?find[created_at][$gte]='+new Date(from).toISOString()+'&find[created_at][$lt]='+new Date(to).toISOString();
+
+      $("#tab-group-content").html("");
+      $("#tab-group").html("");
       
       $.ajax({
-          url:'http://localhost:1337/api/v1/treatments.json'+tquery,
+          url:input_URL+tquery,
           type:'GET',
           success: function (result) {    
             var head = false;
@@ -176,51 +181,13 @@
               });
             }
             return;
-         /*   for (var i of result){
-              if (i.eventType = 'ARG History'){
-                try{
-                  var data = JSON.parse(i.reason);
-                  var element=Object.values(data);
-                  var type = i.type;
-                  type = type.replace("Biometrics.", "BIOMETRICS_");
-
-                  if (tabGroupsType.indexOf(type) == -1){
-                    var groupid = parseInt(tabGroupsType.length + 1);
-
-
-                    console.log(" group " + groupid + " : " + tabGroupsType.length);
-                    $("#tab-group").append("<li> <a href=\"#group" + groupid + "\" data-toggle=\"tab\">" + type + "</a></li>");
-
-                    var tableHtml = "<table id=\"" + type + "\" class=\"display\" style=\"width:100%\"><thead><tr>";
-
-                    for (var h in data){
-                      tableHtml += '<td>' + h + '</td>';
-                    }
-                    tableHtml += "</tr></thead><tbody></tbody></table>";
-
-                    $("#tab-group-content").append("<div class=\"tab-pane\" id=\"group" + groupid + "\">" + tableHtml + "</div>");
-
-                    tabGroupsType.push(type);
-                    var newTable = $('#' + type).DataTable({
-                        "order": [[ 0, "desc" ]]
-                    });
-                    tables.push(newTable);
-                    
-                    console.log($('#' + type));
-                    newTable.row.add(element).draw(false);
-                  }else{
-                    $('#' + type).DataTable().row.add(element).draw(false);
-                  }
-                }catch(e){
-                  console.log("Error ", e);
-                }
-              }
-            }
-*/
           }
         });
+    }
 
-  });
+    $(document).ready(function(){
+      consultar();  
+    });
     </script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
 
