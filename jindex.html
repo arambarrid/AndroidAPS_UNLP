@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/css/tempusdominus-bootstrap-4.min.css" />
 
 <style>
+
 body {
   padding : 10px ;
   
@@ -84,6 +85,18 @@ body {
     var tabGroupsType = [];
     var tables = [];
 
+    function convertirTiempo(tiempo){
+      var unixTimeMs = tiempo;
+
+      if (unixTimeMs < 1923264000) {
+        unixTimeMs= unixTimeMs * 1000;
+      }
+      var d = new Date(unixTimeMs);
+      var timeStr = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+
+      return tiempo + " | " + timeStr;
+    }
+
 
     function procesarCabecera(data){
       var tabs=[];
@@ -97,6 +110,9 @@ body {
 
             var row  = JSON.parse(i.reason);
             var row_header = new Set(Object.keys(row));
+
+            if (row.time !== undefined)
+              row.time = convertirTiempo(row.time);
 
             type = type.replace("Biometrics.", "BIOMETRICS_");
             
