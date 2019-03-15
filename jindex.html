@@ -83,6 +83,60 @@ body {
 
     var tabGroupsType = [];
     var tables = [];
+
+
+    function procesarCabecera(data){
+      var tabs=[];
+
+      for (var i of data){
+        if (i.eventType == "ARG History"){
+          var type = i.type;
+
+          if (type !== undefined){
+            var existType = false;
+
+            var row  = JSON.parse(i.reason);
+            var row_header = new Set(Object.keys(row));
+
+            type = type.replace("Biometrics.", "BIOMETRICS_");
+            
+            for (var tab = 0; tab < tabs.length; tab++){
+              if (tabs[tab].type == type){
+                var setC1 = new Set( [ ...row_header ].filter( x => ! tabs[tab].headers.has( x ) ) );
+                var setC2 = new Set( [ ...tabs[tab].headers ].filter( x => ! row_header.has( x ) ) );
+                
+                if (setC1.size == 0 && setC2.size == 0){
+                  existType = true;
+                  break;
+                }else{
+                 // console.log("diff", setC);
+                }
+              }
+            }
+
+            //console.log(row_header);
+
+            if (!existType){
+              tab = tabs.length;
+              tabs.push({type: type, data:[row], headers: new Set(row_header)});
+            }else{
+              if (row_header.length != tabs[tab].headers.length){
+                console.log("Agregar row imposible", row_header, tabs[tab].headers  );
+              }else{
+                tabs[tab].data.push(row);
+              }
+
+            }
+          }
+
+        }
+      }
+
+      return tabs;
+
+      console.log("procesarCabecera -> ", tabs);
+    }
+
     $(document).ready(function(){
       $(function () {
           $('#datetimepicker1').datetimepicker();
@@ -101,7 +155,40 @@ body {
           success: function (result) {    
             var head = false;
             var table;
-            for (var i of result){
+            var headers = [];
+
+            var tabs = procesarCabecera(result);
+
+            console.log(tabs);
+
+
+            for (var tab = 0; tab < tabs.length;tab++){
+              console.log(tabs[tab]);
+              var groupid = tab;
+
+              $("#tab-group").append("<li> <a href=\"#group" + groupid + "\" data-toggle=\"tab\">" + tabs[tab].type + "_" + groupid + "</a></li>");
+
+              var tableHtml = "<table id=\"" + tabs[tab].type  + "_" + groupid + "\" class=\"display\" style=\"width:100%\"><thead><tr>";
+              for (var it = tabs[tab].headers.values(), val= null; val=it.next().value; ) {
+                tableHtml += '<td>' + val + '</td>';
+              }
+              tableHtml += "</tr></thead><tbody></tbody></table>";
+
+              $("#tab-group-content").append("<div class=\"tab-pane\" id=\"group" + groupid + "\">" + tableHtml + "</div>");
+
+              console.log(tableHtml);
+
+              var newTable = $('#' + tabs[tab].type + "_" + groupid).DataTable({
+                  "order": [[ 0, "desc" ]]
+              });
+              console.log($('#' + tabs[tab].type + "_" + groupid));
+
+              for (var e = 0; e < tabs[tab].data.length; e++){
+                newTable.row.add(Object.values(tabs[tab].data[e])).draw(false);
+              }
+            }
+            return;
+         /*   for (var i of result){
               if (i.eventType = 'ARG History'){
                 try{
                   var data = JSON.parse(i.reason);
@@ -111,6 +198,8 @@ body {
 
                   if (tabGroupsType.indexOf(type) == -1){
                     var groupid = parseInt(tabGroupsType.length + 1);
+
+
                     console.log(" group " + groupid + " : " + tabGroupsType.length);
                     $("#tab-group").append("<li> <a href=\"#group" + groupid + "\" data-toggle=\"tab\">" + type + "</a></li>");
 
@@ -134,27 +223,12 @@ body {
                   }else{
                     $('#' + type).DataTable().row.add(element).draw(false);
                   }
-  /*
-                  if (!head){
-                    var htmlHead = '';
-                    head = true;
-                    for (var h in data){
-                      htmlHead += '<td>' + h + '</td>';
-                    }
-
-                    $("#tablehead").html(htmlHead);
-                  table = 
-
-                  }
-                          
-                  table.row.add(element).draw( false );*/
                 }catch(e){
                   console.log("Error ", e);
                 }
               }
             }
-
-            console.log(tabGroupsType);
+*/
           }
         });
 
