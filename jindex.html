@@ -70,7 +70,22 @@
         unixTimeMs= unixTimeMs * 1000;
       }
       var d = new Date(unixTimeMs);
-      var timeStr = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+      var timeStr = "";
+
+      if (d.getHours() < 10)
+        timeStr += "0" + d.getHours();
+      else
+        timeStr += d.getHours();
+
+      if (d.getMinutes() < 10)
+        timeStr += ":0" + d.getMinutes();
+      else
+        timeStr += ":" + d.getMinutes();
+
+      if (d.getSeconds() < 10)
+        timeStr += ":0" + d.getSeconds();
+      else
+        timeStr += ":" + d.getSeconds();
 
       return tiempo + " | " + timeStr;
     }
@@ -87,10 +102,15 @@
             var existType = false;
 
             var row  = JSON.parse(i.reason);
-            var row_header = new Set(Object.keys(row));
+            if (i.date !== undefined && row.time === undefined){
+              row.time = i.date/1000;
+              console.log("Agregando time a row", row);
+            }
 
-            if (row.time !== undefined)
+            var row_header = new Set(Object.keys(row));
+            if (row.time !== undefined){
               row.time = convertirTiempo(row.time);
+            }
 
             type = type.replace("Biometrics.", "BIOMETRICS_");
             
