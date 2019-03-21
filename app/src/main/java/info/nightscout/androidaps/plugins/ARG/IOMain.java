@@ -127,7 +127,6 @@ public class IOMain{
 	State DIAS_STATE = State.DIAS_STATE_UNKWOWN;
 
 	double parameterIOBFactor;
-	double parameterIOBFactorF;
 	GController gController;
 	Tvector subjectBasal;
 
@@ -2733,11 +2732,11 @@ public class IOMain{
     	// Debug
 		
 		log.debug("[ARGPLUGIN:IOMAIN]     -> :  Controller State: " + gController.getgControllerState().toString()+ 
-				". MealFlag: "+mealFlag +". MealClass: " + mealClass+". yCGM: " +cgmV[gController.getEstimator().getCgmVector().getM()-1][0]+". iobFactor: "+parameterIOBFactorF);
+				". MealFlag: "+mealFlag +". MealClass: " + mealClass+". yCGM: " +cgmV[gController.getEstimator().getCgmVector().getM()-1][0]+". iobFactor: "+parameterIOBFactor);
 		
 		//
 		
-		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0] ,parameterIOBFactorF);
+		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0] ,parameterIOBFactor);
 
 		// Insulin signal is divided into basal and correction channels
 		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints
@@ -3166,14 +3165,12 @@ public class IOMain{
 
 				// Debug
 	    		
-				parameterIOBFactorF = new BigDecimal(Double.toString(0.015957446808511*parameterIOBFactor-1.776595744680853)).setScale(2, RoundingMode.HALF_DOWN).doubleValue();
-				
+
 	    		log.debug("[ARGPLUGIN:IOMAIN] CR: " + parameterCR + " - CF: " + parameterCF +
 	    			" - basalU: " + parameterBasal + " - TDI: " + parameterTDI + " - Weight: " + parameterWeight + 
 	    			" - setPoint: " + parameterSetpoint + " - IOB_factor: " + parameterIOBFactor);
 
-	    		log.debug("[ARGPLUGIN:IOMAIN] IOB FactorF : "+ parameterIOBFactorF);
-	    		
+
 	    		rutina_1_capturar_bolos_asincronicos();
 
 	    		rutina_2_correccion_iob_bolos_sincronicos_no_infundidos();
