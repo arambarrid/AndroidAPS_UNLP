@@ -3371,6 +3371,39 @@ public class IOMain{
 	}
 
 
+	private void cargarCSV(){
+
+    	/*
+		String fileName = "TablaDeDatos.csv";
+		String filePath = baseDir + File.separator + fileName;
+		CSVWriter writer = null;
+		// File exist
+		try {
+			FileWriter mFileWriter = new FileWriter(filePath, true);
+			writer = new CSVWriter(mFileWriter);
+			if(firstExecution) {
+				String[] headerRecord = {"time", "CGM", "xstates[0][0]", "xstates[1][0]", "xstates[2][0]", "xstates[3][0]", "xstates[4][0]", "xstates[5][0]", "xstates[6][0]", "xstates[7][0]", "xstates[8][0]", "xstates[9][0]", "xstates[10][0]", "xstates[11][0]", "xstates[12][0]",  "tMeal", "ExtAgg", "pCBolus", "IobMax", "slqgState", "IOBMaxCF", "Listening", "MCount", "rCFBolus", "tEndAgg", "iobStates[0][0]", "iobStates[1][0]", "derivadaIOB", "iobEst", "Gamma", "Anuncio", "Tamaño", "Resultado"};
+				writer.writeNext(headerRecord);
+				firstExecution=false;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		int slqgStateFlag = 0;
+		if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
+			slqgStateFlag = 1;
+		iobPrueba=gController.getSafe().getIobEst(gController.getPatient().getWeight());
+		String [] dataToCSV = {String.valueOf(DateUtil.now()), String.valueOf(data.get(0).raw), String.valueOf(xstates[0][0]), String.valueOf(xstates[1][0]), String.valueOf(xstates[2][0]), String.valueOf(xstates[3][0]), String.valueOf(xstates[4][0]), String.valueOf(xstates[5][0]), String.valueOf(xstates[6][0]), String.valueOf(xstates[7][0]), String.valueOf(xstates[8][0]), String.valueOf(xstates[9][0]), String.valueOf(xstates[10][0]), String.valueOf(xstates[11][0]), String.valueOf(xstates[12][0]),  String.valueOf((double) gController.getSlqgController().gettMeal()), String.valueOf((double) gController.getSlqgController().getExtAgg()), String.valueOf(gController.getpCBolus()), String.valueOf(gController.getSafe().getIobMax()), String.valueOf(slqgStateFlag), String.valueOf(gController.getSafe().getIOBMaxCF()), String.valueOf((double) gController.getEstimator().getListening()), String.valueOf((double) gController.getEstimator().getMCount()), String.valueOf((double) gController.getrCFBolus()), String.valueOf((double) gController.gettEndAgg()), String.valueOf(iobStates[0][0]), String.valueOf(iobStates[1][0]), String.valueOf(iobStates[2][0]), String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())), String.valueOf(gController.getSafe().getGamma()),  String.valueOf(comida),String.valueOf(tamanio),  String.valueOf(resultado)};
+
+		writer.writeNext(dataToCSV);
+		try {
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		*/
+	}
+
     private void rutina_luces_semaforo(){
 
 		/*

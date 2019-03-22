@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -59,6 +60,7 @@ import info.nightscout.androidaps.data.GlucoseStatus;
 import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.QuickWizardEntry;
+import info.nightscout.androidaps.db.ARGTable;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.db.DatabaseHelper;
@@ -77,11 +79,13 @@ import info.nightscout.androidaps.events.EventRefreshOverview;
 import info.nightscout.androidaps.events.EventTempBasalChange;
 import info.nightscout.androidaps.events.EventTempTargetChange;
 import info.nightscout.androidaps.events.EventTreatmentChange;
+import info.nightscout.androidaps.interfaces.APSInterface;
 import info.nightscout.androidaps.interfaces.Constraint;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.ARG.ARGPlugin;
 import info.nightscout.androidaps.plugins.Careportal.CareportalFragment;
 import info.nightscout.androidaps.plugins.Careportal.Dialogs.NewNSTreatmentDialog;
 import info.nightscout.androidaps.plugins.Careportal.OptionsToShow;
@@ -1358,6 +1362,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             timeAgoShortView.setText("(" + DateUtil.minAgoShort(lastBG.date) + ")");
 
         // iob
+
+
+        APSInterface usedAPS = ConfigBuilderPlugin.getPlugin().getActiveAPS();
+
+        // Versión AAPS
         TreatmentsPlugin.getPlugin().updateTotalIOBTreatments();
         TreatmentsPlugin.getPlugin().updateTotalIOBTempBasals();
         final IobTotal bolusIob = TreatmentsPlugin.getPlugin().getLastCalculationTreatments().round();
@@ -1383,6 +1392,41 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     + DecimalFormatter.to2Decimal(basalIob.basaliob) + ")";
             iobView.setText(iobtext);
         }
+
+
+        //Versión para ARG
+        /*
+        List<ARGTable> iobARGData = MainApp.getDbHelper()
+                .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", fromTime, false);
+
+        TreatmentsPlugin.getPlugin().updateTotalIOBTreatments();
+        TreatmentsPlugin.getPlugin().updateTotalIOBTempBasals();
+        //final IobTotal bolusIob = TreatmentsPlugin.getPlugin().getLastCalculationTreatments().round();
+        //final IobTotal basalIob = TreatmentsPlugin.getPlugin().getLastCalculationTempBasals().round();
+
+        if (shorttextmode) {
+            String iobtext = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U";
+            iobView.setText(iobtext);
+            iobView.setOnClickListener(v -> {
+                String iobtext1 = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U\n"
+                        + MainApp.gs(R.string.bolus) + ": " + DecimalFormatter.to2Decimal(bolusIob.iob) + "U\n"
+                        + MainApp.gs(R.string.basal) + ": " + DecimalFormatter.to2Decimal(basalIob.basaliob) + "U\n";
+                OKDialog.show(getActivity(), MainApp.gs(R.string.iob), iobtext1, null);
+            });
+        } else if (MainApp.sResources.getBoolean(R.bool.isTablet)) {
+            String iobtext = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U ("
+                    + MainApp.gs(R.string.bolus) + ": " + DecimalFormatter.to2Decimal(bolusIob.iob) + "U "
+                    + MainApp.gs(R.string.basal) + ": " + DecimalFormatter.to2Decimal(basalIob.basaliob) + "U)";
+            iobView.setText(iobtext);
+        } else {
+            String iobtext = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U ("
+                    + DecimalFormatter.to2Decimal(bolusIob.iob) + "/"
+                    + DecimalFormatter.to2Decimal(basalIob.basaliob) + ")";
+            iobView.setText(iobtext);
+        }
+        */
+        // --------- Fin cálculo IOB para ARG ----------
+
 
         // cob
         if (cobView != null) { // view must not exists
