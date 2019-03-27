@@ -203,6 +203,9 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             // TODO_APS: no se usa igual
             // lastAPSRun = now;   
 
+            // Guardo el resultado 
+            JSONObject resultJson = lastAPSResult.json();
+            ioMain.insertNewTable("ARG_RESULT", resultJson);
         }else{
             JSONObject jsonResult = new JSONObject();
             try{
@@ -220,10 +223,13 @@ public class ARGPlugin extends PluginBase implements APSInterface {
             argResult.iob = new IobTotal(0);
             lastAPSResult = argResult;
         }
-        // Guardo el resultado 
 
-        JSONObject resultJson = lastAPSResult.json();
-        ioMain.insertNewTable("ARG_RESULT", resultJson);
+        // Antes guardaba el resultado siempre, y no solo cuando se ejecutaba el controlador.
+        // Ahora solo guardo en DB cuando se ejecuta el controlador 
+        
+        // Guardo el resultado 
+        // JSONObject resultJson = lastAPSResult.json();
+        // ioMain.insertNewTable("ARG_RESULT", resultJson);
         
         MainApp.bus().post(new EventOpenAPSUpdateGui());
     }

@@ -168,7 +168,7 @@ public class IOMain{
     long lastTimeCGM_get = 0;
     long lastTimeInsulin_get = 0;
 
-    long lastEjectuarCada5Min_tick = 0;
+    long lastEjectuarCada5Min_tick = -1;
 
     IOMain(){
     	log.debug("[ARGPLUGIN] IOMain instanciada.");
@@ -3157,6 +3157,20 @@ public class IOMain{
 			return -1;
         }
 
+        // Si ejecutar cada 5 min no tiene un valor es porque se destruyó el controlador
+        // puede ser que se haya intercambiado de plugins en menos de 5 min
+        // que la app haya crasheado, o forzado detencion, etc.
+		List<ARGTable> cResult = MainApp.getDbHelper().getLastsARGTable("ARG_RESULT", 1);
+		
+        if (lastEjectuarCada5Min_tick == -1){
+			if (cResult.size() > 0){
+				if (nowMS - cResult.get(0).date < ( ( (5 * 60) - 10)  * 1000L )){
+					lastEjectuarCada5Min_tick = cResult.get(0).date;
+					return -1;
+				}
+			}
+        }
+
 		// Clonacion de tablas de AAPS a como las adquiere DiAS
 		this.AAPStoDiAS();
 
@@ -3306,6 +3320,8 @@ public class IOMain{
 
         		guardarTablaTotal();
 
+        		// TODO_APS Guardar la informacion si hubo algun bac
+        		// en ARG_REP_BAC -> unico campo 'time' para dibujar el triangulito 
 			}else{
 				
 				// Debug

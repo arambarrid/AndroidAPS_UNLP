@@ -393,13 +393,13 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             item.setCheckable(true);
             item.setChecked(SP.getBoolean("showiob", true));
 
-            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ARGINS.ordinal(), Menu.NONE,"Insulina - ARG");
+            item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ARGINS.ordinal(), Menu.NONE,"Datos ARG (ins,bac,meal,etc)");
             title = item.getTitle();
             s = new SpannableString(title);
             s.setSpan(new ForegroundColorSpan(ResourcesCompat.getColor(getResources(), R.color.iob, null)), 0, s.length(), 0);
             item.setTitle(s);
             item.setCheckable(true);
-            item.setChecked(SP.getBoolean("showarginsulin", true));
+            item.setChecked(SP.getBoolean("showargdata", true));
 
             item = popup.getMenu().add(Menu.NONE, CHARTTYPE.ARGIOB.ordinal(), Menu.NONE, "IOB Estimado - ARG");
             title = item.getTitle();
@@ -455,7 +455,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     } else if (item.getItemId() == CHARTTYPE.ARGIOB.ordinal()) {
                         SP.putBoolean("showargiob", !item.isChecked());
                     } else if (item.getItemId() == CHARTTYPE.ARGINS.ordinal()) {
-                        SP.putBoolean("showarginsulin", !item.isChecked());
+                        SP.putBoolean("showargdata", !item.isChecked());
                     } else if (item.getItemId() == CHARTTYPE.COB.ordinal()) {
                         SP.putBoolean("showcob", !item.isChecked());
                     } else if (item.getItemId() == CHARTTYPE.DEV.ordinal()) {
@@ -1546,7 +1546,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.formatAxis(fromTime, endTime);
 
             // Treatments
-            graphData.addTreatments(fromTime, endTime);
+            graphData.addTreatments(fromTime, endTime, !SP.getBoolean("showargdata", true));
 
             // add basal data
             if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
@@ -1556,10 +1556,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             // add target line
             graphData.addTargetLine(fromTime, toTime, profile);
 
-            if (SP.getBoolean("showarginsulin", true))
+            if (SP.getBoolean("showargdata", true)){
                 graphData.addARGInsulin(fromTime, toTime);
-
-            graphData.addARGExtras(fromTime, toTime);
+                graphData.addARGExtras(fromTime, toTime);
+            }
 
             // **** NOW line ****
             graphData.addNowLine(now);
@@ -1576,7 +1576,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             boolean useRatioForScale = false;
             boolean useDSForScale = false;
 
-            if (SP.getBoolean("showiob", true)) {
+            if (SP.getBoolean("showiob", true) || SP.getBoolean("showargiob", true)) {
                 useIobForScale = true;
             } else if (SP.getBoolean("showcob", true)) {
                 useCobForScale = true;

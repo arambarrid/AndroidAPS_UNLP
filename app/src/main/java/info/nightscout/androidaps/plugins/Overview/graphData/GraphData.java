@@ -427,7 +427,7 @@ public class GraphData {
 
         if (useForScale) {
             maxY = maxIobValueFound;
-            minY = 0;
+            minY = -maxIobValueFound;
         }
 
         iobScale.setMultiplier(maxY * scale / maxIobValueFound);
@@ -477,12 +477,17 @@ public class GraphData {
         List<ARGTable> bolusData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
 
+
+        // Como maximo 24 en total time
+        long minTimeDiff = (toTime - fromTime) / 23;
+        long lastTime = 0;
+
         // Bolos comunes
         for (int i = 0; i< bolusData.size(); i++) {
             double bolus = bolusData.get(i).getDouble("deliv_total");
             long time = bolusData.get(i).getLong("deliv_time") * 1000; // Paso de segs a ms
 
-            if (!(time < fromTime || time > toTime)){
+            if (!(time < fromTime || time > toTime) && (Math.abs(time - lastTime) > minTimeDiff)){
                 ARGDataPoint p = new ARGDataPoint();
 
                 p.dp_x = time;
@@ -491,7 +496,30 @@ public class GraphData {
                 p.dp_color = 0xFF42EEF4;
                 p.dp_label = String.valueOf(bolus) + "U";
 
+                lastTime = time;
+
                 filteredExtras.add(p);
+            }
+        }
+
+
+        List<ARGTable> bacData = MainApp.getDbHelper()
+                    .getAllARGTableFromTimeByDiASType("ARG_REP_BAC", fromTime, false);
+
+        // Bolos comunes
+        for (int i = 0; i< bacData.size(); i++) {
+            long time = bacData.get(i).getLong("time") * 1000; // Paso de segs a ms
+
+            if (!(time < fromTime || time > toTime)){
+                ARGDataPoint bac = new ARGDataPoint();
+
+                bac.dp_x = time;
+                bac.dp_y = -1;
+                bac.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBAC;
+                bac.dp_color = 0xFFFF0000;
+                bac.dp_label = "BAC";
+
+                filteredExtras.add(bac);
             }
         }
 
@@ -545,32 +573,32 @@ public class GraphData {
         addSeries(targetsSeries);
     }
 
-    public void addTreatments(long fromTime, long endTime) {
+    public void addTreatments(long fromTime, long endTime, boolean drawBolus) {
         List<DataPointWithLabelInterface> filteredTreatments = new ArrayList<>();
 
         List<Treatment> treatments = TreatmentsPlugin.getPlugin().getTreatmentsFromHistory();
-/*  
+  
 
         // TODO_APS: Esto corresponde a los triangulitos de bolos y a los textos en gris 
+        if (drawBolus){
+            for (int tx = 0; tx < treatments.size(); tx++) {
+                Treatment t = treatments.get(tx);
+                if (t.getX() < fromTime || t.getX() > endTime) continue;
+                if (t.isSMB && !t.isValid) continue;
+                t.setY(getNearestBg((long) t.getX()));
+                filteredTreatments.add(t);
+            }
 
-        for (int tx = 0; tx < treatments.size(); tx++) {
-            Treatment t = treatments.get(tx);
-            if (t.getX() < fromTime || t.getX() > endTime) continue;
-            if (t.isSMB && !t.isValid) continue;
-            t.setY(getNearestBg((long) t.getX()));
-            filteredTreatments.add(t);
+            // ProfileSwitch
+            List<ProfileSwitch> profileSwitches = TreatmentsPlugin.getPlugin().getProfileSwitchesFromHistory().getList();
+
+            for (int tx = 0; tx < profileSwitches.size(); tx++) {
+                DataPointWithLabelInterface t = profileSwitches.get(tx);
+                if (t.getX() < fromTime || t.getX() > endTime) continue;
+                filteredTreatments.add(t);
+            }
         }
 
-        // ProfileSwitch
-        List<ProfileSwitch> profileSwitches = TreatmentsPlugin.getPlugin().getProfileSwitchesFromHistory().getList();
-
-        for (int tx = 0; tx < profileSwitches.size(); tx++) {
-            DataPointWithLabelInterface t = profileSwitches.get(tx);
-            if (t.getX() < fromTime || t.getX() > endTime) continue;
-            filteredTreatments.add(t);
-        }
-
-*/
         // Extended bolus
         if (!ConfigBuilderPlugin.getPlugin().getActivePump().isFakingTempsByExtendedBoluses()) {
             List<ExtendedBolus> extendedBoluses = TreatmentsPlugin.getPlugin().getExtendedBolusesFromHistory().getList();

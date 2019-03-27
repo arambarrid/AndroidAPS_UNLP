@@ -88,6 +88,7 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
         COBFAILOVER,
         ARGFOOD,
         ARGBOLUS,
+        ARGBAC
     }
 
     /**
@@ -361,6 +362,22 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
                 } else if (value.getShape() == Shape.ARGBOLUS) {
                     log.debug("[ARGPLUGIN-GUI] Dibujando ARGBOLUS");
 
+                    if (value.getLabel() != null) {
+                        drawLabel45(endX, endY, value, canvas);
+                    }
+                } else if (value.getShape() == Shape.ARGBAC) {
+                    log.debug("[ARGPLUGIN-GUI] Dibujando ARGBAC");
+                    
+                    float sSize = scaledPxSize * 1.75f;
+
+                    mPaint.setColor(value.getColor());
+                    mPaint.setStyle(Paint.Style.FILL);
+                    mPaint.setStrokeWidth(0);
+                    Point[] points = new Point[3];
+                    points[0] = new Point((int) endX, (int) (endY - sSize));
+                    points[1] = new Point((int) (endX + sSize), (int) (endY + sSize * 0.67));
+                    points[2] = new Point((int) (endX - sSize), (int) (endY + sSize * 0.67));
+                    drawArrows(points, canvas, mPaint);
                     if (value.getLabel() != null) {
                         drawLabel45(endX, endY, value, canvas);
                     }

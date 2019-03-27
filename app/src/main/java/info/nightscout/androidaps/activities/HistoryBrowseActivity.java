@@ -286,7 +286,7 @@ public class HistoryBrowseActivity extends AppCompatActivity {
         graphData.formatAxis(fromTime, toTime);
 
         // Treatments
-        graphData.addTreatments(fromTime, toTime);
+        graphData.addTreatments(fromTime, toTime, true);
 
         // add basal data
         if (pump.getPumpDescription().isTempBasalCapable && showBasal) {
