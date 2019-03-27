@@ -1197,6 +1197,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             showAcceptButton = showAcceptButton && finalLastRun != null && finalLastRun.lastAPSRun != null; // aps result must exist
             showAcceptButton = showAcceptButton && (finalLastRun.lastOpenModeAccept == null || finalLastRun.lastOpenModeAccept.getTime() < finalLastRun.lastAPSRun.getTime()); // never accepted or before last result
             showAcceptButton = showAcceptButton && finalLastRun.constraintsProcessed.isChangeRequested(); // change is requested
+            
+            // TODO_APS: desactivo el botón de sugerencia
+            showAcceptButton = false;
 
             if (showAcceptButton && pump.isInitialized() && !pump.isSuspended() && LoopPlugin.getPlugin().isEnabled(PluginType.LOOP)) {
                 acceptTempLayout.setVisibility(View.VISIBLE);

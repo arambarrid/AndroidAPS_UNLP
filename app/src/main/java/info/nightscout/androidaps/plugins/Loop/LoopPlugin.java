@@ -415,8 +415,7 @@ public class LoopPlugin extends PluginBase {
                     lastRun.smbSetByPump = null;
                 }
             } else {
-                // TODO_APS: esto para limpiar las notificaciones en OpenLoop
-/*
+            
                 if (resultAfterConstraints.isChangeRequested() && allowNotification) {
                     NotificationCompat.Builder builder =
                             new NotificationCompat.Builder(MainApp.instance().getApplicationContext(), CHANNEL_ID);
@@ -458,7 +457,7 @@ public class LoopPlugin extends PluginBase {
                             (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
                     notificationManager.cancel(Constants.notificationID);
                     ActionStringHandler.handleInitiate("cancelChangeRequest");
-                }*/
+                }
             }
 
             MainApp.bus().post(new EventLoopUpdateGui());
