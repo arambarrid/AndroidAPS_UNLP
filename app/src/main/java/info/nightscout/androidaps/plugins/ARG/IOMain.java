@@ -3073,6 +3073,72 @@ public class IOMain{
     	// ************************************************************************************************************ //
     }
 
+    public void guardarTablaTotal(){	
+    	JSONObject argTableJSON = new JSONObject();
+    	double yCGM = -1;
+		double[][] iobStates = gController.getSafe().getIob().getX().getData();
+		double[][] xstates = gController.getSlqgController().getLqg().getX().getData();
+		boolean anuncio;
+		int slqgStateFlag = 0;
+		int tamanio;
+
+		List<ARGTable> cCGM = MainApp.getDbHelper()
+					.getLastsARGTable("Biometrics.CGM_URI", 1);
+
+		if (cCGM.size() > 0) 
+			yCGM        = cCGM.get(0).getDouble("cgm");
+
+		tamanio = mealClass;
+		anuncio = mealFlag;
+
+		if (Objects.equals(gController.getSlqgController().getSLQGState().getStateString(), "Aggressive"))
+			slqgStateFlag = 1;
+
+		try{
+
+			argTableJSON.put("time",String.valueOf(DateUtil.now()));
+	        argTableJSON.put("CGM", yCGM);
+	        argTableJSON.put("xstates[0][0]", String.valueOf(xstates[0][0]));
+	        argTableJSON.put("xstates[1][0]", String.valueOf(xstates[1][0]));
+	        argTableJSON.put("xstates[2][0]", String.valueOf(xstates[2][0]));
+	        argTableJSON.put("xstates[3][0]", String.valueOf(xstates[3][0]));
+	        argTableJSON.put("xstates[4][0]", String.valueOf(xstates[4][0]));
+	        argTableJSON.put("xstates[5][0]", String.valueOf(xstates[5][0]));
+	        argTableJSON.put("xstates[6][0]", String.valueOf(xstates[6][0]));
+	        argTableJSON.put("xstates[7][0]", String.valueOf(xstates[7][0]));
+	        argTableJSON.put("xstates[8][0]", String.valueOf(xstates[8][0]));
+	        argTableJSON.put("xstates[9][0]", String.valueOf(xstates[9][0]));
+	        argTableJSON.put("xstates[10][0]", String.valueOf(xstates[10][0]));
+	        argTableJSON.put("xstates[11][0]", String.valueOf(xstates[11][0]));
+	        argTableJSON.put("xstates[12][0]", String.valueOf(xstates[12][0]));
+
+	        argTableJSON.put("tMeal",String.valueOf((double) gController.getSlqgController().gettMeal()));
+	        argTableJSON.put("ExtAgg",String.valueOf((double) gController.getSlqgController().getExtAgg()));
+	        argTableJSON.put("pCBolus" ,String.valueOf(gController.getpCBolus()));
+	        argTableJSON.put("IobMax",String.valueOf(gController.getSafe().getIobMax()));
+	        argTableJSON.put("slqgState",String.valueOf(slqgStateFlag));
+	        argTableJSON.put("IOBMaxCF",String.valueOf(gController.getSafe().getIOBMaxCF()));
+	        argTableJSON.put("Listening",String.valueOf((double) gController.getEstimator().getListening()));
+	        argTableJSON.put("MCount", String.valueOf((double) gController.getEstimator().getMCount()));
+	        argTableJSON.put("rCFBolus", String.valueOf((double) gController.getrCFBolus()));
+	        argTableJSON.put("tEndAgg", String.valueOf((double) gController.gettEndAgg()));
+	        argTableJSON.put("iobStates[0][0]", String.valueOf(iobStates[0][0]));
+	        argTableJSON.put("iobStates[1][0]",String.valueOf(iobStates[1][0]));
+	        argTableJSON.put("derivadaIOB", String.valueOf(iobStates[2][0]));
+	        argTableJSON.put("iobEst", String.valueOf(gController.getSafe().getIobEst(gController.getPatient().getWeight())));
+	        argTableJSON.put("Gamma", String.valueOf(gController.getSafe().getGamma()));
+
+	        argTableJSON.put("Anuncio", String.valueOf(anuncio));
+	        argTableJSON.put("Tamanio", String.valueOf(tamanio));
+
+	        argTableJSON.put("Resultado", String.valueOf(correction + diff_rate));
+		}catch(JSONException e){
+
+		}
+
+		this.insertNewTable("ARG_TOTAL_STATES", argTableJSON);
+    }
+
 	public double ejecutarCada5Min(GController g) {
         profile = ProfileFunctions.getInstance().getProfile();
         gController = g;
@@ -3234,7 +3300,9 @@ public class IOMain{
 	    		rutina_7_cargar_estados_controlador();
         		
         		rutina_8();
-			
+
+        		guardarTablaTotal();
+
 			}else{
 				
 				// Debug
