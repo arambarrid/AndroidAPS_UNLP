@@ -104,7 +104,6 @@
             var row  = JSON.parse(i.reason);
             if (i.date !== undefined && row.time === undefined){
               row.time = i.date/1000;
-              console.log("Agregando time a row", row);
             }
 
             var row_header = new Set(Object.keys(row));
@@ -116,19 +115,36 @@
             
             for (var tab = 0; tab < tabs.length; tab++){
               if (tabs[tab].type == type){
+                // Que hay en la row y no en la tabla
                 var setC1 = new Set( [ ...row_header ].filter( x => ! tabs[tab].headers.has( x ) ) );
+
+                // Que hay en la tabla y no en el row
                 var setC2 = new Set( [ ...tabs[tab].headers ].filter( x => ! row_header.has( x ) ) );
                 
-                if (setC1.size == 0 && setC2.size == 0){
-                  existType = true;
-                  break;
-                }else{
-                 // console.log("diff", setC);
+                // habría que agregarla al header de la tabla y a cada elemento ya agregado 
+                // pertenecientes a esa tabla
+                if (setC1.size != 0){
+                  for (var j = 0; j < tabs[tab].data.length; j++){
+                    setC1.forEach(function(value1, value2, set){
+                      tabs[tab].data[j][value1] = 'N/V';
+                    });
+                  }
+                
                 }
+
+                // rellenar los elementos que no estan en el row pero si corresponden
+                // a la cabacera de la tabla
+                if (setC2.size != 0){
+                  setC2.forEach(function(value1, value2, set){
+                    row[value1] = 'N/V';
+                  });
+                }
+
+                existType = true;
+                break;
+
               }
             }
-
-            //console.log(row_header);
 
             if (!existType){
               tab = tabs.length;
@@ -185,7 +201,7 @@
             for (var tab = 0; tab < tabs.length;tab++){
               var groupid = tab;
 
-              $("#tab-group").append("<li class=\"nav-item\"> <a href=\"#group" + groupid + "\" data-toggle=\"tab\" class=\"nav-link\">" + tabs[tab].type + "_" + groupid + "</a></li>");
+              $("#tab-group").append("<li class=\"nav-item\"> <a href=\"#group" + groupid + "\" data-toggle=\"tab\" class=\"nav-link\">" + tabs[tab].type + "</a></li>");
 
               var tableHtml = "<table id=\"" + tabs[tab].type  + "_" + groupid + "\" class=\"display\" style=\"width:100%\"><thead><tr>";
               for (var it = tabs[tab].headers.values(), val= null; val=it.next().value; ) {
@@ -197,7 +213,10 @@
 
               var newTable = $('#' + tabs[tab].type + "_" + groupid).DataTable({
                   "order": [[ 0, "desc" ]],
-                  "data": tabs[tab].data
+                  "data": tabs[tab].data,
+                  buttons: [
+                      'copy', 'csv', 'excel', 'pdf', 'print'
+                  ]
               });
             }
             return;
