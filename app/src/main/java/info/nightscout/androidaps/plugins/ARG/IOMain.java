@@ -142,7 +142,7 @@ public class IOMain{
 	boolean iobInitFlag  = false; // Flag para indicar que se debe ejecutar la rutina de inicialización de IOB
 	
 	// Rutina 2
-	List<ARGTable> sBTime, cIob;
+	List<ARGTable> sBTime, cIob, lastResult;
 	long iobLastTime;
 	double iobState1, iobState2, iobState3, iobEst;
 	double iobBasal;
@@ -481,124 +481,127 @@ public class IOMain{
 		log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 : Correcion IOB - Bolos Sincronicos No Infundidos ###");
 
 		// Puntero al último bolo de insulina sincrónico
-		sBTime = INSULIN_URI_query_reqtime_and_type(currentTime-305, 1);
+		sBTime = INSULIN_URI_query_reqtime_and_type(currentTime-305, 2);
 
+		// Puntero al último resultado del controlador
+		lastResult = ARG_RESULT_query(currentTime-305);
 
-		if (sBTime.size() > 0) {
-			// Capturo el estado
-			
-			//statusIns = sBTime.getInt(sBTime.getColumnIndex("status"));
-			statusIns = sBTime.get(0).getInt("status");
-
-			log.debug("[ARGPLUGIN:IOMAIN] 	  -> : sBTime.size() > 0 - statusIns:" + statusIns);
-    		
-			// Chequeo si no se infundió
-			if(statusIns!=2){
-				// Puntero a la tabla de IOB
-				cIob = MainApp.getDbHelper().getLastsARGTable("ARG_IOB_STATES", 2);
-
-				if (cIob.size() > 0){ //(cIob != null) {
-
-		        	iobLastTime = cIob.get(0).getLong("iobLastTime");
-		        	iobState1 = cIob.get(0).getDouble("iobStates0");
-		        	iobState2 = cIob.get(0).getDouble("iobStates1");
-		        	iobState3 = cIob.get(0).getDouble("iobStates2");
-		        	iobEst    = cIob.get(0).getDouble("iobEst");
-		        	iobBasal  = cIob.get(0).getDouble("iobBasal");
-		       		
-
-					log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 0 - " 
-							+ "Estados últimos. iobLastTime: "+iobLastTime+
-		    				". iobState1: "+iobState1+". iobState2: "+iobState2+
-		    				". iobState3: "+iobState3+". iobBasal: "+iobBasal+
-		    				"iobEst: "+iobEst);
-		    		
-		        	// Voy a la anteúltima fila
-        			if (cIob.size() > 1){ // (cIob.moveToPrevious()){
-			        	iobState1 = cIob.get(1).getDouble("d0");
-			        	iobState2 = cIob.get(1).getDouble("d1");
-			        	iobState3 = cIob.get(1).getDouble("d2");
-			        	iobBasal  = cIob.get(1).getDouble("d4");
-			        	
-						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 1 - " 
-							+ "Estados penúltimos. iobLastTime: "+iobLastTime+
-		    				". iobState1: "+iobState1+". iobState2: "+iobState2+
-		    				". iobState3: "+iobState3+". iobBasal: "+iobBasal+
-		    				"iobEst: "+iobEst);
-
-			        	// Seteo como estado inicial el anterior al último que fue incorrectamente
-			        	// actualizado
-			        	
-			        	double[][] xTemp = {{iobState1},{iobState2},{iobState3}};
-		    			Matrix iobState  = new Matrix(xTemp);
-			    		gController.getSafe().getIob().setX(iobState);
-			    		
-			    		// Actualizo el IOB considerando que no se infundió nada
-			    		
-			    		double[][] uTemp = {{0.0}};
-		    			Matrix u = new Matrix(uTemp);
-		    			
-			    		for(int jj = 0; jj < (currentTime-iobLastTime)/60.0/gController.getSafe().getTs(); ++jj){ 
-			    			
-			    			gController.getSafe().getIob().stateUpdate(u);
-		    			
-			    		}
-			    		
-			    		// Recalculo el iobEst
-			    		iobEst   = gController.getSafe().getIobEst(gController.getPatient().getWeight());
-			    		
-
-			    		// Guardo los estados de IOB corregidos
-			    		double[][] iobStates = gController.getSafe().getIob().getX().getData();
-			    		
-
-			    		iobLastTime = currentTime;
-
-						JSONObject statesTableIOB = new JSONObject();
-						try{
-							statesTableIOB.put("iobStates0", iobStates[0][0]);
-							statesTableIOB.put("iobStates1", iobStates[1][0]);
-							statesTableIOB.put("iobStates2", iobStates[2][0]);
-							statesTableIOB.put("iobEst", iobEst);
-							statesTableIOB.put("iobBasal", iobBasal);	
-							statesTableIOB.put("iobLastTime", iobLastTime);
-						}catch(JSONException e){
-
-						}
-
-						this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
-
-						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : " 
-							+ "Estados corregidos. iobLastTime: "+iobLastTime+
-			    				". iobState1: "+iobStates[0][0]+". iobState2: "+iobStates[1][0]+
-			    				". iobState3: "+iobStates[2][0]+". iobBasal: "+iobBasal+
-			    				"iobEst: "+iobEst);	
-        			}else{
-			    		iobLastTime = currentTime;
-			    		
-
-						JSONObject statesTableIOB = new JSONObject();
-						try{
-							statesTableIOB.put("iobStates0", 0);
-							statesTableIOB.put("iobStates1", 0);
-							statesTableIOB.put("iobStates2", 0);
-							statesTableIOB.put("iobEst", 0);
-							statesTableIOB.put("iobBasal", iobBasal);	
-							statesTableIOB.put("iobLastTime", iobLastTime);
-						}catch(JSONException e){
-
-						}
-
-						this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
-
-						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : No había estados penúltimos --> IOB = 0");	
-        			}
-				}
-			}else{
+		//Si hay resultado y hay bolo
+		if((lastResult.size()>0) && (sBTime.size()>0)){
+			//Chequeo si es la misma cantidad de insulina en ambos
+			if((lastResult.get(0).getLong("bolus")) == (sBTime.get(0).getLong("deliv_total"))){
 				log.debug("[ARGPLUGIN:IOMAIN] 	  -> : El bolo se infundió correctamente");
 			}
-		}else{
-			log.debug("[ARGPLUGIN:IOMAIN] 	  -> : sBTime.size() == 0 ");
+			//TODO_AAPS: si no coincide la cantida de insulina habría que ver cómo resolverlo pero es un caso raro.
+		}
+		else {
+			//Si no hay resultados ni bolo significa que todavía no se corrió el controlador
+			if ((lastResult.size() == 0) && (sBTime.size() == 0)) {
+				log.debug("[ARGPLUGIN:IOMAIN] 	  -> : No hay resultados ");
+			} else
+				//Si no hay bolo y hay resultado significa que no se inyectó
+				if (sBTime.size() == 0) {
+					// Puntero a la tabla de IOB
+					cIob = MainApp.getDbHelper().getLastsARGTable("ARG_IOB_STATES", 2);
+
+					if (cIob.size() > 0) { //(cIob != null) {
+
+						iobLastTime = cIob.get(0).getLong("iobLastTime");
+						iobState1 = cIob.get(0).getDouble("iobStates0");
+						iobState2 = cIob.get(0).getDouble("iobStates1");
+						iobState3 = cIob.get(0).getDouble("iobStates2");
+						iobEst = cIob.get(0).getDouble("iobEst");
+						iobBasal = cIob.get(0).getDouble("iobBasal");
+
+
+						log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 0 - "
+								+ "Estados últimos. iobLastTime: " + iobLastTime +
+								". iobState1: " + iobState1 + ". iobState2: " + iobState2 +
+								". iobState3: " + iobState3 + ". iobBasal: " + iobBasal +
+								"iobEst: " + iobEst);
+
+						// Voy a la anteúltima fila
+						if (cIob.size() > 1) { // (cIob.moveToPrevious()){
+							iobState1 = cIob.get(1).getDouble("d0");
+							iobState2 = cIob.get(1).getDouble("d1");
+							iobState3 = cIob.get(1).getDouble("d2");
+							iobBasal = cIob.get(1).getDouble("d4");
+
+							log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 1 - "
+									+ "Estados penúltimos. iobLastTime: " + iobLastTime +
+									". iobState1: " + iobState1 + ". iobState2: " + iobState2 +
+									". iobState3: " + iobState3 + ". iobBasal: " + iobBasal +
+									"iobEst: " + iobEst);
+
+							// Seteo como estado inicial el anterior al último que fue incorrectamente
+							// actualizado
+
+							double[][] xTemp = {{iobState1}, {iobState2}, {iobState3}};
+							Matrix iobState = new Matrix(xTemp);
+							gController.getSafe().getIob().setX(iobState);
+
+							// Actualizo el IOB considerando que no se infundió nada
+
+							double[][] uTemp = {{0.0}};
+							Matrix u = new Matrix(uTemp);
+
+							for (int jj = 0; jj < (currentTime - iobLastTime) / 60.0 / gController.getSafe().getTs(); ++jj) {
+
+								gController.getSafe().getIob().stateUpdate(u);
+
+							}
+
+							// Recalculo el iobEst
+							iobEst = gController.getSafe().getIobEst(gController.getPatient().getWeight());
+
+
+							// Guardo los estados de IOB corregidos
+							double[][] iobStates = gController.getSafe().getIob().getX().getData();
+
+
+							iobLastTime = currentTime;
+
+							JSONObject statesTableIOB = new JSONObject();
+							try {
+								statesTableIOB.put("iobStates0", iobStates[0][0]);
+								statesTableIOB.put("iobStates1", iobStates[1][0]);
+								statesTableIOB.put("iobStates2", iobStates[2][0]);
+								statesTableIOB.put("iobEst", iobEst);
+								statesTableIOB.put("iobBasal", iobBasal);
+								statesTableIOB.put("iobLastTime", iobLastTime);
+							} catch (JSONException e) {
+
+							}
+
+							this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
+
+							log.debug("[ARGPLUGIN:IOMAIN] 	  -> : "
+									+ "Estados corregidos. iobLastTime: " + iobLastTime +
+									". iobState1: " + iobStates[0][0] + ". iobState2: " + iobStates[1][0] +
+									". iobState3: " + iobStates[2][0] + ". iobBasal: " + iobBasal +
+									"iobEst: " + iobEst);
+						} else {
+							iobLastTime = currentTime;
+
+
+							JSONObject statesTableIOB = new JSONObject();
+							try {
+								statesTableIOB.put("iobStates0", 0);
+								statesTableIOB.put("iobStates1", 0);
+								statesTableIOB.put("iobStates2", 0);
+								statesTableIOB.put("iobEst", 0);
+								statesTableIOB.put("iobBasal", iobBasal);
+								statesTableIOB.put("iobLastTime", iobLastTime);
+							} catch (JSONException e) {
+
+							}
+
+							this.insertNewTable("ARG_IOB_STATES", statesTableIOB);
+
+							log.debug("[ARGPLUGIN:IOMAIN] 	  -> : No había estados penúltimos --> IOB = 0");
+						}
+					}
+				}
 		}
     }
 
@@ -3346,7 +3349,7 @@ public class IOMain{
 		ret.removeIf(item -> item.getLong("deliv_time") < greaterTime);
 
 		return ret;
-	}		
+	}
 
 	private List<ARGTable> INSULIN_URI_query_reqtime_and_type(long greaterTime, int type){
 		// req: cuando lo solicito, la tabla seguramente se cree despues
@@ -3354,13 +3357,27 @@ public class IOMain{
 		// obtengo todo esos bolos y los filtro por el verdadero campo
 
 		List<ARGTable> ret = MainApp.getDbHelper()
-			.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", 
-					greaterTime - (10*60*1000L), false);
+				.getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI",
+						greaterTime - (10*60*1000L), false);
 
 		ret.removeIf(item -> (
-			(item.getLong("req_time") < greaterTime) && 
-			(item.getInt("type") == 2)
+				(item.getLong("time") < greaterTime) ||
+						(item.getInt("type") != type)
 		));
+
+
+		return ret;
+	}
+
+	private List<ARGTable> ARG_RESULT_query(long greaterTime){
+		List<ARGTable> ret = MainApp.getDbHelper()
+				.getAllARGTableFromTimeByDiASType("ARG_RESULT",
+						greaterTime - (10*60*1000L), false);
+
+		ret.removeIf(item -> (
+				(item.getLong("time") < greaterTime)
+		));
+
 
 		return ret;
 	}
