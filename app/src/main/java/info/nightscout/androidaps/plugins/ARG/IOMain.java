@@ -142,7 +142,8 @@ public class IOMain{
 	boolean iobInitFlag  = false; // Flag para indicar que se debe ejecutar la rutina de inicialización de IOB
 	
 	// Rutina 2
-	List<ARGTable> sBTime, cIob, lastResult;
+	List<ARGTable> sBTime, cIob;
+	ARGTable lastResult;
 	long iobLastTime;
 	double iobState1, iobState2, iobState3, iobEst;
 	double iobBasal;
@@ -486,21 +487,30 @@ public class IOMain{
 		// Puntero al último resultado del controlador
 		lastResult = ARG_RESULT_query(currentTime-305);
 
-		//Si hay resultado y hay bolo
-		if((lastResult.size()>0) && (sBTime.size()>0)){
+		//CASO 1: Hay resultado y hay bolo
+		if((lastResult!=null) && (sBTime.size()>0)){
 			//Chequeo si es la misma cantidad de insulina en ambos
-			if((lastResult.get(0).getLong("bolus")) == (sBTime.get(0).getLong("deliv_total"))){
-				log.debug("[ARGPLUGIN:IOMAIN] 	  -> : El bolo se infundió correctamente");
+			if((lastResult.getLong("bolus")) == (sBTime.get(0).getLong("deliv_total"))){
+				log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 1: El bolo se infundió correctamente");
 			}
 			//TODO_AAPS: si no coincide la cantida de insulina habría que ver cómo resolverlo pero es un caso raro.
 		}
 		else {
-			//Si no hay resultados ni bolo significa que todavía no se corrió el controlador
-			if ((lastResult.size() == 0) && (sBTime.size() == 0)) {
-				log.debug("[ARGPLUGIN:IOMAIN] 	  -> : No hay resultados ");
+			//CASO 2: No hay resultado ni bolo. Significa que no se corrió el controlador
+			if ((lastResult == null) && (sBTime.size() == 0)) {
+				log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 2: No hay resultados ");
 			} else
-				//Si no hay bolo y hay resultado significa que no se inyectó
+				//CASO 3: No hay bolo y hay resultado. Se debe actualizar el IOB.
 				if (sBTime.size() == 0) {
+					//CASO 3A: Si el resultado es cero significa que no se inyectó por decisión del controlador
+					if(lastResult.getLong("bolus")==0)
+						log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 3A: El resultado del controlador fue 0");
+					else {
+						// CASO 3B: Si el resultado es disinto de cero significa que no se comunicó con la bomba
+						log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 3B: PROBLEMA: No se inyectó.");
+					}
+
+
 					// Puntero a la tabla de IOB
 					cIob = MainApp.getDbHelper().getLastsARGTable("ARG_IOB_STATES", 2);
 
@@ -602,6 +612,9 @@ public class IOMain{
 						}
 					}
 				}
+				//CASO 4: No hay resultado y sí hay bolo, lo cual no debería pasar
+				else
+					log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :->  CASO 4: ERROR: No hay resultado y sí hay bolo.");
 		}
     }
 
@@ -3385,17 +3398,14 @@ public class IOMain{
 		return ret;
 	}
 
-	private List<ARGTable> ARG_RESULT_query(long greaterTime){
+	private ARGTable ARG_RESULT_query(long greaterTime){
 		List<ARGTable> ret = MainApp.getDbHelper()
 				.getAllARGTableFromTimeByDiASType("ARG_RESULT",
 						greaterTime - (10*60*1000L), false);
-
-		ret.removeIf(item -> (
-				(item.getLong("time") < greaterTime)
-		));
-
-
-		return ret;
+		if((ret.size()>0) && (ret.get(0).date > greaterTime*1000))
+			return ret.get(0);
+		else
+			return null;
 	}
 
 	private List<ARGTable> CGM_URI_query_between_desc_order(long greaterTime, long lowerTime){
