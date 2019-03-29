@@ -628,7 +628,7 @@ public class IOMain{
 		//CASO 1: Hay resultado y hay bolo
 		if((lastResult!=null) && (sBTime.size()>0)){
 			//Chequeo si es la misma cantidad de insulina en ambos
-			if((lastResult.getLong("bolus")) == (sBTime.get(0).getLong("deliv_total"))){
+			if((lastResult.getDouble("bolus")) == (sBTime.get(0).getDouble("deliv_total"))){
 				log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 1: El bolo se infundió correctamente");
 			}
 			//TODO_AAPS: si no coincide la cantida de insulina habría que ver cómo resolverlo pero es un caso raro.
@@ -641,10 +641,10 @@ public class IOMain{
 				//CASO 3: No hay bolo y hay resultado. Se debe actualizar el IOB.
 				if (sBTime.size() == 0) {
 					//CASO 3A: Si el resultado es cero significa que no se inyectó por decisión del controlador
-					if(lastResult.getLong("bolus")==0)
+					if(lastResult.getDouble("bolus")==0)
 						log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 3A: El resultado del controlador fue 0");
 					else {
-						// CASO 3B: Si el resultado es disinto de cero significa que no se comunicó con la bomba
+						// CASO 3B: Si el resultado es distinto de cero significa que no se comunicó con la bomba
 						log.debug("[ARGPLUGIN:IOMAIN] ### Rutina 2 :-> : CASO 3B: PROBLEMA: No se inyectó.");
 					}
 
