@@ -81,7 +81,10 @@ import info.nightscout.androidaps.data.Intervals;
 import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
 import info.nightscout.utils.DateUtil;
 
+import android.support.v4.app.FragmentManager;
+import info.nightscout.androidaps.plugins.ARG.Dialogs.NewInitBolusDialog;
 
+import info.nightscout.androidaps.plugins.ARG.ARGFragment;
 // ************************************************************************************************************ //
 
 public class IOMain{
@@ -3328,9 +3331,53 @@ public class IOMain{
 		this.insertNewTable("ARG_TOTAL_STATES", argTableJSON);
     }
 
+    private boolean rutina_chequeo_bolo_inicializacion(){
+
+        long tolTimeMin = 30; // 30 minutos, cambiar este valor
+        boolean forceInitIob = false;
+		List<ARGTable> cIob = MainApp.getDbHelper().getLastsARGTable("ARG_IOB_STATES", 1);
+
+		if (cIob.size() > 0){
+			long time = cIob.get(0).getLong("iobLastTime");
+			if (time < (nowMS / 1000) - (tolTimeMin * 60)){
+				forceInitIob = true;
+
+				log.debug("[ARGPLUGIN] Forzando inicializar insulina para IOB: tolerancia superada");
+			}else{
+				log.debug("[ARGPLUGIN] Hay iob recientes");
+			}
+		}else{
+			forceInitIob = true;
+			log.debug("[ARGPLUGIN] Forzando inicializar insulina para IOB: no hay IOB");
+		}	
+
+		// Controlo que no se haya dado el bolo de inicalizacion
+		if (forceInitIob){
+			List<ARGTable> insulin = INSULIN_URI_query_reqtime_and_type((nowMS / 1000 - 300), 3);
+			if (insulin.size() == 0){
+				// Llamar a ventana de dialogo
+
+				ARGFragment.showInitBolus();
+
+		        //FragmentManager manager = MainApp.instance().getApplicationContext().getFragmentManager();
+		        //new NewInitBolusDialog().show(manager, "InitBolusDialog");
+		       // FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Init_Bolus"));
+
+				log.debug("[ARGPLUGIN] Forzado inicializar insulina para IOB: llamado a ventana de dialogo");
+				return false;
+			}else{
+				log.debug("[ARGPLUGIN] Forzado inicializar insulina para IOB: ya fue ingresada");
+			}
+		}
+		
+		return true;
+
+    }
+
 	public double ejecutarCada5Min(GController g) {
         profile = ProfileFunctions.getInstance().getProfile();
         gController = g;
+		nowMS = System.currentTimeMillis();
 
 		// Debug
 		log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min()");
@@ -3342,6 +3389,10 @@ public class IOMain{
 			log.debug("[ARGPLUGIN:IOMAIN] ejecutarCada5Min() NO HAY PERFIL ACTIVO");
 			return -1;
         }
+
+
+        if (!rutina_chequeo_bolo_inicializacion())
+        	return -1;
 
         // Si ejecutar cada 5 min no tiene un valor es porque se destruyó el controlador
         // puede ser que se haya intercambiado de plugins en menos de 5 min
@@ -3375,7 +3426,6 @@ public class IOMain{
 		correction = 0.0;
 		diff_rate = 0.0;
 		new_rate = false;
-		nowMS = System.currentTimeMillis();
 		
 
 		if (nowMS - lastEjectuarCada5Min_tick < ( ( (5 * 60) - 10)  * 1000L ) ){

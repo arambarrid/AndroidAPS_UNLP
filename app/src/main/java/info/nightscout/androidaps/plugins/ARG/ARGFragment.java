@@ -47,6 +47,7 @@ import info.nightscout.androidaps.plugins.PumpCombo.ComboPlugin;
 
 public class ARGFragment extends SubscriberFragment {
     private static Logger log = LoggerFactory.getLogger(L.APS);
+    public static FragmentManager lastFragmentManager = null;
 
     @BindView(R.id.arg_run)
     Button run;
@@ -92,6 +93,7 @@ public class ARGFragment extends SubscriberFragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.arg_fragment, container, false);
 
+        lastFragmentManager = getFragmentManager();
         unbinder = ButterKnife.bind(this, view);
         return view;
     }
@@ -125,6 +127,11 @@ public class ARGFragment extends SubscriberFragment {
         FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Reset"));
     }
 
+
+    public static void showInitBolus(){
+        new NewInitBolusDialog().show(lastFragmentManager, "InitBolusDialog");
+        FabricPrivacy.getInstance().logCustom(new CustomEvent("ARG_Init_Bolus"));
+    }
 
     @OnClick(R.id.arg_init_bolus)
     public void onInitBolusClick() {
