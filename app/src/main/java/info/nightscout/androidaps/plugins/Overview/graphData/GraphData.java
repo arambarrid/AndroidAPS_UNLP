@@ -501,19 +501,22 @@ public class GraphData {
         for (int i = 0; i< bolusData.size(); i++) {
             double bolus = bolusData.get(i).getDouble("deliv_total");
             long time = bolusData.get(i).getLong("deliv_time") * 1000; // Paso de segs a ms
+            int type = bolusData.get(i).getInt("type");
 
             if (!(time < fromTime || time > toTime) && (Math.abs(time - lastTime) > minTimeDiff)){
-                ARGDataPoint p = new ARGDataPoint();
+                if (type == 2){
+                    ARGDataPoint p = new ARGDataPoint();
 
-                p.dp_x = time;
-                p.dp_y = -2;
-                p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBOLUS;
-                p.dp_color = 0xFF42EEF4;
-                p.dp_label = String.valueOf(bolus) + "U";
+                    p.dp_x = time;
+                    p.dp_y = -2;
+                    p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBOLUS;
+                    p.dp_color = 0xFF42EEF4;
+                    p.dp_label = String.valueOf(bolus) + "U";
 
-                lastTime = time;
+                    lastTime = time;
 
-                filteredExtras.add(p);
+                    filteredExtras.add(p);
+                }
             }
         }
 
