@@ -46,7 +46,15 @@ public class ARGDataPoint implements DataPointWithLabelInterface {
 
     @Override
     public double getY() {
-        return (dp_y == -1) ? OverviewPlugin.getPlugin().determineLowLine() : dp_y;
+        if ((dp_y == -1)){
+            return OverviewPlugin.getPlugin().determineLowLine();
+        }else if ((dp_y == -2)){
+            return OverviewPlugin.getPlugin().determineLowLine() * 1.5;
+        }else if ((dp_y == -3)){
+            return OverviewPlugin.getPlugin().determineLowLine() * 2;
+        }else{
+            return dp_y;
+        }
     }
 
     @Override

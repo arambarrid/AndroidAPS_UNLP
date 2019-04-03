@@ -506,7 +506,7 @@ public class GraphData {
                 ARGDataPoint p = new ARGDataPoint();
 
                 p.dp_x = time;
-                p.dp_y = -1;
+                p.dp_y = -2;
                 p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBOLUS;
                 p.dp_color = 0xFF42EEF4;
                 p.dp_label = String.valueOf(bolus) + "U";
@@ -529,7 +529,7 @@ public class GraphData {
                 ARGDataPoint bac = new ARGDataPoint();
 
                 bac.dp_x = time;
-                bac.dp_y = -1;
+                bac.dp_y = -3;
                 bac.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBAC;
                 bac.dp_color = 0xFFFF0000;
                 bac.dp_label = "BAC";
