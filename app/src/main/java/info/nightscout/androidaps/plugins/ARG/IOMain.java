@@ -76,8 +76,11 @@ import info.nightscout.androidaps.plugins.PumpVirtual.VirtualPumpPlugin;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.db.ARGTable;
 import info.nightscout.androidaps.db.BgReading;
+import info.nightscout.androidaps.db.TemporaryBasal;
+import info.nightscout.androidaps.data.Intervals;
 import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
 import info.nightscout.utils.DateUtil;
+
 
 // ************************************************************************************************************ //
 
@@ -168,7 +171,7 @@ public class IOMain{
     // Variables de control en rutinas
     long lastTimeCGM_get = 0;
     long lastTimeInsulin_get = 0;
-
+    long lastTimeTempBasal_get = 0;
     long lastEjectuarCada5Min_tick = -1;
 
     IOMain(){
@@ -359,6 +362,141 @@ public class IOMain{
     	// percent_of_profile_basal_rate		Porcentaje por el que se multiplica el perfil de insulina basal
     	// scheduled_end_time 					Fin del TBR
     	// actual_end_time						Fin del TBR prematuro por el usuario
+
+    	long prevlastTime = lastTimeTempBasal_get, newLastTime = -1;
+      	long fromTime = 0, now = System.currentTimeMillis() ;
+    	ARGTable tbr_uri_argTable;
+        Intervals<TemporaryBasal> tempBasalList;
+    	int added = 0;
+    	boolean virtualPumpEnable = false;
+
+    	if (ConfigBuilderPlugin.getPlugin().getActivePump() == 
+    		VirtualPumpPlugin.getPlugin()){
+    		virtualPumpEnable = true;
+    	}
+
+    	tempBasalList = TreatmentsPlugin.getPlugin().getTemporaryBasalsFromHistory();
+
+		// Primera vez
+    	if (lastTimeTempBasal_get == 0){
+    		// Voy a copiar tbrs de como mucho hace 6 horas
+    		fromTime = now - 6*3600*1000L;
+
+    		// Verifico cual fue el ultimo TBR almacenado en el TEMP_BASAL_URI
+    		List<ARGTable> tbr_uri_list = MainApp.getDbHelper()
+    				.getAllARGTableFromTimeByDiASType("Biometrics.TEMP_BASAL_URI", fromTime, false);
+
+    		if (tbr_uri_list.size() > 0){
+        		for (int tx = 0; tx < tbr_uri_list.size(); tx++){
+		    		tbr_uri_argTable = tbr_uri_list.get(tx);
+		    		long time =  tbr_uri_argTable.getLong("time_ms");
+		    		if (time > lastTimeTempBasal_get)
+		    			lastTimeTempBasal_get = time;
+        		}
+	    	}else{	
+	    		lastTimeTempBasal_get = fromTime;
+	    	}
+    	}
+
+    	log.debug("[ARGPLUGIN] TBRs procesando " + tempBasalList.size() + " resultados.");
+
+        for (int tx = 0; tx < tempBasalList.size(); tx++) {
+            TemporaryBasal tbr = tempBasalList.get(tx);
+            if (tbr.date > lastTimeTempBasal_get)
+            {
+            	if ( 
+            			(tbr.source == Source.PUMP || virtualPumpEnable) &&
+            	   		!tbr.isAbsolute  // Solo leo tbrs relativos
+            	   )
+            	{
+            	   	
+            		// Comentar esta linea si queremos que registre lo que están actualmente dándose
+	                if (!tbr.isInProgress()) {
+	                	if (tbr.durationInMinutes > 0){
+		                	JSONObject tbr_uri_json = new JSONObject();
+			    			try{
+								tbr_uri_json.put("time", tbr.date/1000);
+
+								tbr_uri_json.put("start_time", tbr.date/1000);
+								tbr_uri_json.put("percent_of_profile_basal_rate", tbr.percentRate);
+								tbr_uri_json.put("scheduled_end_time", (tbr.date/1000) + (tbr.durationInMinutes*60));
+
+								// Cero significa que se está dando en este momento 
+								tbr_uri_json.put("actual_end_time",(tbr.date/1000) + (tbr.getRealDuration() * 60));
+								// Cuando se actualice porque aún no se está dando
+								// 	(tbr.date/1000) + (tbr.getRealDuration() * 60)
+
+								tbr_uri_json.put("time_ms", tbr.date);
+
+								tbr_uri_argTable = new ARGTable(tbr.date, "Biometrics.TEMP_BASAL_URI", tbr_uri_json);
+						        MainApp.getDbHelper().createARGTableIfNotExists(tbr_uri_argTable, "TEMP_BASAL_Clone()");
+								NSUpload.uploadARGTable(tbr_uri_argTable);
+
+						        log.debug("[ARGPLUGIN] TBR clonado (lastTimeTempBasal_get-tbr.date = " + 
+		            					(tbr.date - lastTimeTempBasal_get) + " ms) source: " 
+						        		+ tbr.source + " time:" + tbr.date  + " percent " + tbr.percentRate + "% " + 
+						        		" idealmente termina: " + (tbr.date/1000) + (tbr.durationInMinutes*60) + 
+						        		" duracion ideal: " + tbr.durationInMinutes + " min " + 
+						        		" termino: " + (tbr.date/1000) + (tbr.getRealDuration() * 60) + 
+						        		" realmente duró: " + tbr.getRealDuration() + " min " + 
+						        		" lastTimeTempBasal_get= " + lastTimeTempBasal_get);
+						        added++;
+
+						        if (tbr.date > newLastTime)
+						        	newLastTime = tbr.date;
+			    			}catch(JSONException e){
+
+			    			}
+			    		}else{
+
+	            	       log.debug("[ARGPLUGIN] TBR ignorado (tiempo nulo) (lastTimeTempBasal_get-tbr.date = " + 
+	        					(tbr.date - lastTimeTempBasal_get) + " ms) source: " 
+				        		+ tbr.source + " time:" + tbr.date  + " percent " + tbr.percentRate + "% " + 
+				        		" idealmente termina: " + (tbr.date/1000) + (tbr.durationInMinutes*60) + 
+				        		" duracion ideal: " + tbr.durationInMinutes + " min " + 
+				        		" termino: " +  ((tbr.date/1000) + (tbr.getRealDuration() * 60))  + 
+				        		" va durando: " + tbr.getRealDuration() + " min " +  
+				        		" lastTimeTempBasal_get= " + lastTimeTempBasal_get);
+			    		}
+	                }else{
+            	       log.debug("[ARGPLUGIN] TBR ignorado en progreso (lastTimeTempBasal_get-tbr.date = " + 
+        					(tbr.date - lastTimeTempBasal_get) + " ms) source: " 
+			        		+ tbr.source + " time:" + tbr.date  + " percent " + tbr.percentRate + "% " + 
+			        		" idealmente termina: " + (tbr.date/1000) + (tbr.durationInMinutes*60) + 
+			        		" duracion ideal: " + tbr.durationInMinutes + " min " + 
+			        		" termino: " +  ((tbr.date/1000) + (tbr.getRealDuration() * 60))  + 
+			        		" va durando: " + tbr.getRealDuration() + " min " +  
+			        		" lastTimeTempBasal_get= " + lastTimeTempBasal_get);
+	                }
+
+            	}else{
+       				log.debug("[ARGPLUGIN] TBR ignorado fuente no bomba (lastTimeTempBasal_get-tbr.date = " + 
+	            					(tbr.date - lastTimeTempBasal_get) + " ms) source: " 
+					        		+ tbr.source + " time:" + tbr.date  + " percent " + tbr.percentRate + "% " + 
+					        		" idealmente termina: " + (tbr.date/1000) + (tbr.durationInMinutes*60) + 
+					        		" duracion ideal: " + tbr.durationInMinutes + " min " + 
+					        		" termino: " +  ((tbr.date/1000) + (tbr.getRealDuration() * 60)) +
+					        		" realmente duró: " + tbr.getRealDuration() +  " min " + 
+					        		" lastTimeTempBasal_get= " + lastTimeTempBasal_get);
+            	}
+            }else{
+    	       log.debug("[ARGPLUGIN] TBR ignorado (lastTimeTempBasal_get-tbr.date = " + 
+        					(tbr.date - lastTimeTempBasal_get) + " ms) source: " 
+			        		+ tbr.source + " time:" + tbr.date  + " percent " + tbr.percentRate + "% " + 
+			        		" idealmente termina: " + (tbr.date/1000) + (tbr.durationInMinutes*60) + 
+			        		" duracion ideal: " + tbr.durationInMinutes + " min " + 
+			        		" termino: " + ((tbr.date/1000) + (tbr.getRealDuration() * 60)) + 
+			        		" realmente duró: " + tbr.getRealDuration() +  " min " + 
+			        		" lastTimeTempBasal_get= " + lastTimeTempBasal_get);
+            }
+        }
+
+        if (newLastTime > lastTimeTempBasal_get)
+        	lastTimeTempBasal_get = newLastTime;
+
+    	log.debug("[ARGPLUGIN] TEMP_BASAL_URI : " + String.valueOf(added) +
+    			 " added, prevlastTime: " + String.valueOf(prevlastTime) +
+    			 " currentLastTime: " + String.valueOf(lastTimeInsulin_get));
     }
 
     public void AAPStoDiAS(){
@@ -2860,7 +2998,7 @@ public class IOMain{
 	    		
 	    		// Puntero a la tabla de TBR
 	    		// Cursor bTime = getContentResolver().query(Biometrics.TEMP_BASAL_URI, null, null, null, null);
-	    		List<ARGTable> bTime = MainApp.getDbHelper().getLastsARGTable("Biometrics.TEMP_BASAL_URI", 1);
+	    		/*List<ARGTable> bTime = MainApp.getDbHelper().getLastsARGTable("Biometrics.TEMP_BASAL_URI", 1);
 
 	        	if (bTime.size() > 0){ //(bTime != null) {
         			endTime       = bTime.get(0).getLong("scheduled_end_time");
@@ -2902,7 +3040,7 @@ public class IOMain{
 		    		//Toast.makeText(IOMain.this, "Error loading TBR table!" , Toast.LENGTH_SHORT).show();
 		    		
 	        	}
-	        	
+
 
 	        	// ************************************************************************************************************ //
 	        	
@@ -2945,7 +3083,30 @@ public class IOMain{
 	        		
 	        	}
 	        	
-	        	// Debug
+	        	
+	        	*/
+
+	        	// Verifico de esta forma si hay un TBR activo
+
+	        	final TemporaryBasal activeTemp = TreatmentsPlugin.getPlugin().getTempBasalFromHistory(System.currentTimeMillis());
+	    
+	            if (activeTemp != null) {
+	            	perTBR = activeTemp.percentRate;
+    				actualEndTime = 0;
+    				startTime     = activeTemp.date / 1000;
+    				endTime       = (activeTemp.date / 1000) + (activeTemp.durationInMinutes * 60);
+
+	        		mBasal = activeTemp.percentRate * gController.getPatient().getBasalU()/(12.0);
+	            } else {
+	            	perTBR = 100;
+    				actualEndTime = 0;
+    				startTime     = 0;
+    				endTime       = 0;
+
+	        		mBasal = gController.getPatient().getBasalU()/(12.0);
+	            }
+
+        		// Debug
 	    		
 	    		log.debug("[ARGPLUGIN:IOMAIN]     -> :  mBasal: "+mBasal + ". Subject basal bolus: "+gController.getPatient().getBasalU()/12.0 + ". perTBR: " + 
 	    		perTBR + ". currentTime: " + currentTime + ". startTime: "+ startTime + ". endTime: "+endTime + ". actualEndTime: "+actualEndTime);
