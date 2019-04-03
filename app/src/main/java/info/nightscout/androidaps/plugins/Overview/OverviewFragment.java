@@ -197,6 +197,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     private boolean accepted;
 
     private int rangeToDisplay = 6; // for graph
+    private int shiftToDisplay = 0;
 
     Handler sLoopHandler = new Handler();
     Runnable sRefreshLoop = null;
@@ -728,16 +729,28 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 treatmentDialogFragment.show(manager, "TreatmentDialog");
                 break;
             case R.id.overview_zoomIn: 
+                shiftToDisplay = 0;
                 rangeToDisplay -= 2;
                 rangeToDisplay = rangeToDisplay < 1 ? 1 : rangeToDisplay;
                 SP.putInt(R.string.key_rangetodisplay, rangeToDisplay);
                 updateGUI("rangeChange");
                 break;
             case R.id.overview_zoomOut:
+                shiftToDisplay = 0;
                 rangeToDisplay += 2;
                 rangeToDisplay = rangeToDisplay > 24 ? 2 : rangeToDisplay;
                 SP.putInt(R.string.key_rangetodisplay, rangeToDisplay);
                 updateGUI("rangeChange");
+                break;
+            case R.id.overview_horIzq:
+                shiftToDisplay++;
+                updateGUI("rangeChange");
+                break;
+            case R.id.overview_horDer:
+                if (shiftToDisplay > 0){
+                    shiftToDisplay--;
+                    updateGUI("rangeChange");
+                }
                 break;
             case R.id.overview_insulinbutton:
                 new NewInsulinDialog().show(manager, "InsulinDialog");
@@ -1505,18 +1518,18 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 predHours = Math.min(2, predHours);
                 predHours = Math.max(0, predHours);
                 hoursToFetch = rangeToDisplay - predHours;
-                toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
+                toTime = calendar.getTimeInMillis() + 100000- T.hours(hoursToFetch * shiftToDisplay).msecs(); // little bit more to avoid wrong rounding - Graphview specific
                 fromTime = toTime - T.hours(hoursToFetch).msecs();
                 endTime = toTime + T.hours(predHours).msecs();
             } else {
                 if (rangeToDisplay >= 6){
                     hoursToFetch = rangeToDisplay;
-                    toTime = calendar.getTimeInMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
+                    toTime = calendar.getTimeInMillis() + 100000 - T.hours(hoursToFetch * shiftToDisplay).msecs(); // little bit more to avoid wrong rounding - Graphview specific
                     fromTime = toTime - T.hours(hoursToFetch).msecs();
                     endTime = toTime;
                 }else{
                     hoursToFetch = rangeToDisplay;
-                    toTime = System.currentTimeMillis() + 100000; // little bit more to avoid wrong rounding - Graphview specific
+                    toTime = System.currentTimeMillis() + 100000 - T.hours(hoursToFetch * shiftToDisplay).msecs(); // little bit more to avoid wrong rounding - Graphview specific
                     fromTime = toTime - T.hours(hoursToFetch).msecs();
                     endTime = toTime;
                 }

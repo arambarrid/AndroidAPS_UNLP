@@ -2611,7 +2611,7 @@ public class IOMain{
 			
 			lastTime     = cKStates.get(0).getLong("time");
 			int rCFBolus = (int)cKStates.get(0).getDouble("rCFBolus");
-			int tEndAgg  = (int)cKStates.get(0).getDouble("endAggInit");
+			int tEndAgg  = (int)cKStates.get(0).getDouble("endAggIni");
 			
 			if(Objects.equals(lastTime, null)){
 				
@@ -2891,6 +2891,18 @@ public class IOMain{
 		//
 		
 		uControl = gController.run(mealFlag, mealClass, cgmV[gController.getEstimator().getCgmVector().getM()-1][0] ,parameterIOBFactor);
+
+		double sumaDeBACs = gController.getgControllerState().getBACs();
+		if (sumaDeBACs > 0){
+			JSONObject bacJSONTable = new JSONObject();
+			try{
+		    		bacJSONTable.put("time", currentTime);
+			}catch(JSONException e){
+
+			}
+			this.insertNewTable("ARG_REP_BAC", bacJSONTable);
+		}
+
 
 		// Insulin signal is divided into basal and correction channels
 		// El bolo basal máximo es de 0.5 U de acuerdo a SysMan/Constraints

@@ -7,5 +7,5 @@ public interface GControllerState {
 	double standardCB(boolean hypoFlag);
 	void updateBolusVar();
 	void show(); 
-	
+	double getBACs();
 }

@@ -75,4 +75,8 @@ public class Open implements GControllerState {
 	
 	/**************************************************************************************************************/
 
+
+	public double getBACs(){
+		return 0.0;
+	}
 }

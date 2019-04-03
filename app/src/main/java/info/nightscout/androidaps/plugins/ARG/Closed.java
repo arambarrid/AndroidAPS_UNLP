@@ -12,6 +12,8 @@ public class Closed implements GControllerState {
     private static Logger log = LoggerFactory.getLogger(L.DATABASE);
 
 	private GController gController; // Switched LQG + SAFE
+
+	private double sumaDeBACs = 0.0;
 	
 	/**************************************************************************************************************/
 	
@@ -133,6 +135,7 @@ public class Closed implements GControllerState {
 		
 		cfBolus = Math.round(cfBolus*100.0)/100.0;
 
+		sumaDeBACs = cfBolus;
 		log.debug("[ARGPLUGIN:CONTROLADOR] run() cfBolus:" + cfBolus +
 		 " cfBolusAux:" + cfBolusAux + " cfMBolus:" + cfMBolus + " cfSBolus:" + cfSBolus);
 		
@@ -309,6 +312,12 @@ public class Closed implements GControllerState {
 
 		System.out.println("Closed-Loop");
 		
+	}
+
+	// Funciones extras para AndroidAPS
+
+	public double getBACs(){
+		return sumaDeBACs;
 	}
 
 }
