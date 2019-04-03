@@ -3,7 +3,13 @@ package info.nightscout.androidaps.plugins.ARG;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import info.nightscout.androidaps.logging.L;
+
 public class Closed implements GControllerState {
+
+    private static Logger log = LoggerFactory.getLogger(L.DATABASE);
 
 	private GController gController; // Switched LQG + SAFE
 	
@@ -126,6 +132,9 @@ public class Closed implements GControllerState {
 		double cfBolus = new BigDecimal(Double.toString(cfBolusAux)).setScale(3, RoundingMode.HALF_DOWN).doubleValue();
 		
 		cfBolus = Math.round(cfBolus*100.0)/100.0;
+
+		log.debug("[ARGPLUGIN:CONTROLADOR] run() cfBolus:" + cfBolus +
+		 " cfBolusAux:" + cfBolusAux + " cfMBolus:" + cfMBolus + " cfSBolus:" + cfSBolus);
 		
 		/**************************************************************************************************************/
 		

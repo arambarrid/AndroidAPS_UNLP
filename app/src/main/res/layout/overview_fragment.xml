@@ -292,23 +292,42 @@
                         android:orientation="horizontal">
 
                         <ImageButton
-                            android:id="@+id/overview_zoomOut"
-                            android:layout_width="30dp"
+                            android:id="@+id/overview_horIzq"
+                            android:layout_width="36dp"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_alignParentTop="true"
-                            android:paddingTop="5dp"
-                            app:srcCompat="@drawable/ic_arrow_drop_down_white_24dp" />
+                            android:paddingTop="10dp"
+                            app:srcCompat="@drawable/ic_arrow_back_black_24dp" />
+
+
+                        <ImageButton
+                            android:id="@+id/overview_horDer"
+                            android:layout_width="36dp"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_alignParentTop="true"
+                            android:paddingTop="10dp"
+                            app:srcCompat="@drawable/ic_arrow_forward_black_24dp" />
+
+                        <ImageButton
+                            android:id="@+id/overview_zoomOut"
+                            android:layout_width="36dp"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_alignParentTop="true"
+                            android:paddingTop="10dp"
+                            app:srcCompat="@drawable/ic_zoom_out_black_24dp" />
 
 
                         <ImageButton
                             android:id="@+id/overview_zoomIn"
-                            android:layout_width="30dp"
+                            android:layout_width="36dp"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_alignParentTop="true"
-                            android:paddingTop="5dp"
-                            app:srcCompat="@drawable/ic_arrow_drop_down_white_24dp" />
+                            android:paddingTop="10dp"
+                            app:srcCompat="@drawable/ic_zoom_in_black_24dp" />
 
                     </LinearLayout>
 

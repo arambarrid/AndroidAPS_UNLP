@@ -286,6 +286,7 @@ public class GraphData {
     public void addARGInsulin(long fromTime, long toTime) {
         FixedLineGraphSeries<ScaledDataPoint> insulinSeries;
         List<ScaledDataPoint> insulinArray = new ArrayList<>();
+        List<DataPointWithLabelInterface> initBolusArray = new ArrayList<>();
         Double maxInsulinValueFound = Double.MIN_VALUE;
         double lastInsulin = 0;
         long lastInsulinTime = 0;
@@ -306,33 +307,44 @@ public class GraphData {
         for (int i = bolusData.size() - 1;i >= 0; i--){
             double bolus = bolusData.get(i).getDouble("deliv_total");
             long time = bolusData.get(i).getLong("deliv_time") * 1000; // Paso de segs a ms
-         
+            int type = bolusData.get(i).getInt("type");
+
             if (time >= fromTime && time <= toTime){
-
-                if ( lastInsulinTime > 0){
-                    // Tolerancia de 60 segundos (delays de comunicacion con bomba)
-                    // para que el grafico sea continuo, sino, que la discontinuidad
-                    // sea visual para ver que hay lapsos sin infundir
-                    if (time - lastInsulinTime > ((5*60) + 60) * 1000L){
-                        insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L), lastInsulin, insulinScale));   
-                        insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L) + 10, 0, insulinScale));    
-                        insulinArray.add(new ScaledDataPoint(time - 10, 0, insulinScale));  
-                        insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
+                if (type == 2){
+                    if ( lastInsulinTime > 0){
+                        // Tolerancia de 60 segundos (delays de comunicacion con bomba)
+                        // para que el grafico sea continuo, sino, que la discontinuidad
+                        // sea visual para ver que hay lapsos sin infundir
+                        if (time - lastInsulinTime > ((5*60) + 60) * 1000L){
+                            insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L), lastInsulin, insulinScale));   
+                            insulinArray.add(new ScaledDataPoint(lastInsulinTime + (5*60*1000L) + 10, 0, insulinScale));    
+                            insulinArray.add(new ScaledDataPoint(time - 10, 0, insulinScale));  
+                            insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
+                        }else{
+                            insulinArray.add(new ScaledDataPoint(time - 10, lastInsulin, insulinScale));  
+                            insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
+                        }
                     }else{
-                        insulinArray.add(new ScaledDataPoint(time - 10, lastInsulin, insulinScale));  
-                        insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale));    
+                        insulinArray.add(new ScaledDataPoint(time-10, 0, insulinScale)); 
+                        insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale)); 
                     }
+
+                    lastInsulinTime = time;
+                    lastInsulin = bolus;
+                    
+                    maxInsulinValueFound = Math.max(maxInsulinValueFound, Math.abs(bolus));
+
+                    log.debug("[ARGPLUGIN-GUI] INSULINA EN GRAFICO TIEMPO " + time + " de " + bolus);
                 }else{
-                    insulinArray.add(new ScaledDataPoint(time-10, 0, insulinScale)); 
-                    insulinArray.add(new ScaledDataPoint(time, bolus, insulinScale)); 
+                    ARGDataPoint p = new ARGDataPoint();
+                    p.dp_x = time;
+                    p.dp_y = -1;
+                    p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGFOOD;
+                    p.dp_color = 0xff01B9FF;
+                    p.dp_label = "I: " + bolus + "U";
+
+                    initBolusArray.add(p);
                 }
-
-                lastInsulinTime = time;
-                lastInsulin = bolus;
-                
-                maxInsulinValueFound = Math.max(maxInsulinValueFound, Math.abs(bolus));
-
-                log.debug("[ARGPLUGIN-GUI] INSULINA EN GRAFICO TIEMPO " + time + " de " + bolus);
             }else{
                 log.debug("[ARGPLUGIN-GUI] Insulina ignorada en grafico tiempo " + time + " de " + bolus);
             }
@@ -362,8 +374,11 @@ public class GraphData {
         //    minY = -maxIobValueFound;
         //}
 
-
         addSeries(insulinSeries);
+
+        DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[initBolusArray.size()];
+        filteredExtrasArray = initBolusArray.toArray(filteredExtrasArray);
+        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
     }
 
     public void addARGIob(long fromTime, long toTime, boolean useForScale, double scale) {

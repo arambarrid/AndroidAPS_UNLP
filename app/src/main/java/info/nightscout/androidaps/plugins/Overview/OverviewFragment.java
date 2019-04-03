@@ -135,6 +135,9 @@ import static info.nightscout.utils.DateUtil.now;
 public class OverviewFragment extends Fragment implements View.OnClickListener, View.OnLongClickListener {
     private static Logger log = LoggerFactory.getLogger(L.OVERVIEW);
 
+    LinearLayout asGroup;
+    LinearLayout cobGroup;
+
     TextView timeView;
     TextView bgView;
     TextView arrowView;
@@ -163,6 +166,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     ImageButton chartButton;
     ImageButton zoomOut;
     ImageButton zoomIn;
+    ImageButton horDer;
+    ImageButton horIzq;
 
     TextView iage;
     TextView cage;
@@ -261,6 +266,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         apsModeView = (TextView) view.findViewById(R.id.overview_apsmode);
         tempTargetView = (TextView) view.findViewById(R.id.overview_temptarget);
 
+        cobGroup = (LinearLayout) view.findViewById(R.id.cob_group);
+        asGroup = (LinearLayout) view.findViewById(R.id.as_group);
+        
         iage = (TextView) view.findViewById(R.id.careportal_insulinage);
         cage = (TextView) view.findViewById(R.id.careportal_canulaage);
         sage = (TextView) view.findViewById(R.id.careportal_sensorage);
@@ -273,6 +281,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         zoomIn.setOnClickListener(this);
         zoomOut = (ImageButton) view.findViewById(R.id.overview_zoomOut);
         zoomOut.setOnClickListener(this);
+
+        horDer = (ImageButton) view.findViewById(R.id.overview_horDer);
+        horDer.setOnClickListener(this);
+        horIzq = (ImageButton) view.findViewById(R.id.overview_horIzq);
+        horIzq.setOnClickListener(this);
 
         treatmentButton = (SingleClickButton) view.findViewById(R.id.overview_treatmentbutton);
         treatmentButton.setOnClickListener(this);
@@ -1397,37 +1410,19 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         }
 
 
-        //Versión para ARG
-        /*
+        // Versión para ARG
+        
         List<ARGTable> iobARGData = MainApp.getDbHelper()
-                .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", fromTime, false);
+                .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", System.currentTimeMillis() - 3600 * 1000L , false);
 
-        TreatmentsPlugin.getPlugin().updateTotalIOBTreatments();
-        TreatmentsPlugin.getPlugin().updateTotalIOBTempBasals();
-        //final IobTotal bolusIob = TreatmentsPlugin.getPlugin().getLastCalculationTreatments().round();
-        //final IobTotal basalIob = TreatmentsPlugin.getPlugin().getLastCalculationTempBasals().round();
+        if (iobARGData.size() > 0){
+            double iobEst = iobARGData.get(0).getDouble("iobEst");
 
-        if (shorttextmode) {
-            String iobtext = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U";
+            String iobtext = DecimalFormatter.to2Decimal(iobEst) + "U";
             iobView.setText(iobtext);
-            iobView.setOnClickListener(v -> {
-                String iobtext1 = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U\n"
-                        + MainApp.gs(R.string.bolus) + ": " + DecimalFormatter.to2Decimal(bolusIob.iob) + "U\n"
-                        + MainApp.gs(R.string.basal) + ": " + DecimalFormatter.to2Decimal(basalIob.basaliob) + "U\n";
-                OKDialog.show(getActivity(), MainApp.gs(R.string.iob), iobtext1, null);
-            });
-        } else if (MainApp.sResources.getBoolean(R.bool.isTablet)) {
-            String iobtext = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U ("
-                    + MainApp.gs(R.string.bolus) + ": " + DecimalFormatter.to2Decimal(bolusIob.iob) + "U "
-                    + MainApp.gs(R.string.basal) + ": " + DecimalFormatter.to2Decimal(basalIob.basaliob) + "U)";
-            iobView.setText(iobtext);
-        } else {
-            String iobtext = DecimalFormatter.to2Decimal(bolusIob.iob + basalIob.basaliob) + "U ("
-                    + DecimalFormatter.to2Decimal(bolusIob.iob) + "/"
-                    + DecimalFormatter.to2Decimal(basalIob.basaliob) + ")";
-            iobView.setText(iobtext);
+        }else{
+            iobView.setText("Sin datos");
         }
-        */
         // --------- Fin cálculo IOB para ARG ----------
 
 
@@ -1442,6 +1437,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             }
             cobView.setText(cobText);
         }
+
+        // ARG Desactivar
+        cobGroup.setVisibility(View.GONE);
+        asGroup.setVisibility(View.GONE);
 
         boolean predictionsAvailable;
         if (Config.APS)
