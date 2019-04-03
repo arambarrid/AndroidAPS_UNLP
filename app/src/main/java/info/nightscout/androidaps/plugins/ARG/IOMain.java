@@ -673,10 +673,10 @@ public class IOMain{
 
 						// Voy a la anteúltima fila
 						if (cIob.size() > 1) { // (cIob.moveToPrevious()){
-							iobState1 = cIob.get(1).getDouble("iobLastTime");
-							iobState2 = cIob.get(1).getDouble("iobLastTime");
-							iobState3 = cIob.get(1).getDouble("iobLastTime");
-							iobBasal = cIob.get(1).getDouble("iobLastTime");
+							iobState1 = cIob.get(1).getDouble("iobStates0");
+							iobState2 = cIob.get(1).getDouble("iobStates1");
+							iobState3 = cIob.get(1).getDouble("iobStates2");
+							iobBasal = cIob.get(1).getDouble("iobBasal");
 
 							log.debug("[ARGPLUGIN:IOMAIN] 	  -> : cIob.size() > 1 - "
 									+ "Estados penúltimos. iobLastTime: " + iobLastTime +

@@ -192,7 +192,7 @@ public class ARGFragment extends SubscriberFragment {
             activity.runOnUiThread(() -> {
                 synchronized (ARGFragment.this) {
 
-                    log.debug("[ARGPLUGIN] Update GUI Fragment");
+                    log.debug("[ARG_GUI] Update GUI Fragment");
 
                     if (!isBound()) return;
                     ARGPlugin plugin = ARGPlugin.getPlugin(this.getContext());

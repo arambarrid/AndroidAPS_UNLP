@@ -296,7 +296,7 @@ public class GraphData {
                     .getAllARGTableFromTimeByDiASType("Biometrics.INSULIN_URI", fromTime, false);
         //List<ARGTable>
 
-        log.debug("[ARGPLUGIN-GUI] Dibujando insulina desde "
+        log.debug("[ARG_GUI] Dibujando insulina desde "
          + fromTime + " hasta " + toTime + " (" + bolusData.size() + " resultados )");
 
         Collections.sort(bolusData, new DelivTimeInJSONComparator());
@@ -334,7 +334,7 @@ public class GraphData {
                     
                     maxInsulinValueFound = Math.max(maxInsulinValueFound, Math.abs(bolus));
 
-                    log.debug("[ARGPLUGIN-GUI] INSULINA EN GRAFICO TIEMPO " + time + " de " + bolus);
+                    log.debug("[ARG_GUI] INSULINA EN GRAFICO TIEMPO " + time + " de " + bolus);
                 }else{
                     ARGDataPoint p = new ARGDataPoint();
                     p.dp_x = time;
@@ -346,7 +346,7 @@ public class GraphData {
                     initBolusArray.add(p);
                 }
             }else{
-                log.debug("[ARGPLUGIN-GUI] Insulina ignorada en grafico tiempo " + time + " de " + bolus);
+                log.debug("[ARG_GUI] Insulina ignorada en grafico tiempo " + time + " de " + bolus);
             }
 
         }
@@ -392,7 +392,7 @@ public class GraphData {
         List<ARGTable> iobARGData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("ARG_IOB_STATES", fromTime, false);
 
-        log.debug("[ARGPLUGIN-GUI] Dibujando iob estimado desde " + fromTime + " hasta " + toTime);
+        log.debug("[ARG_GUI] Dibujando iob estimado desde " + fromTime + " hasta " + toTime);
 
 
         //bolusData.sort()
@@ -424,9 +424,9 @@ public class GraphData {
 
                 maxIobValueFound = Math.max(maxIobValueFound, Math.abs(iob));
 
-                log.debug("[ARGPLUGIN-GUI] IOB ESTIMADO EN GRAFICO TIEMPO " + time + " de " + iob);
+                log.debug("[ARG_GUI] IOB ESTIMADO EN GRAFICO TIEMPO " + time + " de " + iob);
             }else{
-                log.debug("[ARGPLUGIN-GUI] IOB Estimado ignorado en grafico tiempo " + time + " de " + iob);
+                log.debug("[ARG_GUI] IOB Estimado ignorado en grafico tiempo " + time + " de " + iob);
             }
 
         }
@@ -481,10 +481,10 @@ public class GraphData {
 
                 filteredExtras.add(p);
 
-                log.debug("[ARGPLUGIN-GUI] COMIDA ENCONTRADA");
+                log.debug("[ARG_GUI] COMIDA ENCONTRADA");
             }else{
 
-                log.debug("[ARGPLUGIN-GUI] COMIDA IGNORADA");
+                log.debug("[ARG_GUI] COMIDA IGNORADA");
             }
         }
 
@@ -673,9 +673,9 @@ public class GraphData {
                 iobArray.add(new ScaledDataPoint(time, iob, iobScale));
                 maxIobValueFound = Math.max(maxIobValueFound, Math.abs(iob));
                 lastIob = iob;
-                log.debug("[ARGPLUGIN-GUI] IOB AAPS EN GRAFICO TIEMPO " + time + " de " + iob);
+                log.debug("[ARG_GUI] IOB AAPS EN GRAFICO TIEMPO " + time + " de " + iob);
             }else{
-                log.debug("[ARGPLUGIN-GUI] IOB AAPS ignorado en grafico tiempo " + time + " de " + iob);
+                log.debug("[ARG_GUI] IOB AAPS ignorado en grafico tiempo " + time + " de " + iob);
             }
         }
 

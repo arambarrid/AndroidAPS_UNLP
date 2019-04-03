@@ -352,7 +352,7 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
                         canvas.drawRect(px - 3, bounds.top + py - 3, xpluslength + 3, bounds.bottom + py + 3, mPaint);
                     }
                 } else if (value.getShape() == Shape.ARGFOOD) {
-                    log.debug("[ARGPLUGIN-GUI] Dibujando ARGFOOD");
+                    log.debug("[ARG_GUI] Dibujando ARGFOOD");
                     mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
                     mPaint.setStrokeWidth(0);
                     canvas.drawCircle(endX, endY, scaledPxSize * 2, mPaint);
@@ -360,13 +360,13 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
                         drawLabel45(endX, endY, value, canvas);
                     }
                 } else if (value.getShape() == Shape.ARGBOLUS) {
-                    log.debug("[ARGPLUGIN-GUI] Dibujando ARGBOLUS");
+                    log.debug("[ARG_GUI] Dibujando ARGBOLUS");
 
                     if (value.getLabel() != null) {
                         drawLabel45(endX, endY, value, canvas);
                     }
                 } else if (value.getShape() == Shape.ARGBAC) {
-                    log.debug("[ARGPLUGIN-GUI] Dibujando ARGBAC");
+                    log.debug("[ARG_GUI] Dibujando ARGBAC");
                     
                     float sSize = scaledPxSize * 1.75f;
 
