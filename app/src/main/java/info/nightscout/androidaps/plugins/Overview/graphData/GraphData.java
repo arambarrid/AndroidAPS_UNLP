@@ -360,6 +360,21 @@ public class GraphData {
             }
         }
 
+        maxY = Math.max(maxInsulinValueFound, 2);
+        minY = 0;
+
+        ARGDataPoint title = new ARGDataPoint();
+        title.dp_shape = PointsWithLabelGraphSeries.Shape.ARGTITLE;
+        title.dp_color = 0xffffffff;
+        title.dp_label = "INS";
+        title.dp_x = fromTime;
+        title.dp_y = maxY;
+        initBolusArray.add(title);
+
+        DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[initBolusArray.size()];
+        filteredExtrasArray = initBolusArray.toArray(filteredExtrasArray);
+        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
+
         ScaledDataPoint[] insulinData = new ScaledDataPoint[insulinArray.size()];
         insulinData = insulinArray.toArray(insulinData);
         insulinSeries = new FixedLineGraphSeries<>(insulinData);
@@ -367,22 +382,15 @@ public class GraphData {
         insulinSeries.setBackgroundColor(0x8042eef4); //50%
         insulinSeries.setColor(0xFF42EEF4);
         insulinSeries.setThickness(3);
-        insulinScale.setMultiplier(200);
-
-        //if (useForScale) {
-        //    maxY = maxIobValueFound;
-        //    minY = -maxIobValueFound;
-        //}
-
+        insulinScale.setMultiplier(1);
+        
         addSeries(insulinSeries);
-
-        DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[initBolusArray.size()];
-        filteredExtrasArray = initBolusArray.toArray(filteredExtrasArray);
-        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
     }
 
     public void addARGIob(long fromTime, long toTime, boolean useForScale, double scale) {
         FixedLineGraphSeries<ScaledDataPoint> iobSeries;
+
+        List<DataPointWithLabelInterface> iobPoints = new ArrayList<>();
         List<ScaledDataPoint> iobArray = new ArrayList<>();
         Double maxIobValueFound = Double.MIN_VALUE;
         double lastIob = 0;
@@ -404,16 +412,15 @@ public class GraphData {
          
             if (time >= fromTime && time <= toTime){
 
-                if ( lastIobTime > 0){
-                    if (time - lastIobTime > ((5*60) + 60) * 1000L){
-                        iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L), lastIob, iobScale));   
-                        iobArray.add(new ScaledDataPoint(lastIobTime + (5*60*1000L) + 10, 0, iobScale));    
-                        iobArray.add(new ScaledDataPoint(time - 10, 0, iobScale));  
-                        iobArray.add(new ScaledDataPoint(time, iob, iobScale));    
-                    }else{
-                        iobArray.add(new ScaledDataPoint(time - 10, lastIob, iobScale));  
-                        iobArray.add(new ScaledDataPoint(time, iob, iobScale));    
-                    }
+                ARGDataPoint p = new ARGDataPoint();
+                p.dp_x = time;
+                p.dp_y = iob;
+                p.dp_shape = PointsWithLabelGraphSeries.Shape.ARGIOB;
+                p.dp_color = 0xffffffff;
+                iobPoints.add(p);
+
+                if ( lastIobTime > 0){  
+                    iobArray.add(new ScaledDataPoint(time, iob, iobScale));    
                 }else{
                     iobArray.add(new ScaledDataPoint(time-10, 0, iobScale)); 
                     iobArray.add(new ScaledDataPoint(time, iob, iobScale)); 
@@ -442,12 +449,23 @@ public class GraphData {
 
         if (useForScale) {
             maxY = maxIobValueFound;
-            minY = -maxIobValueFound;
-        }
+            minY = 0;
+        }   
 
         iobScale.setMultiplier(maxY * scale / maxIobValueFound);
-
         addSeries(iobSeries);
+
+        ARGDataPoint title = new ARGDataPoint();
+        title.dp_shape = PointsWithLabelGraphSeries.Shape.ARGTITLE;
+        title.dp_color = 0xffffffff;
+        title.dp_label = "IOB";
+        title.dp_x = fromTime;
+        title.dp_y = maxY;
+        iobPoints.add(title);
+
+        DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[iobPoints.size()];
+        filteredExtrasArray = iobPoints.toArray(filteredExtrasArray);
+        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
     }
 
     public void addARGExtras(long fromTime, long toTime) {
@@ -496,7 +514,7 @@ public class GraphData {
         // Como maximo 24 en total time
         long minTimeDiff = (toTime - fromTime) / 23;
         long lastTime = 0;
-
+/*
         // Bolos comunes
         for (int i = 0; i< bolusData.size(); i++) {
             double bolus = bolusData.get(i).getDouble("deliv_total");
@@ -518,13 +536,12 @@ public class GraphData {
                     filteredExtras.add(p);
                 }
             }
-        }
+        }*/
 
 
         List<ARGTable> bacData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("ARG_REP_BAC", fromTime, false);
 
-        // Bolos comunes
         for (int i = 0; i< bacData.size(); i++) {
             long time = bacData.get(i).getLong("time") * 1000; // Paso de segs a ms
 

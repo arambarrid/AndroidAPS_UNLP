@@ -50,8 +50,10 @@ public class VersionChecker {
                                 return;
                             } else if (compare > 0) {
                                 log.debug("Version outdated. Found " + result);
-                                Notification notification = new Notification(Notification.NEWVERSIONDETECTED, String.format(MainApp.gs(R.string.versionavailable), result), Notification.LOW);
-                                MainApp.bus().post(new EventNewNotification(notification));
+                                
+                                // Descomentar para habilitar la notificacion de nueva version de AAPS
+                                //Notification notification = new Notification(Notification.NEWVERSIONDETECTED, String.format(MainApp.gs(R.string.versionavailable), result), Notification.LOW);
+                                //MainApp.bus().post(new EventNewNotification(notification));
                                 return;
                             } else {
                                 log.debug("Version newer than master. Are you developer?");

@@ -293,7 +293,7 @@
 
                         <ImageButton
                             android:id="@+id/overview_horIzq"
-                            android:layout_width="36dp"
+                            android:layout_width="44dp"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_alignParentTop="true"
@@ -303,7 +303,7 @@
 
                         <ImageButton
                             android:id="@+id/overview_horDer"
-                            android:layout_width="36dp"
+                            android:layout_width="44dp"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_alignParentTop="true"
@@ -312,7 +312,7 @@
 
                         <ImageButton
                             android:id="@+id/overview_zoomOut"
-                            android:layout_width="36dp"
+                            android:layout_width="44dp"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_alignParentTop="true"
@@ -322,7 +322,7 @@
 
                         <ImageButton
                             android:id="@+id/overview_zoomIn"
-                            android:layout_width="36dp"
+                            android:layout_width="44dp"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_alignParentTop="true"
@@ -361,6 +361,12 @@
 
                 </RelativeLayout>
 
+
+                <com.jjoe64.graphview.GraphView
+                    android:id="@+id/overview_arginsulingraph"
+                    android:layout_width="wrap_content"
+                    android:layout_height="100dp"
+                    android:visibility="gone" />
 
                 <com.jjoe64.graphview.GraphView
                     android:id="@+id/overview_iobgraph"

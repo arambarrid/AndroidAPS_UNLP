@@ -137,6 +137,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
     LinearLayout asGroup;
     LinearLayout cobGroup;
+    LinearLayout baseBasalGroup;
 
     TextView timeView;
     TextView bgView;
@@ -163,6 +164,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
     LinearLayout pumpStatusLayout;
     GraphView bgGraph;
     GraphView iobGraph;
+    GraphView argInsulinGraph;
     ImageButton chartButton;
     ImageButton zoomOut;
     ImageButton zoomIn;
@@ -251,6 +253,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         avgdeltaView = (TextView) view.findViewById(R.id.overview_avgdelta);
         baseBasalView = (TextView) view.findViewById(R.id.overview_basebasal);
         extendedBolusView = (TextView) view.findViewById(R.id.overview_extendedbolus);
+
+
         activeProfileView = (TextView) view.findViewById(R.id.overview_activeprofile);
         pumpStatusView = (TextView) view.findViewById(R.id.overview_pumpstatus);
         pumpDeviceStatusView = (TextView) view.findViewById(R.id.overview_pump);
@@ -259,6 +263,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         iobCalculationProgressView = (TextView) view.findViewById(R.id.overview_iobcalculationprogess);
         loopStatusLayout = (LinearLayout) view.findViewById(R.id.overview_looplayout);
         pumpStatusLayout = (LinearLayout) view.findViewById(R.id.overview_pumpstatuslayout);
+
+        baseBasalGroup = (LinearLayout) view.findViewById(R.id.overview_basallayout);
+        baseBasalGroup.setVisibility(View.GONE);
 
         pumpStatusView.setBackgroundColor(MainApp.gc(R.color.colorInitializingBorder));
 
@@ -277,6 +284,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
         bgGraph = (GraphView) view.findViewById(R.id.overview_bggraph);
         iobGraph = (GraphView) view.findViewById(R.id.overview_iobgraph);
+        argInsulinGraph = (GraphView) view.findViewById(R.id.overview_arginsulingraph);
 
         zoomIn = (ImageButton) view.findViewById(R.id.overview_zoomIn);
         zoomIn.setOnClickListener(this);
@@ -347,6 +355,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         iobGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
         iobGraph.getGridLabelRenderer().setLabelVerticalWidth(axisWidth);
         iobGraph.getGridLabelRenderer().setNumVerticalLabels(3);
+
+        argInsulinGraph.getGridLabelRenderer().setGridColor(MainApp.gc(R.color.graphgrid));
+        argInsulinGraph.getGridLabelRenderer().reloadStyles();
+        argInsulinGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
+        argInsulinGraph.getGridLabelRenderer().setLabelVerticalWidth(axisWidth);
 
         rangeToDisplay = SP.getInt(R.string.key_rangetodisplay, 6);
 
@@ -1161,6 +1174,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 if (avgdeltaView != null)
                     avgdeltaView.setText("");
             }
+
+            if (avgdeltaView != null)
+                avgdeltaView.setVisibility(View.GONE);
         }
 
         Constraint<Boolean> closedLoopEnabled = MainApp.getConstraintChecker().isClosedLoopAllowed();
@@ -1312,6 +1328,9 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             else
                 extendedBolusView.setVisibility(View.VISIBLE);
         }
+
+
+        extendedBolusView.setVisibility(View.GONE);
 
         activeProfileView.setText(ProfileFunctions.getInstance().getProfileName());
         activeProfileView.setBackgroundColor(Color.GRAY);
@@ -1572,7 +1591,6 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             graphData.addTargetLine(fromTime, toTime, profile);
 
             if (SP.getBoolean("showargdata", true)){
-                graphData.addARGInsulin(fromTime, toTime);
                 graphData.addARGExtras(fromTime, toTime);
             }
 
@@ -1624,6 +1642,19 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             secondGraphData.formatAxis(fromTime, endTime);
             secondGraphData.addNowLine(now);
 
+            if (L.isEnabled(L.OVERVIEW))
+                Profiler.log(log, from + " - 3rd graph - START", updateGUIStart);
+
+            final GraphData thirdGraphData = new GraphData(argInsulinGraph, IobCobCalculatorPlugin.getPlugin());
+
+            // ------------------ 3rd graph
+            if (SP.getBoolean("showargdata", true))
+                thirdGraphData.addARGInsulin(fromTime, toTime);
+
+
+            thirdGraphData.formatAxis(fromTime, endTime);
+            thirdGraphData.addNowLine(now);
+
             // do GUI update
             FragmentActivity activity = getActivity();
             if (activity != null) {
@@ -1638,13 +1669,23 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                     } else {
                         iobGraph.setVisibility(View.GONE);
                     }
+
+                    if (SP.getBoolean("showargdata", true)){
+                        argInsulinGraph.setVisibility(View.VISIBLE);
+                    } else {
+                        argInsulinGraph.setVisibility(View.GONE);
+                    }
+
                     // finally enforce drawing of graphs
                     graphData.performUpdate();
                     secondGraphData.performUpdate();
+                    thirdGraphData.performUpdate();
                     if (L.isEnabled(L.OVERVIEW))
                         Profiler.log(log, from + " - onDataChanged", updateGUIStart);
                 });
             }
+
+
         }).start();
 
         if (L.isEnabled(L.OVERVIEW))

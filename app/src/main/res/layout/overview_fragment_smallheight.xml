@@ -369,6 +369,12 @@
                 </RelativeLayout>
 
                 <com.jjoe64.graphview.GraphView
+                    android:id="@+id/overview_arginsulingraph"
+                    android:layout_width="wrap_content"
+                    android:layout_height="150dp"
+                    android:visibility="gone" />
+
+                <com.jjoe64.graphview.GraphView
                     android:id="@+id/overview_iobgraph"
                     android:layout_width="wrap_content"
                     android:layout_height="150dp" />

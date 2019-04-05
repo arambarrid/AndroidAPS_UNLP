@@ -88,7 +88,9 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
         COBFAILOVER,
         ARGFOOD,
         ARGBOLUS,
-        ARGBAC
+        ARGBAC,
+        ARGIOB,
+        ARGTITLE
     }
 
     /**
@@ -359,12 +361,27 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
                     if (value.getLabel() != null) {
                         drawLabel45(endX, endY, value, canvas);
                     }
+                } else if (value.getShape() == Shape.ARGIOB) {
+                    log.debug("[ARG_GUI] Dibujando ARGIOB");
+                    mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+                    mPaint.setStrokeWidth(0);
+                    canvas.drawCircle(endX, endY, scaledPxSize , mPaint);
                 } else if (value.getShape() == Shape.ARGBOLUS) {
                     log.debug("[ARG_GUI] Dibujando ARGBOLUS");
 
                     if (value.getLabel() != null) {
                         drawLabel45(endX, endY, value, canvas);
                     }
+                } else if (value.getShape() == Shape.ARGTITLE) {
+                    log.debug("[ARG_GUI] Dibujando ARGTITLE " + endX + "," + endY);
+
+                    mPaint.setTextSize((float) (scaledTextSize * 1));
+                    mPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+                    mPaint.setFakeBoldText(true);
+                    mPaint.setTextAlign(Paint.Align.LEFT);
+
+                    canvas.drawText(value.getLabel(), endX, scaledTextSize , mPaint);
+                    
                 } else if (value.getShape() == Shape.ARGBAC) {
                     log.debug("[ARG_GUI] Dibujando ARGBAC");
                     
