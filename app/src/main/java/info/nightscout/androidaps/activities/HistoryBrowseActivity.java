@@ -290,7 +290,7 @@ public class HistoryBrowseActivity extends AppCompatActivity {
 
         // add basal data
         if (pump.getPumpDescription().isTempBasalCapable && showBasal) {
-            graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d);
+            graphData.addBasals(fromTime, toTime, lowLine / graphData.maxY / 1.2d, false);
         }
 
         // **** NOW line ****

@@ -1585,7 +1585,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             if (!SP.getBoolean("showargdata", true)){
                 // add basal data
                 if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
-                    graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d);
+                    graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d, false);
                 }
             }
 
@@ -1655,7 +1655,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
 
                 // add basal data
                 if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
-                    thirdGraphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d);
+                    thirdGraphData.addBasals(fromTime, now, 1 / thirdGraphData.maxY / 1.2d, true);
                 }
             }
 

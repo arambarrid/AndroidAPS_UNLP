@@ -108,12 +108,22 @@ public class GraphData {
         if (highLine > maxBgValue) maxBgValue = highLine;
         int numOfVertLines = units.equals(Constants.MGDL) ? (int) (maxBgValue / 40 + 1) : (int) (maxBgValue / 2 + 1);
 
+        maxY = maxBgValue;
+        minY = 0;
+
+        ARGDataPoint title = new ARGDataPoint();
+        title.dp_shape = PointsWithLabelGraphSeries.Shape.ARGTITLE;
+        title.dp_color = 0xffffffff;
+        title.dp_label = "G";
+        title.dp_x = fromTime;
+        title.dp_y = maxY;
+        bgListArray.add(title);
+
+
         DataPointWithLabelInterface[] bg = new DataPointWithLabelInterface[bgListArray.size()];
         bg = bgListArray.toArray(bg);
 
 
-        maxY = maxBgValue;
-        minY = 0;
         // set manual y bounds to have nice steps
         graph.getGridLabelRenderer().setNumVerticalLabels(numOfVertLines);
 
@@ -136,7 +146,7 @@ public class GraphData {
     }
 
     // scale in % of vertical size (like 0.3)
-    public void addBasals(long fromTime, long toTime, double scale) {
+    public void addBasals(long fromTime, long toTime, double scale, boolean thirdGraph) {
         LineGraphSeries<ScaledDataPoint> basalsLineSeries;
         LineGraphSeries<ScaledDataPoint> absoluteBasalsLineSeries;
         LineGraphSeries<ScaledDataPoint> baseBasalsSeries;
@@ -237,7 +247,10 @@ public class GraphData {
         absolutePaint.setColor(MainApp.gc(R.color.basal));
         absoluteBasalsLineSeries.setCustomPaint(absolutePaint);
 
-        basalScale.setMultiplier(maxY * scale / maxBasalValueFound);
+        if (!thirdGraph)
+            basalScale.setMultiplier(maxY * scale / maxBasalValueFound);
+        else
+            basalScale.setMultiplier(1.0d);
 
         addSeries(baseBasalsSeries);
         addSeries(tempBasalsSeries);
@@ -371,7 +384,7 @@ public class GraphData {
         title.dp_y = maxY;
         initBolusArray.add(title);
 
-        
+
         List<ARGTable> bacData = MainApp.getDbHelper()
                     .getAllARGTableFromTimeByDiASType("ARG_REP_BAC", fromTime, false);
 
@@ -382,7 +395,7 @@ public class GraphData {
                 ARGDataPoint bac = new ARGDataPoint();
 
                 bac.dp_x = time;
-                bac.dp_y = -3;
+                bac.dp_y = maxY/2;
                 bac.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBAC;
                 bac.dp_color = 0xFFFF0000;
                 bac.dp_label = "BAC";
@@ -393,7 +406,6 @@ public class GraphData {
 
         DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[initBolusArray.size()];
         filteredExtrasArray = initBolusArray.toArray(filteredExtrasArray);
-        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
 
         ScaledDataPoint[] insulinData = new ScaledDataPoint[insulinArray.size()];
         insulinData = insulinArray.toArray(insulinData);
@@ -405,6 +417,7 @@ public class GraphData {
         insulinScale.setMultiplier(1);
         
         addSeries(insulinSeries);
+        addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
     }
 
     public void addARGIob(long fromTime, long toTime, boolean useForScale, double scale) {
