@@ -826,12 +826,35 @@ public class IOMain{
 		// y genero el mismo tipo de datos que utiliza este codigo
 		// de esa forma, nos aseguramos el mismo funcionamiento
 		// siempre y cuando la adaptacion de los datos sea correcta
+
+		// Primero verifico que el cambio no se produzca a las 00 hs
+		double rate00 = profile.getBasalTimeFromMidnight(0 * 60 * 60);
+		double rate23 = profile.getBasalTimeFromMidnight(23 * 60 * 60);
+		double lastRate = -1;
+
+		//  Esto quiere decir que en 00 hay un cambio, entonces, lo voy a 
+		// tomar como cambio inicial, pongo cualquier otra cosa en 
+		// lastRate asi en el for lo toma como una diferencia
+		if (rate00 != rate23){
+			lastRate = -1;
+
+		/// Sino, me interesan los cambios realizados despues de las 12
+		// ya que la basal a las 00 arranca antes, por lo tanto la diferencia
+		// se tiene encuenta desde ese instante anterior
+	    }else{
+	    	lastRate = rate00;
+	    }
+
 		subjectBasal = new Tvector();
         for (int i = 0; i < 24; i++) {
         	// obtengo basal de la hora i
             double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
 
-			subjectBasal.put_with_replace(i*60, rate);
+            // Ahora solo lee las diferencias
+            if (rate != lastRate){
+				subjectBasal.put_with_replace(i*60, rate);
+				lastRate = rate;
+            }
         }
     	
     	

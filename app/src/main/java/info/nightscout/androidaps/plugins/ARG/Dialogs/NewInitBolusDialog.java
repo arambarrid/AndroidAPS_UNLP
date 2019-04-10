@@ -171,28 +171,25 @@ public class NewInitBolusDialog extends DialogFragment implements OnClickListene
 
         Double insulin = SafeParse.stringToDouble(editInsulin.getText());
 
-        if (insulin != 0){
-            long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
-            JSONObject insulinTable = new JSONObject();
-            try{
-                insulinTable.put("time", now/1000);
-                insulinTable.put("type", 3); // 3 es tipo de bolo de inicializacion
-                insulinTable.put("status", 2); // 2 es que fue totalmente infundida
-                insulinTable.put("deliv_total", insulin); // cantidad de insulina
-                insulinTable.put("deliv_time", now/1000); 
-	        }catch(JSONException e){
+        JSONObject insulinTable = new JSONObject();
+        try{
+            insulinTable.put("time", now/1000);
+            insulinTable.put("type", 3); // 3 es tipo de bolo de inicializacion
+            insulinTable.put("status", 2); // 2 es que fue totalmente infundida
+            insulinTable.put("deliv_total", insulin); // cantidad de insulina
+            insulinTable.put("deliv_time", now/1000); 
+        }catch(JSONException e){
 
-            }
-
-            ARGTable argTable = new ARGTable(now, "Biometrics.INSULIN_URI", insulinTable);
-
-            MainApp.getDbHelper().createARGTableIfNotExists(argTable, "ARGInitBolusDialog()");
-            NSUpload.uploadARGTable(argTable);
-
-            dismiss();
         }
 
+        ARGTable argTable = new ARGTable(now, "Biometrics.INSULIN_URI", insulinTable);
+
+        MainApp.getDbHelper().createARGTableIfNotExists(argTable, "ARGInitBolusDialog()");
+        NSUpload.uploadARGTable(argTable);
+
+        dismiss();
 
         okClicked = true;
     }
