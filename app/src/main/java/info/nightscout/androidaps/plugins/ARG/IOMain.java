@@ -850,11 +850,14 @@ public class IOMain{
         	// obtengo basal de la hora i
             double rate = profile.getBasalTimeFromMidnight(i * 60 * 60);
 
+            // TODO_APS: Crasheaba si descomentas esto(por algo del funcionamiento)
+            // osea, esto desencadena el crash, pero no crashea por este codigo.
+            
             // Ahora solo lee las diferencias
-            if (rate != lastRate){
+            //if (rate != lastRate){
 				subjectBasal.put_with_replace(i*60, rate);
-				lastRate = rate;
-            }
+			//	lastRate = rate;
+            //}
         }
     	
     	
