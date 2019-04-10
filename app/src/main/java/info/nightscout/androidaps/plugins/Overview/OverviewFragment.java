@@ -1582,9 +1582,11 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             // Treatments
             graphData.addTreatments(fromTime, endTime, !SP.getBoolean("showargdata", true));
 
-            // add basal data
-            if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
-                graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d);
+            if (!SP.getBoolean("showargdata", true)){
+                // add basal data
+                if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
+                    graphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d);
+                }
             }
 
             // add target line
@@ -1648,8 +1650,14 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             final GraphData thirdGraphData = new GraphData(argInsulinGraph, IobCobCalculatorPlugin.getPlugin());
 
             // ------------------ 3rd graph
-            if (SP.getBoolean("showargdata", true))
+            if (SP.getBoolean("showargdata", true)){
                 thirdGraphData.addARGInsulin(fromTime, toTime);
+
+                // add basal data
+                if (pump.getPumpDescription().isTempBasalCapable && SP.getBoolean("showbasals", true)) {
+                    thirdGraphData.addBasals(fromTime, now, lowLine / graphData.maxY / 1.2d);
+                }
+            }
 
 
             thirdGraphData.formatAxis(fromTime, endTime);

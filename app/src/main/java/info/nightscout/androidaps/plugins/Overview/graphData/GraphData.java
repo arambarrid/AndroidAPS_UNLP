@@ -371,6 +371,26 @@ public class GraphData {
         title.dp_y = maxY;
         initBolusArray.add(title);
 
+        
+        List<ARGTable> bacData = MainApp.getDbHelper()
+                    .getAllARGTableFromTimeByDiASType("ARG_REP_BAC", fromTime, false);
+
+        for (int i = 0; i< bacData.size(); i++) {
+            long time = bacData.get(i).getLong("time") * 1000; // Paso de segs a ms
+
+            if (!(time < fromTime || time > toTime)){
+                ARGDataPoint bac = new ARGDataPoint();
+
+                bac.dp_x = time;
+                bac.dp_y = -3;
+                bac.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBAC;
+                bac.dp_color = 0xFFFF0000;
+                bac.dp_label = "BAC";
+
+                initBolusArray.add(bac);
+            }
+        }
+
         DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[initBolusArray.size()];
         filteredExtrasArray = initBolusArray.toArray(filteredExtrasArray);
         addSeries(new PointsWithLabelGraphSeries<>(filteredExtrasArray));
@@ -539,24 +559,6 @@ public class GraphData {
         }*/
 
 
-        List<ARGTable> bacData = MainApp.getDbHelper()
-                    .getAllARGTableFromTimeByDiASType("ARG_REP_BAC", fromTime, false);
-
-        for (int i = 0; i< bacData.size(); i++) {
-            long time = bacData.get(i).getLong("time") * 1000; // Paso de segs a ms
-
-            if (!(time < fromTime || time > toTime)){
-                ARGDataPoint bac = new ARGDataPoint();
-
-                bac.dp_x = time;
-                bac.dp_y = -3;
-                bac.dp_shape = PointsWithLabelGraphSeries.Shape.ARGBAC;
-                bac.dp_color = 0xFFFF0000;
-                bac.dp_label = "BAC";
-
-                filteredExtras.add(bac);
-            }
-        }
 
         DataPointWithLabelInterface[] filteredExtrasArray = new DataPointWithLabelInterface[filteredExtras.size()];
         filteredExtrasArray = filteredExtras.toArray(filteredExtrasArray);
