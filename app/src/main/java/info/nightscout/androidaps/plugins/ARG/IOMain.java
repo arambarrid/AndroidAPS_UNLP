@@ -714,12 +714,14 @@ public class IOMain{
 
 							JSONObject statesTableIOB = new JSONObject();
 							try {
+								statesTableIOB.put("time", System.currentTimeMillis());
 								statesTableIOB.put("iobStates0", iobStates[0][0]);
 								statesTableIOB.put("iobStates1", iobStates[1][0]);
 								statesTableIOB.put("iobStates2", iobStates[2][0]);
 								statesTableIOB.put("iobEst", iobEst);
 								statesTableIOB.put("iobBasal", iobBasal);
 								statesTableIOB.put("iobLastTime", iobLastTime);
+								statesTableIOB.put("razon", "A: rutina_2_correccion_iob_bolos_sincronicos_no_infundidos");
 							} catch (JSONException e) {
 
 							}
@@ -737,12 +739,14 @@ public class IOMain{
 
 							JSONObject statesTableIOB = new JSONObject();
 							try {
+								statesTableIOB.put("time", System.currentTimeMillis());
 								statesTableIOB.put("iobStates0", 0);
 								statesTableIOB.put("iobStates1", 0);
 								statesTableIOB.put("iobStates2", 0);
 								statesTableIOB.put("iobEst", 0);
 								statesTableIOB.put("iobBasal", iobBasal);
 								statesTableIOB.put("iobLastTime", iobLastTime);
+								statesTableIOB.put("razon", "B: rutina_2_correccion_iob_bolos_sincronicos_no_infundidos");
 							} catch (JSONException e) {
 
 							}
@@ -1405,12 +1409,14 @@ public class IOMain{
     		iobLastTime = currentTime;
     		
 			try{
+				statesTableIOB.put("time", System.currentTimeMillis());
 				statesTableIOB.put("iobStates0", iobStates[0][0]);
 				statesTableIOB.put("iobStates1", iobStates[1][0]);
 				statesTableIOB.put("iobStates2", iobStates[2][0]);
 				statesTableIOB.put("iobEst", iobEst);
 				statesTableIOB.put("iobBasal", iobBasal);	
 				statesTableIOB.put("iobLastTime", iobLastTime);
+				statesTableIOB.put("razon", "C: rutina_4_inicializacion_iob");
 			}catch(JSONException e){
 
 			}
@@ -3265,12 +3271,14 @@ public class IOMain{
 
 			JSONObject statesTableIOB = new JSONObject();
 			try{
+				statesTableIOB.put("time", System.currentTimeMillis());
 				statesTableIOB.put("iobStates0", iobStates1[0][0]);
 				statesTableIOB.put("iobStates1", iobStates1[1][0]);
 				statesTableIOB.put("iobStates2", iobStates1[2][0]);
 				statesTableIOB.put("iobEst", iobEst);
 				statesTableIOB.put("iobBasal", iobBasal);	
 				statesTableIOB.put("iobLastTime", iobLastTime);
+				statesTableIOB.put("razon", "D: rutina_8");
 			}catch(JSONException e){
 
 			}
@@ -3547,12 +3555,14 @@ public class IOMain{
     				iobLastTime = currentTime;
 
 					try{
+						statesTableIOB.put("time", System.currentTimeMillis());
 						statesTableIOB.put("iobStates0", iobStates[0][0]);
 						statesTableIOB.put("iobStates1", iobStates[1][0]);
 						statesTableIOB.put("iobStates2", iobStates[2][0]);
 						statesTableIOB.put("iobEst", iobEst);
 						statesTableIOB.put("iobBasal", iobBasal);	
 						statesTableIOB.put("iobLastTime", iobLastTime);
+						statesTableIOB.put("razon", "E: sub_rutina_entre_4_5 ultimo bolo infundido (ultimos 300segs)");
 					}catch(JSONException e){
 
 					}

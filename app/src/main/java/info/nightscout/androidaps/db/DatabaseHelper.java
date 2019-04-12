@@ -1675,7 +1675,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
     public boolean createARGTableIfNotExists(ARGTable argTable, String from) {
         try {
             argTable.date = roundDateToSec(argTable.date);
-
+            
             getDaoARGTable().create(argTable);
             if (L.isEnabled(L.DATABASE))
                 log.debug("[ARGPLUGIN] Agregado a DB local: " + from + " " + argTable.toString());

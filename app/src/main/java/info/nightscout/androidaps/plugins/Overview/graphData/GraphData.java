@@ -441,8 +441,52 @@ public class GraphData {
         // Lo recorro desde la mas antigua hasta la mas nueva
         for (int i = iobARGData.size() - 1;i >= 0; i--){
             double iob = iobARGData.get(i).getDouble("iobEst");
-            long time = iobARGData.get(i).date;//getLong("iobLastTime") * 1000; // Paso de segs a ms
-         
+
+            long time = iobARGData.get(i).getLong("time");
+            if (time < 1)
+                time = iobARGData.get(i).date;
+
+            // Chequeo para ver si es de aproximadamente el mismo momento
+            // el calculo de IOB, entonces calculo el mas reciente
+
+            // Como estamos recorriendo desde el mas viejo al mas reciente
+            // el primero que agarre es mas antiguo que los que siguen
+            // entonces tengo que ver hacia adelante si hay muestras mas 
+            // recientes, y directamente saltar hacia ellas.
+
+            // Si i == 0, entonces estoy en la ultima de las ultimas
+            if (i > 0){
+                while (i > 0){
+                    long timeNext = iobARGData.get(i-1).getLong("time");
+                    if (timeNext < 1)
+                        timeNext = iobARGData.get(i-1).date;
+
+
+                    if (timeNext - time >= 0){
+
+                        // Como mucho 1 segundo despues
+                        // Me muevo a la siguiente con el i y actualizo el iob y time leido
+                        // Estoy contemplando el caso en el que timeNext - time == 0
+                        // que es cuando para el reloj estoy en el mismo lapso de tiempo cuantizado
+                        
+                        if (timeNext - time < 1000){
+                            time = timeNext;
+                            iob = iobARGData.get(i-1).getDouble("iobEst");
+                            i--;
+                        }else{
+                            break;
+                        }
+                    }else{
+                        // NO DEBERÍA ENTRAR ACA
+                        // UN BUG DE JAVA??
+                        log.debug("[ARG_GUI] Grafico IOB - Entre a una muestra siguiente que es mas antigua que la actual ¡Imposible!");                        
+                    
+                        /// Salgo para no entrar en loop infinito
+                        break;
+                    }
+                }
+            }
+
             if (time >= fromTime && time <= toTime){
 
                 ARGDataPoint p = new ARGDataPoint();
