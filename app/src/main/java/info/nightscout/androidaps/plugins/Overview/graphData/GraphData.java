@@ -461,26 +461,21 @@ public class GraphData {
                     if (timeNext < 1)
                         timeNext = iobARGData.get(i-1).date;
 
-
-                    if (timeNext - time >= 0){
+                    if (Math.abs(timeNext - time) >= 0 && Math.abs(timeNext - time) < 1000){
 
                         // Como mucho 1 segundo despues
                         // Me muevo a la siguiente con el i y actualizo el iob y time leido
                         // Estoy contemplando el caso en el que timeNext - time == 0
                         // que es cuando para el reloj estoy en el mismo lapso de tiempo cuantizado
                         
-                        if (timeNext - time < 1000){
+                        if (timeNext - time < 1000 && (timeNext - time) >= 0){
                             time = timeNext;
                             iob = iobARGData.get(i-1).getDouble("iobEst");
-                            i--;
-                        }else{
-                            break;
                         }
+                        
+                        i--;
+
                     }else{
-                        // NO DEBERÍA ENTRAR ACA
-                        // UN BUG DE JAVA??
-                        log.debug("[ARG_GUI] Grafico IOB - Entre a una muestra siguiente que es mas antigua que la actual ¡Imposible!");                        
-                    
                         /// Salgo para no entrar en loop infinito
                         break;
                     }

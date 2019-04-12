@@ -266,6 +266,9 @@ public class LoopPlugin extends PluginBase {
 
     public synchronized void invoke(String initiator, boolean allowNotification, boolean tempBasalFallback) {
         try {
+            // Desactivar sugerencias en codigo
+            boolean allowNotificationByPass = true;
+
             if (L.isEnabled(L.APS))
                 log.debug("invoke from " + initiator);
             Constraint<Boolean> loopEnabled = MainApp.getConstraintChecker().isLoopInvokationAllowed();
@@ -416,7 +419,7 @@ public class LoopPlugin extends PluginBase {
                 }
             } else {
             
-                if (resultAfterConstraints.isChangeRequested() && allowNotification) {
+                if (resultAfterConstraints.isChangeRequested() && (allowNotification && !allowNotificationByPass)) {
                     NotificationCompat.Builder builder =
                             new NotificationCompat.Builder(MainApp.instance().getApplicationContext(), CHANNEL_ID);
                     builder.setSmallIcon(R.drawable.notif_icon)
@@ -451,7 +454,7 @@ public class LoopPlugin extends PluginBase {
 
                     // Send to Wear
                     ActionStringHandler.handleInitiate("changeRequest");
-                } else if (allowNotification) {
+                } else if (allowNotification && !allowNotificationByPass) {
                     // dismiss notifications
                     NotificationManager notificationManager =
                             (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
