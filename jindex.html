@@ -66,9 +66,10 @@
     function convertirTiempo(tiempo){
       var unixTimeMs = tiempo;
 
-      if (unixTimeMs < 1923264000) {
+      if (unixTimeMs < 2000000000) {
         unixTimeMs= unixTimeMs * 1000;
       }
+
       var d = new Date(unixTimeMs);
       var timeStr = "";
 
@@ -106,20 +107,24 @@
               row.time = i.date/1000;
             }
 
-            var row_header = new Set(Object.keys(row));
             if (row.time !== undefined){
               row.time = convertirTiempo(row.time);
             }
+
+            var row_header = Object.keys(row);
+            var row_header_set = new Set(Object.keys(row));
 
             type = type.replace("Biometrics.", "BIOMETRICS_");
             
             for (var tab = 0; tab < tabs.length; tab++){
               if (tabs[tab].type == type){
+                var header_set = new Set(tabs[tab].headers);
+
                 // Que hay en la row y no en la tabla
-                var setC1 = new Set( [ ...row_header ].filter( x => ! tabs[tab].headers.has( x ) ) );
+                var setC1 = new Set( [ ...row_header_set].filter( x => ! header_set.has( x ) ) );
 
                 // Que hay en la tabla y no en el row
-                var setC2 = new Set( [ ...tabs[tab].headers ].filter( x => ! row_header.has( x ) ) );
+                var setC2 = new Set( [ ...header_set ].filter( x => ! row_header_set.has( x ) ) );
                 
                 // habría que agregarla al header de la tabla y a cada elemento ya agregado 
                 // pertenecientes a esa tabla
@@ -140,6 +145,8 @@
                   });
                 }
 
+                tabs[tab].headers = row_header;
+
                 existType = true;
                 break;
 
@@ -148,23 +155,40 @@
 
             if (!existType){
               tab = tabs.length;
-              tabs.push({type: type, data:[Object.values(row)], headers: new Set(row_header)});
+              tabs.push({type: type, data:[row], headers: row_header});
             }else{
-              if (row_header.length != tabs[tab].headers.length){
-                console.log("Agregar row imposible", row_header, tabs[tab].headers  );
-              }else{
-                tabs[tab].data.push(Object.values(row));
-              }
-
+              tabs[tab].data.push(row);
             }
           }
 
         }
       }
 
+
+      for (var tab = 0; tab < tabs.length;tab++){
+        var header_set = new Set(tabs[tab].headers);
+        tabs[tab].dataArr = [];
+
+        for (var j = 0; j < tabs[tab].data.length; j++){
+          var arrayData = [];
+
+          header_set.forEach(function(value1, value2, set){
+            //console.log(value1 + ' : ' + tabs[tab].data[j][value1]);
+
+            arrayData.push(tabs[tab].data[j][value1]);
+          });
+
+          tabs[tab].dataArr.push(arrayData);
+
+        //  console.log(arrayData);
+        }
+
+        delete tabs[tab].data;
+      }
+      console.log("procesarCabecera -> ", tabs);
+
       return tabs;
 
-      console.log("procesarCabecera -> ", tabs);
     }
 
     function consultar(){
@@ -195,25 +219,33 @@
             var headers = [];
 
             var tabs = procesarCabecera(result);
-
-            console.log(tabs);
+            
 
             for (var tab = 0; tab < tabs.length;tab++){
               var groupid = tab;
 
               $("#tab-group").append("<li class=\"nav-item\"> <a href=\"#group" + groupid + "\" data-toggle=\"tab\" class=\"nav-link\">" + tabs[tab].type + "</a></li>");
 
-              var tableHtml = "<table id=\"" + tabs[tab].type  + "_" + groupid + "\" class=\"display\" style=\"width:100%\"><thead><tr>";
+              var tableHtml = "<table id=\"" + tabs[tab].type  + "_" + groupid + "\" class=\"display\" style=\"width:100%\">";
+
+              tableHtml += "<thead><tr>";
               for (var it = tabs[tab].headers.values(), val= null; val=it.next().value; ) {
                 tableHtml += '<td>' + val + '</td>';
               }
-              tableHtml += "</tr></thead><tbody></tbody></table>";
+              tableHtml += "</tr></thead>";
+
+              tableHtml += "<tbody></tbody></table>";
 
               $("#tab-group-content").append("<div class=\"tab-pane\" id=\"group" + groupid + "\">" + tableHtml + "</div>");
 
+//
+//              for (var j = 0; j < tabs[tab].data.length; j++){
+//                tabs[tab].data[j] = Object.values(tabs[tab].data[j]);
+//              }
+
               var newTable = $('#' + tabs[tab].type + "_" + groupid).DataTable({
                   "order": [[ 0, "desc" ]],
-                  "data": tabs[tab].data,
+                  "data": tabs[tab].dataArr,
                   buttons: [
                       'copy', 'csv', 'excel', 'pdf', 'print'
                   ]

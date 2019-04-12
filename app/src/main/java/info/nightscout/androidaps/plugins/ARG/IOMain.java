@@ -3278,7 +3278,7 @@ public class IOMain{
 				statesTableIOB.put("iobEst", iobEst);
 				statesTableIOB.put("iobBasal", iobBasal);	
 				statesTableIOB.put("iobLastTime", iobLastTime);
-				statesTableIOB.put("razon", "D: rutina_8");
+				statesTableIOB.put("razon", "D: rutina_8_tbr_basal_lazo_abierto");
 			}catch(JSONException e){
 
 			}
