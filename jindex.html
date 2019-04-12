@@ -134,7 +134,10 @@
                       tabs[tab].data[j][value1] = 'N/V';
                     });
                   }
-                
+
+                  setC1.forEach(function(value1, value2, set){
+                    tabs[tab].headers.push(value1);
+                  }); 
                 }
 
                 // rellenar los elementos que no estan en el row pero si corresponden
@@ -144,8 +147,6 @@
                     row[value1] = 'N/V';
                   });
                 }
-
-                tabs[tab].headers = row_header;
 
                 existType = true;
                 break;
