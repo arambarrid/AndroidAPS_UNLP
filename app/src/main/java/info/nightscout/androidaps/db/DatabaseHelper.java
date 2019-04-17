@@ -1674,7 +1674,7 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     public boolean createARGTableIfNotExists(ARGTable argTable, String from) {
         try {
-            argTable.date = roundDateToSec(argTable.date);
+            //argTable.date = roundDateToSec(argTable.date);
             
             getDaoARGTable().create(argTable);
             if (L.isEnabled(L.DATABASE))

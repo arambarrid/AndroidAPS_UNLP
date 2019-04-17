@@ -67,7 +67,7 @@ public class PumpDescription {
 
         isTempBasalCapable = true;
         tempBasalStyle = PERCENT;
-        maxTempPercent = 200;
+        maxTempPercent = 500;
         tempPercentStep = 10;
         maxTempAbsolute = 10;
         tempAbsoluteStep = 0.05d;

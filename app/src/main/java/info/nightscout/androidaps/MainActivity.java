@@ -287,9 +287,9 @@ public class MainActivity extends AppCompatActivity {
 
         // guarantee that the unreachable threshold is at least 30 and of type String
         // Added in 1.57 at 21.01.2018
-        Integer unreachable_threshold = SP.getInt(R.string.key_pump_unreachable_threshold, 30);
+        Integer unreachable_threshold = SP.getInt(R.string.key_pump_unreachable_threshold, 10);
         SP.remove(R.string.key_pump_unreachable_threshold);
-        if (unreachable_threshold < 30) unreachable_threshold = 30;
+        //if (unreachable_threshold < 30) unreachable_threshold = 30;
         SP.putString(R.string.key_pump_unreachable_threshold, unreachable_threshold.toString());
     }
 
